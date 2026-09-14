@@ -11,6 +11,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.amjyem.moneymemory",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -29,8 +30,11 @@
       [
         "expo-splash-screen",
         {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
           "backgroundColor": "#eae5db",
           "dark": {
+            "image": "./assets/splash-icon.png",
             "backgroundColor": "#101216"
           }
         }
@@ -38,6 +42,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "882f0161-f6c4-4a13-85b6-773cec24437a"
+      }
+    },
+    "owner": "amjyem"
   }
 }
