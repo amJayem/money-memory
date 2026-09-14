@@ -223,10 +223,11 @@ export default function EntryForm() {
                 value={date}
                 mode="date"
                 maximumDate={new Date()}
-                onChange={(_, selected) => {
+                onValueChange={(_, selected) => {
                   setShowDatePicker(Platform.OS === 'ios');
-                  if (selected) setDate(selected);
+                  setDate(selected);
                 }}
+                onDismiss={() => setShowDatePicker(false)}
               />
             ) : null}
           </Section>

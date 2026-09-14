@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { StyleSheet, View, ScrollView, ScrollViewProps } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurTargetView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
+import { BlurTargetContext } from './BlurTargetContext';
 
 /** The warm mesh ground + three blurred color blobs that sit behind every screen (brief §7). */
 function Backdrop() {
@@ -27,22 +29,27 @@ interface Props extends ScrollViewProps {
 /** Standard screen shell: backdrop + safe area + (optionally) a scroll container with room for the tab bar/FAB. */
 export function Screen({ scroll = true, bottomInset = 122, children, contentContainerStyle, ...rest }: Props) {
   const theme = useTheme();
+  // On Android, GlassCard's blur needs an explicit target view to sample —
+  // this whole screen (backdrop + scrolling content) is that shared target.
+  const blurTargetRef = useRef<View>(null);
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <Backdrop />
-      <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
-        {scroll ? (
-          <ScrollView
-            contentContainerStyle={[{ paddingHorizontal: 18, paddingBottom: bottomInset, gap: 13 }, contentContainerStyle]}
-            showsVerticalScrollIndicator={false}
-            {...rest}
-          >
-            {children}
-          </ScrollView>
-        ) : (
-          <View style={{ flex: 1, paddingHorizontal: 18 }}>{children}</View>
-        )}
-      </SafeAreaView>
-    </View>
+    <BlurTargetView ref={blurTargetRef} style={{ flex: 1, backgroundColor: theme.bg }}>
+      <BlurTargetContext.Provider value={blurTargetRef}>
+        <Backdrop />
+        <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
+          {scroll ? (
+            <ScrollView
+              contentContainerStyle={[{ paddingHorizontal: 18, paddingBottom: bottomInset, gap: 13 }, contentContainerStyle]}
+              showsVerticalScrollIndicator={false}
+              {...rest}
+            >
+              {children}
+            </ScrollView>
+          ) : (
+            <View style={{ flex: 1, paddingHorizontal: 18 }}>{children}</View>
+          )}
+        </SafeAreaView>
+      </BlurTargetContext.Provider>
+    </BlurTargetView>
   );
 }

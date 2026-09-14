@@ -4,6 +4,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/theme/ThemeProvider';
 import { RADII } from '@/theme/tokens';
+import { useBlurTarget } from './BlurTargetContext';
 
 interface Props extends ViewProps {
   radius?: number;
@@ -17,6 +18,7 @@ interface Props extends ViewProps {
  */
 export function GlassCard({ radius = RADII.card, padding = 18, style, children, ...rest }: Props) {
   const theme = useTheme();
+  const blurTarget = useBlurTarget();
   return (
     <View
       style={[
@@ -38,7 +40,8 @@ export function GlassCard({ radius = RADII.card, padding = 18, style, children, 
       <BlurView
         intensity={40}
         tint={theme.mode}
-        experimentalBlurMethod="dimezisBlurView"
+        blurMethod="dimezisBlurView"
+        blurTarget={blurTarget ?? undefined}
         style={StyleSheet.absoluteFill}
       />
       <LinearGradient
