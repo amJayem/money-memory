@@ -26,11 +26,11 @@ function greeting(): string {
   return 'Good night';
 }
 
-const QUICK_ACTIONS: { label: string; type: 'expense' | 'income' | 'lent' | 'transfer'; icon: string }[] = [
-  { label: 'Spent', type: 'expense', icon: '−' },
-  { label: 'Received', type: 'income', icon: '+' },
-  { label: 'Lent', type: 'lent', icon: '→' },
-  { label: 'Moved', type: 'transfer', icon: '⇄' },
+const QUICK_ACTIONS: { label: string; type: 'expense' | 'income' | 'lent' | 'transfer'; icon: string; tone: 'neg' | 'pos' | 'warn' | 'neutral' }[] = [
+  { label: 'Spent', type: 'expense', icon: '−', tone: 'neg' },
+  { label: 'Received', type: 'income', icon: '+', tone: 'pos' },
+  { label: 'Lent', type: 'lent', icon: '→', tone: 'warn' },
+  { label: 'Moved', type: 'transfer', icon: '⇄', tone: 'neutral' },
 ];
 
 export default function HomeScreen() {
@@ -102,12 +102,12 @@ export default function HomeScreen() {
           })}
         </ScrollView>
         <Pressable onPress={() => router.push('/accounts')} style={{ paddingTop: 9 }}>
-          <AppText variant="mono" style={{ textAlign: 'right' }}>
+          <AppText variant="mono" color={theme.accentColor} style={{ textAlign: 'right' }}>
             All accounts →
           </AppText>
         </Pressable>
         {privacy.hintText ? (
-          <AppText variant="mono" style={{ marginTop: 6 }}>
+          <AppText variant="mono" color={theme.accentColor} style={{ marginTop: 6 }}>
             {privacy.hintText}
           </AppText>
         ) : null}
@@ -115,15 +115,19 @@ export default function HomeScreen() {
 
       <View style={{ flexDirection: 'row', gap: 9 }}>
         {QUICK_ACTIONS.map((q) => (
-          <Pressable
-            key={q.type}
-            onPress={() => router.push(`/entry/${q.type}`)}
-            style={{ flex: 1, alignItems: 'center', gap: 7, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 18, paddingVertical: 13 }}
-          >
-            <AppText style={{ fontSize: 16, color: theme.ink }}>{q.icon}</AppText>
-            <AppText variant="body" style={{ fontSize: 11.5 }}>
-              {q.label}
-            </AppText>
+          <Pressable key={q.type} onPress={() => router.push(`/entry/${q.type}`)} style={{ flex: 1 }}>
+            <GlassCard radius={18} padding={13}>
+              <View style={{ alignItems: 'center', gap: 7 }}>
+                <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.toneBg(q.tone) }}>
+                  <AppText style={{ fontSize: 15 }} color={theme.tone(q.tone)}>
+                    {q.icon}
+                  </AppText>
+                </View>
+                <AppText variant="body" style={{ fontSize: 11.5 }}>
+                  {q.label}
+                </AppText>
+              </View>
+            </GlassCard>
           </Pressable>
         ))}
       </View>
@@ -199,7 +203,9 @@ export default function HomeScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10 }}>
           <AppText variant="heading">Recent activity</AppText>
           <Pressable onPress={() => router.push('/history')}>
-            <AppText variant="mono">See all</AppText>
+            <AppText variant="mono" color={theme.accentColor}>
+              See all
+            </AppText>
           </Pressable>
         </View>
         {recent.length === 0 ? (

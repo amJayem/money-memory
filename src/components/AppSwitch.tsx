@@ -18,7 +18,7 @@ export function AppSwitch({ value, onValueChange }: Props) {
   }, [value, anim]);
 
   const knobLeft = anim.interpolate({ inputRange: [0, 1], outputRange: [SWITCH.knobInset, SWITCH.trackWidth - SWITCH.knobSize - SWITCH.knobInset] });
-  const trackColor = anim.interpolate({ inputRange: [0, 1], outputRange: [theme.switchOffTrack, theme.ink] });
+  const trackColor = anim.interpolate({ inputRange: [0, 1], outputRange: [theme.switchOffTrack, theme.accentColor] });
 
   return (
     <Pressable

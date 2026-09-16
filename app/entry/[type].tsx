@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from '@/components/AppText';
 import { Chip } from '@/components/Chip';
+import { IconButton } from '@/components/IconButton';
 import { Keypad } from '@/components/Keypad';
+import { ScreenBackground } from '@/components/Screen';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, type TransactionType } from '@/domain/types';
@@ -146,13 +147,10 @@ export default function EntryForm() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 6 }}>
+    <ScreenBackground blobs={false}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 6 }}>
           <AppText variant="heading">{editing ? 'Edit transaction' : TITLE[type]}</AppText>
-          <Pressable onPress={() => router.back()} hitSlop={8}>
-            <AppText variant="body2">Close</AppText>
-          </Pressable>
+          <IconButton glyph="✕" onPress={() => router.back()} />
         </View>
 
         <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 16 }} keyboardShouldPersistTaps="handled">
@@ -252,15 +250,20 @@ export default function EntryForm() {
 
           <Pressable
             onPress={save}
-            style={{ backgroundColor: theme.ink, borderRadius: 18, minHeight: 52, alignItems: 'center', justifyContent: 'center' }}
+            style={{
+              backgroundColor: numericAmount ? theme.ink : theme.lineStrong,
+              borderRadius: 18,
+              minHeight: 52,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            <AppText color={theme.solid} weight="manrope700">
+            <AppText color={numericAmount ? theme.solid : theme.ink3} weight="manrope700">
               {numericAmount ? `Save ${formatAmount(numericAmount, settings.currencySymbol)}` : 'Save transaction'}
             </AppText>
           </Pressable>
         </ScrollView>
-      </SafeAreaView>
-    </View>
+    </ScreenBackground>
   );
 }
 

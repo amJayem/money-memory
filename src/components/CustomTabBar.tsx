@@ -44,17 +44,17 @@ export function CustomTabBar({ state, navigation }: MinimalTabBarProps) {
   }
 
   return (
-    <View style={[styles.wrap, { paddingBottom: insets.bottom }]} pointerEvents="box-none">
+    <View style={styles.wrap} pointerEvents="box-none">
       <View style={styles.barContainer}>
         <BlurView intensity={50} tint={theme.mode} style={StyleSheet.absoluteFill} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.surface2 }]} />
-        <View style={[styles.row, { borderColor: theme.line }]}>
+        <View style={[styles.row, { borderTopColor: theme.line, paddingBottom: 9 + insets.bottom }]}>
           {left.map((r, i) => renderTab(r, i))}
           <View style={styles.fabGap} />
           {right.map((r, i) => renderTab(r, i + left.length))}
         </View>
       </View>
-      <Pressable onPress={() => router.push('/sheet')} style={[styles.fab, { backgroundColor: theme.ink, shadowColor: theme.lift.shadowColor }]}>
+      <Pressable onPress={() => router.push('/sheet')} style={[styles.fab, { backgroundColor: theme.ink, shadowColor: theme.lift.shadowColor, bottom: insets.bottom + 36 }]}>
         <AppText color={theme.solid} style={{ fontSize: 26, marginTop: -2 }}>
           +
         </AppText>
@@ -72,17 +72,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   barContainer: {
-    width: '92%',
-    borderRadius: 26,
-    overflow: 'hidden',
-    marginBottom: 10,
+    width: '100%',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 26,
-    paddingVertical: 8,
+    borderTopWidth: 1,
+    paddingTop: 9,
+    paddingHorizontal: 10,
   },
   tab: {
     flex: 1,
@@ -95,7 +92,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    top: -22,
+    alignSelf: 'center',
     width: 58,
     height: 58,
     borderRadius: 20,
