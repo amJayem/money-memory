@@ -10,7 +10,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { balance, creditLeft, creditUsed } from '@/domain/money';
-import { sortedTransactions, transactionSub, transactionTitle } from '@/domain/search';
+import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
 import { ACCOUNT_TYPE_LABEL } from '@/theme/tokens';
 import { formatAmount } from '@/domain/format';
 
@@ -80,6 +80,7 @@ export default function AccountDetailScreen() {
               key={t.id}
               title={transactionTitle(t, accounts)}
               sub={transactionSub(t, accounts)}
+              icon={transactionIcon(t)}
               amountText={privacy.fmt(t.type === 'expense' || t.type === 'lent' || t.type === 'repay_out' ? -t.amount : t.amount, true)}
               type={t.type}
               onPress={() => router.push(`/transaction/${t.id}`)}

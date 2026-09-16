@@ -85,6 +85,8 @@ export interface FlowStep {
   label: string;
   amount: number;
   sub: string;
+  /** Design colors each step's dot/amount by semantic tone (fixed per step), not accent — 'neutral' renders in plain ink. */
+  tone: 'pos' | 'neutral' | 'neg' | 'warn';
 }
 
 /** "Money flow" — the 5 fixed reconciliation-style steps shown on Stats. */
@@ -103,11 +105,11 @@ export function moneyFlow(transactions: Transaction[], accounts: Account[], coun
     .slice(0, 3)
     .join(', ');
   return [
-    { label: 'Money came in', amount: income, sub: 'Income this period' },
-    { label: 'Landed in accounts', amount: income - spentTotal, sub: 'After spending' },
-    { label: 'Moved between accounts', amount: transfers, sub: 'Transfers · no net effect' },
-    { label: 'Went out as spending', amount: expense, sub: cats || 'No categories yet' },
-    { label: 'Sitting with other people', amount: owed, sub: lentPeople || 'Nobody currently' },
+    { label: 'Money came in', amount: income, sub: 'Income this period', tone: 'pos' },
+    { label: 'Landed in accounts', amount: income - spentTotal, sub: 'After spending', tone: 'neutral' },
+    { label: 'Moved between accounts', amount: transfers, sub: 'Transfers · no net effect', tone: 'neutral' },
+    { label: 'Went out as spending', amount: expense, sub: cats || 'No categories yet', tone: 'neg' },
+    { label: 'Sitting with other people', amount: owed, sub: lentPeople || 'Nobody currently', tone: 'warn' },
   ];
 }
 
@@ -160,4 +162,32 @@ export function calendarIntensity(transactions: Transaction[], countLentAsSpendi
     amount,
     barWidth: amount > 0 ? Math.max(4, Math.round((amount / maxDay) * 16)) : 0,
   }));
+}
+
+export interface MonthSpend {
+  month: string;
+  spent: number;
+}
+
+/**
+ * Design's "Budget history" card shows the last 3 months' spending against
+ * the budget. The prototype hardcodes 3 fixed demo months; we compute real
+ * ones from actual transactions instead. Note: we don't yet persist a
+ * budget-per-month snapshot, so each past month is compared against the
+ * *current* budget setting, not whatever it was that month.
+ */
+export function recentMonthSpending(transactions: Transaction[], countLentAsSpending: boolean, monthsBack = 3, now: Date = new Date()): MonthSpend[] {
+  const result: MonthSpend[] = [];
+  for (let i = 1; i <= monthsBack; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const spent = transactions
+      .filter((t) => {
+        if (t.type !== 'expense' && !(t.type === 'lent' && countLentAsSpending)) return false;
+        const at = new Date(t.at);
+        return at.getFullYear() === d.getFullYear() && at.getMonth() === d.getMonth();
+      })
+      .reduce((s, t) => s + t.amount, 0);
+    result.push({ month: d.toLocaleDateString('en-US', { month: 'short' }), spent });
+  }
+  return result;
 }

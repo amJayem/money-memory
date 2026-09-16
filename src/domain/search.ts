@@ -28,6 +28,13 @@ export function matchesFilter(t: Transaction, filter: TxFilter, accounts: Accoun
   }
 }
 
+/** Row icon: the design uses a single letter (category or person initial), not a symbolic glyph — transfer is the one fixed exception. */
+export function transactionIcon(t: Transaction): string {
+  if (t.type === 'transfer') return '⇄';
+  const text = t.type === 'expense' || t.type === 'income' ? t.category : t.person;
+  return (text || '?')[0]?.toUpperCase() ?? '?';
+}
+
 export function transactionTitle(t: Transaction, accounts: Account[]): string {
   const accName = (id: string) => accounts.find((a) => a.id === id)?.name ?? id;
   switch (t.type) {

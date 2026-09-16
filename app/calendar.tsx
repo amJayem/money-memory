@@ -10,7 +10,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { calendarIntensity } from '@/domain/stats';
-import { sortedTransactions, transactionSub, transactionTitle } from '@/domain/search';
+import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -65,7 +65,7 @@ export default function CalendarScreen() {
                     {dayNum}
                   </AppText>
                 </View>
-                <View style={{ width: d.barWidth, height: 3, borderRadius: 2, backgroundColor: d.amount > 0 ? theme.accentColor : 'transparent' }} />
+                <View style={{ width: d.barWidth, height: 3, borderRadius: 2, backgroundColor: d.amount > 0 ? (isSelected ? theme.solid : theme.tone('neg')) : 'transparent' }} />
               </Pressable>
             );
           })}
@@ -88,6 +88,7 @@ export default function CalendarScreen() {
               key={t.id}
               title={transactionTitle(t, accounts)}
               sub={transactionSub(t, accounts)}
+              icon={transactionIcon(t)}
               amountText={privacy.fmt(t.type === 'expense' || t.type === 'lent' || t.type === 'repay_out' ? -t.amount : t.amount, true)}
               type={t.type}
               onPress={() => router.push(`/transaction/${t.id}`)}

@@ -1,22 +1,27 @@
 import React, { useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/AppText';
 import { IconButton } from '@/components/IconButton';
 import { Chip } from '@/components/Chip';
+import { GhostButton } from '@/components/GhostButton';
 import { GlassCard } from '@/components/GlassCard';
 import { TransactionRow } from '@/components/TransactionRow';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
-import { groupByDay, matchesFilter, matchesQuery, transactionSub, transactionTitle, type TxFilter } from '@/domain/search';
+import { useBlurTarget } from '@/components/BlurTargetContext';
+import { groupByDay, matchesFilter, matchesQuery, transactionIcon, transactionSub, transactionTitle, type TxFilter } from '@/domain/search';
 
 const FILTERS: TxFilter[] = ['All', 'Money out', 'Money in', 'Transfers', 'Loans', 'Cash', 'Cards'];
 
 export default function HistoryScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const blurTarget = useBlurTarget();
   const { accounts, transactions, settings } = useLedger();
   const privacy = usePrivacy('transactions');
   const params = useLocalSearchParams<{ category?: string }>();
@@ -34,12 +39,12 @@ export default function HistoryScreen() {
           <IconButton glyph="←" onPress={() => router.push('/')} />
           <AppText variant="title">Transactions</AppText>
         </View>
-        <Pressable onPress={() => router.push('/calendar')}>
-          <AppText variant="mono">Calendar</AppText>
-        </Pressable>
+        <GhostButton label="Calendar" onPress={() => router.push('/calendar')} />
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 16, paddingHorizontal: 13, minHeight: 46 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: theme.line, borderRadius: 16, paddingHorizontal: 13, minHeight: 46, overflow: 'hidden' }}>
+        <BlurView intensity={40} tint={theme.mode} blurMethod="dimezisBlurView" blurTarget={blurTarget ?? undefined} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={theme.surfaceGradient as unknown as [string, string]} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={StyleSheet.absoluteFill} />
         <AppText color={theme.ink3}>⌕</AppText>
         <TextInput
           value={query}
@@ -90,6 +95,7 @@ export default function HistoryScreen() {
                   key={t.id}
                   title={transactionTitle(t, accounts)}
                   sub={transactionSub(t, accounts)}
+                  icon={transactionIcon(t)}
                   amountText={privacy.fmt(t.type === 'expense' || t.type === 'lent' || t.type === 'repay_out' ? -t.amount : t.amount, true)}
                   type={t.type}
                   onPress={() => router.push(`/transaction/${t.id}`)}

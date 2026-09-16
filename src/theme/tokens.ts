@@ -32,6 +32,14 @@ export function categoryColor(category: string, mode: ThemeMode): string {
   return mode === 'dark' ? oklch(0.72, 0.11, hue) : oklch(0.63, 0.12, hue);
 }
 
+/** Rotating hues for "How the money left" — a different fixed palette from category colors, per the design's `hues` array. */
+export const METHOD_HUES = [45, 230, 280, 165, 320, 100];
+
+export function methodColor(index: number, mode: ThemeMode): string {
+  const hue = METHOD_HUES[index % METHOD_HUES.length];
+  return mode === 'dark' ? oklch(0.7, 0.1, hue) : oklch(0.6, 0.11, hue);
+}
+
 /** Wallet-card gradient palettes by account type (§5, `paletteOf`). */
 export const WALLET_PALETTE: Record<string, [string, string, string]> = {
   total: ['#2f3d63', '#222c48', '#161d2f'],

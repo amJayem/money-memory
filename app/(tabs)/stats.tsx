@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/AppText';
 import { Chip } from '@/components/Chip';
 import { GlassCard } from '@/components/GlassCard';
+import { IconButton } from '@/components/IconButton';
 import { DonutChart } from '@/components/DonutChart';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { categoryBreakdown, methodBreakdown, moneyFlow, spendingByDay, type StatRange } from '@/domain/stats';
-import { categoryColor } from '@/theme/tokens';
+import { categoryColor, methodColor } from '@/theme/tokens';
 import { formatAmount } from '@/domain/format';
 
 const RANGES: StatRange[] = ['Today', 'This week', 'This month', '3 months', 'This year'];
 
 export default function StatsScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const { accounts, transactions, settings } = useLedger();
   const privacy = usePrivacy('stats');
   const [range, setRange] = useState<StatRange>('This month');
@@ -35,9 +38,10 @@ export default function StatsScreen() {
 
   return (
     <Screen>
-      <AppText variant="title" style={{ paddingTop: 4 }}>
-        Statistics
-      </AppText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
+        <IconButton glyph="←" onPress={() => router.push('/')} />
+        <AppText variant="title">Statistics</AppText>
+      </View>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {RANGES.map((r) => (
@@ -96,14 +100,14 @@ export default function StatsScreen() {
             <GlassCard>
               <AppText variant="heading">How the money left</AppText>
               <View style={{ gap: 12, marginTop: 14 }}>
-                {methods.map((m) => (
+                {methods.map((m, i) => (
                   <View key={m.name}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                       <AppText variant="body">{m.name}</AppText>
                       <AppText variant="body">{privacy.fmt(m.amount)}</AppText>
                     </View>
                     <View style={{ height: 7, borderRadius: 999, backgroundColor: theme.surface2, overflow: 'hidden', marginTop: 6 }}>
-                      <View style={{ width: `${(m.amount / Math.max(1, methods[0].amount)) * 100}%`, height: '100%', backgroundColor: theme.accentColor }} />
+                      <View style={{ width: `${(m.amount / Math.max(1, methods[0].amount)) * 100}%`, height: '100%', backgroundColor: methodColor(i, theme.mode) }} />
                     </View>
                   </View>
                 ))}
@@ -114,23 +118,29 @@ export default function StatsScreen() {
           <GlassCard>
             <AppText variant="heading">Money flow</AppText>
             <View style={{ gap: 4, marginTop: 14 }}>
-              {flow.map((f, i) => (
-                <View key={f.label} style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ width: 26, alignItems: 'center' }}>
-                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.accentColor }} />
-                    {i < flow.length - 1 ? <View style={{ width: 1, flex: 1, backgroundColor: theme.line, marginTop: 2 }} /> : null}
-                  </View>
-                  <View style={{ flex: 1, paddingBottom: 14 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <AppText variant="body">{f.label}</AppText>
-                      <AppText variant="body">{privacy.fmt(f.amount)}</AppText>
+              {flow.map((f, i) => {
+                const dotColor = theme.tone(f.tone);
+                const amountColor = f.tone === 'neutral' ? theme.ink : dotColor;
+                return (
+                  <View key={f.label} style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ width: 26, alignItems: 'center' }}>
+                      <View style={{ width: 11, height: 11, borderRadius: 5.5, backgroundColor: dotColor, marginTop: 5 }} />
+                      {i < flow.length - 1 ? <View style={{ width: 1, flex: 1, backgroundColor: theme.lineStrong, marginTop: 2 }} /> : null}
                     </View>
-                    <AppText variant="mono" style={{ marginTop: 2 }}>
-                      {f.sub}
-                    </AppText>
+                    <View style={{ flex: 1, paddingBottom: 14 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <AppText variant="body">{f.label}</AppText>
+                        <AppText variant="body" color={amountColor}>
+                          {privacy.fmt(f.amount)}
+                        </AppText>
+                      </View>
+                      <AppText variant="mono" style={{ marginTop: 2 }}>
+                        {f.sub}
+                      </AppText>
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           </GlassCard>
 

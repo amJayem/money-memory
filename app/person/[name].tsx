@@ -10,8 +10,8 @@ import { TransactionRow } from '@/components/TransactionRow';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
-import { outstandingFor } from '@/domain/money';
-import { sortedTransactions, transactionSub, transactionTitle } from '@/domain/search';
+import { outstandingFor, statusLabel, statusTone } from '@/domain/money';
+import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
 
 export default function PersonScreen() {
   const { name, kind } = useLocalSearchParams<{ name: string; kind?: string }>();
@@ -24,6 +24,7 @@ export default function PersonScreen() {
 
   const ledger = outstandingFor(transactions, direction, person);
   const cleared = ledger.out <= 0 && ledger.given > 0;
+  const tone = statusTone(ledger);
   const pct = ledger.given > 0 ? Math.min(100, (ledger.back / ledger.given) * 100) : 0;
 
   const related = sortedTransactions(transactions.filter((t) => t.person === person));
@@ -42,8 +43,8 @@ export default function PersonScreen() {
 
       <GlassCard>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: theme.surface2, alignItems: 'center', justifyContent: 'center' }}>
-            <AppText variant="heading" style={{ fontSize: 18 }}>
+          <View style={{ width: 54, height: 54, borderRadius: 19, backgroundColor: theme.toneBg(tone), alignItems: 'center', justifyContent: 'center' }}>
+            <AppText variant="heading" color={theme.tone(tone)} style={{ fontSize: 21 }}>
               {person[0]?.toUpperCase()}
             </AppText>
           </View>
@@ -52,11 +53,11 @@ export default function PersonScreen() {
             <AppText variant="amount" style={{ fontSize: 24, marginTop: 4 }}>
               {privacy.fmt(Math.max(0, ledger.out))}
             </AppText>
-            {cleared ? (
-              <AppText variant="mono" color={theme.tone('pos')} style={{ marginTop: 2 }}>
-                Paid in full ✓
+            <View style={{ alignSelf: 'flex-start', backgroundColor: theme.toneBg(tone), borderRadius: 7, paddingHorizontal: 7, paddingVertical: 4, marginTop: 6 }}>
+              <AppText variant="mono" color={theme.tone(tone)} style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {statusLabel(ledger)}
               </AppText>
-            ) : null}
+            </View>
           </View>
         </View>
         <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: theme.line, paddingTop: 13, marginTop: 14 }}>
@@ -97,6 +98,7 @@ export default function PersonScreen() {
             key={t.id}
             title={transactionTitle(t, accounts)}
             sub={transactionSub(t, accounts)}
+            icon={transactionIcon(t)}
             amountText={privacy.fmt(t.type === 'expense' || t.type === 'lent' || t.type === 'repay_out' ? -t.amount : t.amount, true)}
             type={t.type}
             onPress={() => router.push(`/transaction/${t.id}`)}

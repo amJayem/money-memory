@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/AppText';
 import { IconButton } from '@/components/IconButton';
@@ -13,6 +14,7 @@ import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { useAppStore } from '@/store/appStore';
 import { budgetStatus } from '@/domain/money';
+import { recentMonthSpending } from '@/domain/stats';
 import { CATEGORY_BUDGETS } from '@/domain/types';
 
 export default function BudgetScreen() {
@@ -24,6 +26,7 @@ export default function BudgetScreen() {
 
   const monthLabel = new Date().toLocaleDateString('en-US', { month: 'long' });
   const lentThisMonth = transactions.filter((t) => t.type === 'lent').reduce((s, t) => s + t.amount, 0);
+  const history = recentMonthSpending(transactions, settings.countLentAsSpending);
 
   return (
     <Screen>
@@ -71,18 +74,8 @@ export default function BudgetScreen() {
             <AppText variant="body2" style={{ flex: 1 }}>
               Adjust this month
             </AppText>
-            <Pressable
-              onPress={() => updateSettings({ monthlyBudget: Math.max(0, settings.monthlyBudget - 2500) })}
-              style={{ width: 44, height: 44, borderRadius: 13, borderWidth: 1, borderColor: theme.lineStrong, alignItems: 'center', justifyContent: 'center' }}
-            >
-              <AppText variant="heading">−</AppText>
-            </Pressable>
-            <Pressable
-              onPress={() => updateSettings({ monthlyBudget: settings.monthlyBudget + 2500 })}
-              style={{ width: 44, height: 44, borderRadius: 13, borderWidth: 1, borderColor: theme.lineStrong, alignItems: 'center', justifyContent: 'center' }}
-            >
-              <AppText variant="heading">+</AppText>
-            </Pressable>
+            <StepButton glyph="−" onPress={() => updateSettings({ monthlyBudget: Math.max(0, settings.monthlyBudget - 2500) })} />
+            <StepButton glyph="+" onPress={() => updateSettings({ monthlyBudget: settings.monthlyBudget + 2500 })} />
           </View>
           <AppText variant="body2" style={{ textAlign: 'center' }}>
             Past months keep the budget they were planned with — editing now only changes {monthLabel}.
@@ -119,6 +112,30 @@ export default function BudgetScreen() {
         </View>
       </GlassCard>
 
+      {history.some((h) => h.spent > 0) ? (
+        <GlassCard>
+          <AppText variant="heading">Budget history</AppText>
+          <View style={{ gap: 12, marginTop: 13 }}>
+            {history.map((h) => {
+              const status = budgetStatus(settings.monthlyBudget, h.spent);
+              return (
+                <View key={h.month} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+                  <AppText variant="body" style={{ width: 34 }}>
+                    {h.month}
+                  </AppText>
+                  <View style={{ flex: 1 }}>
+                    <ProgressBar barPct={status.barPct} overPct={status.overPct} tone={status.tone} height={8} />
+                  </View>
+                  <AppText variant="mono" color={theme.tone(status.overBudget ? 'neg' : 'pos')} style={{ width: 76, textAlign: 'right' }}>
+                    {status.overBudget ? `${privacy.fmt(-status.left)} over` : `${privacy.fmt(status.left)} left`}
+                  </AppText>
+                </View>
+              );
+            })}
+          </View>
+        </GlassCard>
+      ) : null}
+
       <GlassCard>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
           <View style={{ flex: 1 }}>
@@ -131,6 +148,16 @@ export default function BudgetScreen() {
         </View>
       </GlassCard>
     </Screen>
+  );
+}
+
+function StepButton({ glyph, onPress }: { glyph: string; onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable onPress={onPress} style={{ width: 44, height: 44, borderRadius: 13, borderWidth: 1, borderColor: theme.lineStrong, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+      <LinearGradient colors={theme.surfaceGradient as unknown as [string, string]} style={StyleSheet.absoluteFill} />
+      <AppText variant="heading">{glyph}</AppText>
+    </Pressable>
   );
 }
 

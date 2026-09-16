@@ -14,7 +14,7 @@ import { usePrivacy } from '@/hooks/usePrivacy';
 import { useToastStore } from '@/store/toastStore';
 import { balance, budgetStatusLine, creditLeft, creditUsed } from '@/domain/money';
 import { formatAmount } from '@/domain/format';
-import { sortedTransactions, transactionSub, transactionTitle } from '@/domain/search';
+import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
 import { ACCOUNT_TYPE_LABEL } from '@/theme/tokens';
 
 function greeting(): string {
@@ -218,6 +218,7 @@ export default function HomeScreen() {
               key={t.id}
               title={transactionTitle(t, accounts)}
               sub={transactionSub(t, accounts)}
+              icon={transactionIcon(t)}
               amountText={privacy.fmt(t.type === 'expense' || t.type === 'lent' || t.type === 'repay_out' ? -t.amount : t.amount, true)}
               type={t.type}
               onPress={() => router.push(`/transaction/${t.id}`)}

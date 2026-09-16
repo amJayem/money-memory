@@ -3,17 +3,7 @@ import { Pressable, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from './AppText';
 import { MIN_TAP_TARGET } from '@/theme/tokens';
-import type { Transaction, TransactionType } from '@/domain/types';
-
-const GLYPH: Record<TransactionType, string> = {
-  expense: '−',
-  income: '+',
-  transfer: '⇄',
-  lent: '→',
-  borrowed: '←',
-  repay_in: '↩',
-  repay_out: '↩',
-};
+import type { TransactionType } from '@/domain/types';
 
 const TONE: Record<TransactionType, 'pos' | 'neg' | 'warn' | 'neutral'> = {
   expense: 'neg',
@@ -30,12 +20,17 @@ interface Props {
   sub: string;
   amountText: string;
   type: TransactionType;
+  /** Category/person initial (or '⇄' for transfers) — see domain/search.ts's transactionIcon(). */
+  icon: string;
   onPress: () => void;
 }
 
-export function TransactionRow({ title, sub, amountText, type, onPress }: Props) {
+export function TransactionRow({ title, sub, amountText, type, icon, onPress }: Props) {
   const theme = useTheme();
   const tone = TONE[type];
+  // Design's row(t): the icon badge is always tone-colored, but the amount
+  // text itself is only tone-colored for pos/neg — warn/neutral stay plain ink.
+  const amountColor = tone === 'pos' || tone === 'neg' ? theme.tone(tone) : theme.ink;
   return (
     <Pressable onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: MIN_TAP_TARGET, paddingVertical: 8, paddingHorizontal: 8 }}>
       <View
@@ -49,7 +44,7 @@ export function TransactionRow({ title, sub, amountText, type, onPress }: Props)
         }}
       >
         <AppText color={theme.tone(tone)} weight="manrope700">
-          {GLYPH[type]}
+          {icon}
         </AppText>
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
@@ -60,7 +55,7 @@ export function TransactionRow({ title, sub, amountText, type, onPress }: Props)
           {sub}
         </AppText>
       </View>
-      <AppText variant="amount" color={theme.tone(tone)} style={{ fontSize: 14.5 }}>
+      <AppText variant="amount" color={amountColor} style={{ fontSize: 14.5 }}>
         {amountText}
       </AppText>
     </Pressable>

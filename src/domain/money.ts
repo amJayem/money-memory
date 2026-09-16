@@ -101,6 +101,19 @@ export function outstandingFor(transactions: Transaction[], kind: 'lent' | 'borr
   return row ?? { person, given: 0, back: 0, out: 0 };
 }
 
+/** Design's `statusTone`: cleared -> pos, partly paid -> warn, still fully outstanding -> neg. Drives both the avatar circle and the status pill on Loans/Person. */
+export function statusTone(p: PersonLedger): 'pos' | 'warn' | 'neg' {
+  if (p.out <= 0) return 'pos';
+  if (p.back > 0) return 'warn';
+  return 'neg';
+}
+
+export function statusLabel(p: PersonLedger): 'Cleared' | 'Partly paid' | 'Outstanding' {
+  if (p.out <= 0) return 'Cleared';
+  if (p.back > 0) return 'Partly paid';
+  return 'Outstanding';
+}
+
 /** "You are owed" — brief §2 rule: never shown negative, people can't net below zero. */
 export function totalOwedToMe(transactions: Transaction[]): number {
   return peopleAgg(transactions, 'lent').reduce((sum, p) => sum + Math.max(0, p.out), 0);
