@@ -49,59 +49,57 @@ export default function AddAccountScreen() {
         <AppText variant="title">Add account</AppText>
       </View>
 
-      <View style={{ gap: 18, marginTop: 16 }}>
-        <View>
-          <AppText variant="label" style={{ marginBottom: 8 }}>
-            Name
-          </AppText>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. City Bank"
-            placeholderTextColor={theme.ink3}
-            style={{ borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 13, color: theme.ink, fontSize: 14 }}
-          />
-        </View>
-
-        <View>
-          <AppText variant="label" style={{ marginBottom: 8 }}>
-            Type
-          </AppText>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {TYPES.map((t) => (
-              <Chip key={t} label={ACCOUNT_TYPE_LABEL[t]} active={type === t} onPress={() => setType(t)} />
-            ))}
+      <GlassCard>
+        <View style={{ gap: 16 }}>
+          <View>
+            <AppText variant="label" style={{ marginBottom: 8 }}>
+              Name
+            </AppText>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="e.g. City Bank"
+              placeholderTextColor={theme.ink3}
+              style={{ borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 13, color: theme.ink, fontSize: 14 }}
+            />
           </View>
-        </View>
 
-        <View>
-          <AppText variant="label" style={{ marginBottom: 8 }}>
-            {type === 'credit' ? 'Credit limit' : 'Money in it now'}
-          </AppText>
-          <TextInput
-            value={amount}
-            onChangeText={(v) => setAmount(v.replace(/[^0-9.]/g, ''))}
-            keyboardType="numeric"
-            placeholder="0"
-            placeholderTextColor={theme.ink3}
-            style={{ borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 13, color: theme.ink, fontSize: 14 }}
-          />
-        </View>
+          <View>
+            <AppText variant="label" style={{ marginBottom: 8 }}>
+              Type
+            </AppText>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {TYPES.map((t) => (
+                <Chip key={t} label={ACCOUNT_TYPE_LABEL[t]} active={type === t} onPress={() => setType(t)} />
+              ))}
+            </View>
+          </View>
 
-        <GlassCard padding={13}>
+          <View>
+            <AppText variant="label" style={{ marginBottom: 8 }}>
+              {type === 'credit' ? 'Credit limit' : 'Money in it now'}
+            </AppText>
+            <TextInput
+              value={amount}
+              onChangeText={(v) => setAmount(v.replace(/[^0-9.]/g, ''))}
+              keyboardType="numeric"
+              placeholder="0"
+              placeholderTextColor={theme.ink3}
+              style={{ borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 13, color: theme.ink, fontSize: 14 }}
+            />
+          </View>
+
           <AppText variant="body2">
-            {type === 'credit'
-              ? "Credit limits are never counted as your money — only what's left to spend."
-              : 'This starting balance only affects totals from today forward.'}
+            We never ask for bank logins, card numbers or OTPs. You type what you know; the numbers stay on this phone.
           </AppText>
-        </GlassCard>
 
-        <Pressable onPress={save} style={{ backgroundColor: theme.ink, borderRadius: 18, minHeight: 52, alignItems: 'center', justifyContent: 'center' }}>
-          <AppText color={theme.solid} weight="manrope700">
-            Save account
-          </AppText>
-        </Pressable>
-      </View>
+          <Pressable onPress={save} style={{ backgroundColor: theme.ink, borderRadius: 18, minHeight: 52, alignItems: 'center', justifyContent: 'center' }}>
+            <AppText color={theme.solid} weight="manrope700">
+              Save account
+            </AppText>
+          </Pressable>
+        </View>
+      </GlassCard>
     </Screen>
   );
 }

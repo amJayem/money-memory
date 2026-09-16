@@ -5,7 +5,7 @@ import { AppText } from './AppText';
 import { MIN_TAP_TARGET } from '@/theme/tokens';
 import type { TransactionType } from '@/domain/types';
 
-const TONE: Record<TransactionType, 'pos' | 'neg' | 'warn' | 'neutral'> = {
+export const TRANSACTION_TONE: Record<TransactionType, 'pos' | 'neg' | 'warn' | 'neutral'> = {
   expense: 'neg',
   income: 'pos',
   transfer: 'neutral',
@@ -27,7 +27,7 @@ interface Props {
 
 export function TransactionRow({ title, sub, amountText, type, icon, onPress }: Props) {
   const theme = useTheme();
-  const tone = TONE[type];
+  const tone = TRANSACTION_TONE[type];
   // Design's row(t): the icon badge is always tone-colored, but the amount
   // text itself is only tone-colored for pos/neg — warn/neutral stay plain ink.
   const amountColor = tone === 'pos' || tone === 'neg' ? theme.tone(tone) : theme.ink;

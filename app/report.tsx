@@ -5,11 +5,13 @@ import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/AppText';
 import { IconButton } from '@/components/IconButton';
 import { GlassCard } from '@/components/GlassCard';
+import { TransactionRow } from '@/components/TransactionRow';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { balance, monthlyReport } from '@/domain/money';
-import { sortedTransactions, transactionTitle } from '@/domain/search';
+import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
+import type { Tone } from '@/theme/tokens';
 
 export default function ReportScreen() {
   const theme = useTheme();
@@ -25,14 +27,12 @@ export default function ReportScreen() {
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 4);
 
-  const rows: { label: string; value: number | null; bold?: boolean }[] = [
+  const rows: { label: string; value: number | null; tone?: Tone; bold?: boolean }[] = [
     { label: `Total available on ${monthLabel.split(' ')[0]} 1`, value: report.opening },
-    { label: 'Money in', value: report.income },
-    { label: 'Money out', value: -report.expense },
-    { label: 'Lent to people', value: -report.lent },
-    { label: 'Repayments received', value: report.repaidIn },
-    { label: 'Borrowed', value: report.borrowed },
-    { label: 'Repayments made', value: -report.repaidOut },
+    { label: 'Money in', value: report.income, tone: 'pos' },
+    { label: 'Money out', value: -report.expense, tone: 'neg' },
+    { label: 'Lent to people', value: -report.lent, tone: 'warn' },
+    { label: 'Repayments received', value: report.repaidIn, tone: 'pos' },
     { label: 'Transfers', value: null },
     { label: 'Total available now', value: report.closing, bold: true },
   ];
@@ -58,7 +58,11 @@ export default function ReportScreen() {
               }}
             >
               <AppText variant={r.bold ? 'heading' : 'body2'}>{r.label}</AppText>
-              <AppText variant={r.bold ? 'amount' : 'body'} style={r.bold ? { fontSize: 17 } : undefined}>
+              <AppText
+                variant={r.bold ? 'amount' : 'body'}
+                color={r.tone ? theme.tone(r.tone) : undefined}
+                style={r.bold ? { fontSize: 17 } : undefined}
+              >
                 {r.value === null ? 'no net effect' : r.bold ? privacy.fmtTotal(r.value) : privacy.fmt(r.value, true)}
               </AppText>
             </View>
@@ -71,10 +75,15 @@ export default function ReportScreen() {
       </AppText>
       <GlassCard padding={4}>
         {largest.map((t) => (
-          <View key={t.id} style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 12 }}>
-            <AppText variant="body">{transactionTitle(t, accounts)}</AppText>
-            <AppText variant="body">{privacy.fmt(t.amount)}</AppText>
-          </View>
+          <TransactionRow
+            key={t.id}
+            title={transactionTitle(t, accounts)}
+            sub={transactionSub(t, accounts)}
+            icon={transactionIcon(t)}
+            amountText={privacy.fmt(t.type === 'expense' || t.type === 'lent' || t.type === 'repay_out' ? -t.amount : t.amount, true)}
+            type={t.type}
+            onPress={() => router.push(`/transaction/${t.id}`)}
+          />
         ))}
       </GlassCard>
 

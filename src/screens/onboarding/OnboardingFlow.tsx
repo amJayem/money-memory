@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from '@/components/AppText';
+import { ScreenBackground } from '@/components/Screen';
+import { GhostButton } from '@/components/GhostButton';
 import { useAppStore } from '@/store/appStore';
 import type { AccountType } from '@/domain/types';
 import { ACCOUNT_TYPE_LABEL } from '@/theme/tokens';
@@ -57,17 +57,19 @@ export function OnboardingFlow() {
 
   if (showSplash) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.bg, alignItems: 'center', justifyContent: 'center', gap: 18 }}>
-        <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: theme.ink }} />
-        <View style={{ alignItems: 'center' }}>
-          <AppText variant="title" style={{ fontSize: 26 }}>
-            Money Memory
-          </AppText>
-          <AppText variant="mono" style={{ marginTop: 6 }}>
-            a searchable memory for your money
-          </AppText>
+      <ScreenBackground edges={['top', 'bottom', 'left', 'right']}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18 }}>
+          <View style={{ width: 66, height: 66, borderRadius: 24, backgroundColor: theme.tone('accent') }} />
+          <View style={{ alignItems: 'center' }}>
+            <AppText variant="title" style={{ fontSize: 26 }}>
+              Money Memory
+            </AppText>
+            <AppText variant="mono" style={{ marginTop: 6 }}>
+              a searchable memory for your money
+            </AppText>
+          </View>
         </View>
-      </View>
+      </ScreenBackground>
     );
   }
 
@@ -76,102 +78,97 @@ export function OnboardingFlow() {
   const isLast = slide === SLIDES.length - 1;
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <LinearGradient colors={theme.bgGradient} style={StyleSheet.absoluteFill} />
-      <SafeAreaView style={{ flex: 1, paddingHorizontal: 24 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingTop: 8 }}>
-          <Pressable onPress={finish} hitSlop={8}>
-            <AppText variant="body2">Skip</AppText>
-          </Pressable>
+    <ScreenBackground edges={['top', 'bottom', 'left', 'right']} style={{ paddingHorizontal: 24 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingTop: 8 }}>
+        <GhostButton label="Skip" onPress={finish} />
+      </View>
+
+      <View style={{ flex: 1, justifyContent: 'center', gap: 26 }}>
+        <View>
+          <AppText variant="title" style={{ fontSize: 27 }}>
+            {s.title}
+          </AppText>
+          <AppText variant="body2" style={{ marginTop: 10, lineHeight: 21 }}>
+            {s.body}
+          </AppText>
         </View>
 
-        <View style={{ flex: 1, justifyContent: 'center', gap: 26 }}>
-          <View>
-            <AppText variant="title" style={{ fontSize: 27 }}>
-              {s.title}
-            </AppText>
-            <AppText variant="body2" style={{ marginTop: 10, lineHeight: 21 }}>
-              {s.body}
-            </AppText>
-          </View>
-
-          {isSetup ? (
-            <View style={{ gap: 8 }}>
-              {ACCOUNT_CHOICES.map((type) => {
-                const on = enabled.includes(type);
-                return (
-                  <Pressable
-                    key={type}
-                    onPress={() => toggle(type)}
+        {isSetup ? (
+          <View style={{ gap: 8 }}>
+            {ACCOUNT_CHOICES.map((type) => {
+              const on = enabled.includes(type);
+              return (
+                <Pressable
+                  key={type}
+                  onPress={() => toggle(type)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 11,
+                    borderWidth: 1,
+                    borderColor: theme.line,
+                    backgroundColor: theme.surface2,
+                    borderRadius: 18,
+                    padding: 13,
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <AppText variant="body">{ACCOUNT_TYPE_LABEL[type]}</AppText>
+                  </View>
+                  <View
                     style={{
-                      flexDirection: 'row',
+                      width: 22,
+                      height: 22,
+                      borderRadius: 7,
+                      borderWidth: 1.5,
+                      borderColor: on ? theme.accentColor : theme.lineStrong,
+                      backgroundColor: on ? theme.accentColor : 'transparent',
                       alignItems: 'center',
-                      gap: 11,
-                      borderWidth: 1,
-                      borderColor: theme.line,
-                      backgroundColor: theme.surface2,
-                      borderRadius: 18,
-                      padding: 13,
+                      justifyContent: 'center',
                     }}
                   >
-                    <View style={{ flex: 1 }}>
-                      <AppText variant="body">{ACCOUNT_TYPE_LABEL[type]}</AppText>
-                    </View>
-                    <View
-                      style={{
-                        width: 22,
-                        height: 22,
-                        borderRadius: 7,
-                        borderWidth: 1.5,
-                        borderColor: on ? theme.accentColor : theme.lineStrong,
-                        backgroundColor: on ? theme.accentColor : 'transparent',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {on ? <AppText color="#fff" style={{ fontSize: 13 }}>✓</AppText> : null}
-                    </View>
-                  </Pressable>
-                );
-              })}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 18, padding: 13, marginTop: 4 }}>
-                <View style={{ flex: 1 }}>
-                  <AppText variant="body">Currency symbol</AppText>
-                  <AppText variant="mono" style={{ marginTop: 2 }}>
-                    amounts will read {symbol || '৳'}1,250
-                  </AppText>
-                </View>
-                <PlainInput value={symbol} onChangeText={(v) => setSymbol(v.slice(0, 4))} />
+                    {on ? <AppText color="#fff" style={{ fontSize: 13 }}>✓</AppText> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 18, padding: 13, marginTop: 4 }}>
+              <View style={{ flex: 1 }}>
+                <AppText variant="body">Currency symbol</AppText>
+                <AppText variant="mono" style={{ marginTop: 2 }}>
+                  amounts will read {symbol || '৳'}1,250
+                </AppText>
               </View>
+              <PlainInput value={symbol} onChangeText={(v) => setSymbol(v.slice(0, 4))} />
             </View>
-          ) : null}
-        </View>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingBottom: 18 }}>
-          <View style={{ flexDirection: 'row', gap: 6, flex: 1 }}>
-            {SLIDES.map((_, i) => (
-              <View
-                key={i}
-                style={{
-                  width: i === slide ? 20 : 6,
-                  height: 6,
-                  borderRadius: 3,
-                  backgroundColor: i === slide ? theme.accentColor : theme.lineStrong,
-                }}
-              />
-            ))}
           </View>
-          <Pressable
-            onPress={() => (isLast ? finish() : setSlide((s2) => s2 + 1))}
-            style={{ backgroundColor: theme.ink, borderRadius: 16, paddingVertical: 13, paddingHorizontal: 20, minHeight: 44, justifyContent: 'center' }}
-          >
-            <AppText color={theme.solid} weight="manrope700">
-              {isLast ? 'Start using Money Memory' : 'Next'}
-            </AppText>
-          </Pressable>
+        ) : null}
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingBottom: 18 }}>
+        <View style={{ flexDirection: 'row', gap: 6, flex: 1 }}>
+          {SLIDES.map((_, i) => (
+            <View
+              key={i}
+              style={{
+                width: i === slide ? 20 : 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: i === slide ? theme.ink : theme.lineStrong,
+              }}
+            />
+          ))}
         </View>
-      </SafeAreaView>
-    </View>
+        <Pressable
+          onPress={() => (isLast ? finish() : setSlide((s2) => s2 + 1))}
+          style={{ backgroundColor: theme.ink, borderRadius: 16, paddingVertical: 13, paddingHorizontal: 20, minHeight: 44, justifyContent: 'center' }}
+        >
+          <AppText color={theme.solid} weight="manrope700">
+            {isLast ? 'Start using Money Memory' : 'Next'}
+          </AppText>
+        </Pressable>
+      </View>
+    </ScreenBackground>
   );
 }
 

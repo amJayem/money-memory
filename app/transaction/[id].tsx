@@ -6,21 +6,22 @@ import { AppText } from '@/components/AppText';
 import { IconButton } from '@/components/IconButton';
 import { GlassCard } from '@/components/GlassCard';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { TRANSACTION_TONE } from '@/components/TransactionRow';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
 import { usePrivacy } from '@/hooks/usePrivacy';
-import { transactionSub, transactionTitle } from '@/domain/search';
+import { transactionIcon, transactionTitle } from '@/domain/search';
 import { formatAmount } from '@/domain/format';
 
 const TYPE_LABEL: Record<string, string> = {
-  expense: 'Expense',
-  income: 'Income',
-  transfer: 'Transfer',
-  lent: 'Lent',
-  borrowed: 'Borrowed',
+  expense: 'Money out',
+  income: 'Money in',
+  transfer: 'Transfer between your accounts',
+  lent: 'Money you lent',
+  borrowed: 'Money you borrowed',
   repay_in: 'Repayment received',
-  repay_out: 'Repayment made',
+  repay_out: 'Repayment you made',
 };
 
 export default function TransactionDetailScreen() {
@@ -44,8 +45,32 @@ export default function TransactionDetailScreen() {
   }
 
   const accName = (accId?: string) => accounts.find((a) => a.id === accId)?.name ?? accId ?? '';
-  const negative = t.type === 'expense' || t.type === 'lent' || t.type === 'repay_out';
-  const tone = negative ? 'neg' : t.type === 'transfer' ? 'neutral' : 'pos';
+  const tone = TRANSACTION_TONE[t.type];
+  const amountColor = tone === 'pos' || tone === 'neg' ? theme.tone(tone) : theme.ink;
+  const when = new Date(t.at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  const monthLabel = new Date(t.at).toLocaleDateString('en-US', { month: 'long' });
+
+  const echo =
+    t.type === 'transfer'
+      ? 'Transfers move money between your own accounts — they never count as income or spending.'
+      : t.type === 'expense'
+        ? `Counted in ${monthLabel} spending and in your ${t.category} category.`
+        : t.type === 'lent'
+          ? `${t.person}'s outstanding balance includes this amount.`
+          : t.type === 'repay_in'
+            ? 'Recorded as money returning to you, not as new income.'
+            : 'Recorded against your balance and this person.';
+
+  const rows: { label: string; value: string }[] = [
+    { label: 'Type', value: TYPE_LABEL[t.type] },
+    ...(t.category ? [{ label: 'Category', value: t.category }] : []),
+    ...(t.person ? [{ label: 'Person', value: t.person }] : []),
+    { label: t.type === 'transfer' ? 'Out of' : 'Paid using', value: accName(t.account) },
+    ...(t.toAccount ? [{ label: 'Into', value: accName(t.toAccount) }] : []),
+    { label: 'When', value: when },
+    ...(t.note ? [{ label: 'Note', value: t.note }] : []),
+    ...(t.editedAt ? [{ label: 'Edited', value: new Date(t.editedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) }] : []),
+  ];
 
   function askDelete() {
     setConfirmOpen(true);
@@ -66,42 +91,67 @@ export default function TransactionDetailScreen() {
       </View>
 
       <GlassCard>
-        <View style={{ alignItems: 'center', gap: 8, paddingVertical: 6 }}>
+        <View style={{ alignItems: 'center', gap: 9, paddingVertical: 6 }}>
+          <View
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 18,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: theme.toneBg(tone),
+            }}
+          >
+            <AppText color={theme.tone(tone)} weight="manrope700" style={{ fontSize: 20 }}>
+              {transactionIcon(t)}
+            </AppText>
+          </View>
           <AppText variant="body">{transactionTitle(t, accounts)}</AppText>
-          <AppText variant="amount" color={theme.tone(tone)} style={{ fontSize: 30 }}>
+          <AppText variant="amount" color={amountColor} style={{ fontSize: 30 }}>
             {privacy.fmt(t.amount)}
           </AppText>
-          <AppText variant="mono">{new Date(t.at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</AppText>
+          <AppText variant="mono">{when}</AppText>
         </View>
 
-        <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: theme.line, paddingTop: 14, gap: 12 }}>
-          <Row label="Type" value={TYPE_LABEL[t.type]} />
-          {t.category ? <Row label="Category" value={t.category} /> : null}
-          {t.person ? <Row label="Person" value={t.person} /> : null}
-          <Row label={t.type === 'transfer' ? 'Out of' : 'Account'} value={accName(t.account)} />
-          {t.toAccount ? <Row label="Into" value={accName(t.toAccount)} /> : null}
-          {t.note ? <Row label="Note" value={t.note} /> : null}
-          {t.editedAt ? <Row label="Edited" value={new Date(t.editedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })} /> : null}
+        <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: theme.line }}>
+          {rows.map((r, i) => (
+            <View
+              key={r.label}
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                gap: 12,
+                paddingVertical: 9,
+                borderBottomWidth: i < rows.length - 1 ? 1 : 0,
+                borderBottomColor: theme.line,
+              }}
+            >
+              <AppText variant="body2">{r.label}</AppText>
+              <AppText variant="body" style={{ flexShrink: 1, textAlign: 'right' }}>
+                {r.value}
+              </AppText>
+            </View>
+          ))}
         </View>
 
-        <AppText variant="body2" style={{ marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: theme.line }}>
-          {transactionSub(t, accounts)}
-        </AppText>
+        <View style={{ flexDirection: 'row', gap: 11, marginTop: 14 }}>
+          <Pressable
+            onPress={() => router.push(`/entry/${t.type}?editId=${t.id}`)}
+            style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 15, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <AppText variant="body">Edit</AppText>
+          </Pressable>
+          <Pressable onPress={askDelete} style={{ flex: 1, backgroundColor: theme.toneBg('neg'), borderRadius: 15, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}>
+            <AppText variant="body" color={theme.tone('neg')}>
+              Delete
+            </AppText>
+          </Pressable>
+        </View>
       </GlassCard>
 
-      <View style={{ flexDirection: 'row', gap: 11 }}>
-        <Pressable
-          onPress={() => router.push(`/entry/${t.type}?editId=${t.id}`)}
-          style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 16, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <AppText variant="body">Edit</AppText>
-        </Pressable>
-        <Pressable onPress={askDelete} style={{ flex: 1, backgroundColor: theme.toneBg('neg'), borderRadius: 16, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}>
-          <AppText variant="body" color={theme.tone('neg')}>
-            Delete
-          </AppText>
-        </Pressable>
-      </View>
+      <AppText variant="body2" style={{ paddingHorizontal: 4 }}>
+        {echo}
+      </AppText>
 
       <ConfirmDialog
         visible={confirmOpen}
@@ -112,16 +162,5 @@ export default function TransactionDetailScreen() {
         onConfirm={confirmDelete}
       />
     </Screen>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-      <AppText variant="body2">{label}</AppText>
-      <AppText variant="body" style={{ flexShrink: 1, textAlign: 'right' }}>
-        {value}
-      </AppText>
-    </View>
   );
 }
