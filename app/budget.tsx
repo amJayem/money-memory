@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@/components/Screen';
@@ -9,12 +9,14 @@ import { GlassCard } from '@/components/GlassCard';
 import { ProgressBar } from '@/components/ProgressBar';
 import { AppSwitch } from '@/components/AppSwitch';
 import { DonutChart } from '@/components/DonutChart';
+import { Keypad } from '@/components/Keypad';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { useAppStore } from '@/store/appStore';
 import { budgetStatus } from '@/domain/money';
 import { recentMonthSpending } from '@/domain/stats';
+import { formatAmount } from '@/domain/format';
 import { CATEGORY_BUDGETS } from '@/domain/types';
 
 export default function BudgetScreen() {
@@ -23,10 +25,23 @@ export default function BudgetScreen() {
   const { transactions, settings, spentAmount, budget } = useLedger();
   const privacy = usePrivacy('budget');
   const updateSettings = useAppStore((s) => s.updateSettings);
+  const [budgetEditorOpen, setBudgetEditorOpen] = useState(false);
+  const [budgetInput, setBudgetInput] = useState('');
 
   const monthLabel = new Date().toLocaleDateString('en-US', { month: 'long' });
   const lentThisMonth = transactions.filter((t) => t.type === 'lent').reduce((s, t) => s + t.amount, 0);
   const history = recentMonthSpending(transactions, settings.countLentAsSpending);
+
+  function openBudgetEditor() {
+    setBudgetInput('');
+    setBudgetEditorOpen(true);
+  }
+
+  function saveBudget() {
+    const value = parseFloat(budgetInput);
+    if (value > 0) updateSettings({ monthlyBudget: value });
+    setBudgetEditorOpen(false);
+  }
 
   return (
     <Screen>
@@ -53,7 +68,7 @@ export default function BudgetScreen() {
                       ]
               }
             />
-            <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+            <Pressable onPress={openBudgetEditor} style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
               <AppText variant="label">left to spend</AppText>
               <AppText variant="amount" color={theme.tone(budget.tone)} style={{ fontSize: 22, marginTop: 4 }}>
                 {privacy.fmt(Math.max(0, budget.left))}
@@ -61,7 +76,7 @@ export default function BudgetScreen() {
               <AppText variant="body2" style={{ marginTop: 3 }}>
                 {budget.noBudget ? 'not set' : `${budget.pct}%`}
               </AppText>
-            </View>
+            </Pressable>
           </View>
           <View style={{ flexDirection: 'row', width: '100%', borderTopWidth: 1, borderTopColor: theme.line, paddingTop: 14 }}>
             <Stat label="Budget" value={privacy.fmt(budget.budget)} />
@@ -147,6 +162,36 @@ export default function BudgetScreen() {
           <AppSwitch value={settings.countLentAsSpending} onValueChange={(v) => updateSettings({ countLentAsSpending: v })} />
         </View>
       </GlassCard>
+
+      <Modal visible={budgetEditorOpen} transparent animationType="fade" onRequestClose={() => setBudgetEditorOpen(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(10,10,12,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 }} onPress={() => setBudgetEditorOpen(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={{ backgroundColor: theme.solid, borderRadius: 22, padding: 20, width: '100%', maxWidth: 420, gap: 14 }}>
+            <AppText variant="heading">Set {monthLabel}'s budget</AppText>
+            <AppText variant="body2">Currently {privacy.fmt(settings.monthlyBudget)} · type a new amount below.</AppText>
+            <View style={{ alignItems: 'center', paddingVertical: 6 }}>
+              <AppText style={{ fontSize: budgetInput.length > 7 ? 30 : 42 }} variant="amount">
+                {settings.currencySymbol}
+                {budgetInput || '0'}
+              </AppText>
+            </View>
+            <Keypad value={budgetInput} onChange={setBudgetInput} />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Pressable onPress={() => setBudgetEditorOpen(false)} style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}>
+                <AppText variant="body">Cancel</AppText>
+              </Pressable>
+              <Pressable
+                onPress={saveBudget}
+                disabled={!budgetInput}
+                style={{ flex: 1, backgroundColor: budgetInput ? theme.ink : theme.lineStrong, borderRadius: 14, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <AppText color={budgetInput ? theme.solid : theme.ink3} weight="manrope700">
+                  {budgetInput ? `Set ${formatAmount(parseFloat(budgetInput) || 0, settings.currencySymbol)}` : 'Set budget'}
+                </AppText>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
