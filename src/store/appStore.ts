@@ -36,6 +36,8 @@ interface AppState extends PersistedShape {
   updateTransaction: (id: string, patch: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
   addAccount: (a: Account) => void;
+  updateAccount: (id: string, patch: Partial<Account>) => void;
+  deleteAccount: (id: string) => void;
   updateSettings: (patch: Partial<Settings>) => void;
   resetAllData: () => void;
   startPeek: () => void;
@@ -105,6 +107,18 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   addAccount: (a) => {
     set((s) => ({ accounts: [...s.accounts, a] }));
+    schedulePersist(get);
+  },
+
+  updateAccount: (id, patch) => {
+    set((s) => ({ accounts: s.accounts.map((a) => (a.id === id ? { ...a, ...patch } : a)) }));
+    schedulePersist(get);
+  },
+
+  // Callers must check for related transactions first (see accounts/add.tsx) —
+  // deleting an account with history would orphan those transactions' `account`/`toAccount` refs.
+  deleteAccount: (id) => {
+    set((s) => ({ accounts: s.accounts.filter((a) => a.id !== id) }));
     schedulePersist(get);
   },
 

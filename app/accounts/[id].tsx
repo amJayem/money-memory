@@ -42,11 +42,14 @@ export default function AccountDetailScreen() {
 
   return (
     <Screen>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
-        <IconButton glyph="←" onPress={() => router.back()} />
-        <AppText variant="title" numberOfLines={1}>
-          {account.name}
-        </AppText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingTop: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+          <IconButton glyph="←" onPress={() => router.back()} />
+          <AppText variant="title" numberOfLines={1}>
+            {account.name}
+          </AppText>
+        </View>
+        <IconButton glyph="✎" onPress={() => router.push(`/accounts/add?editId=${account.id}`)} />
       </View>
 
       <GlassCard>
