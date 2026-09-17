@@ -33,7 +33,7 @@ export default function LoansScreen() {
   return (
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
-        <IconButton glyph="←" onPress={() => router.push('/')} />
+        <IconButton glyph="←" onPress={() => (router.canGoBack() ? router.back() : router.push('/'))} />
         <AppText variant="title">Loans</AppText>
       </View>
 

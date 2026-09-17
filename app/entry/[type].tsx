@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -8,6 +8,7 @@ import { Chip } from '@/components/Chip';
 import { IconButton } from '@/components/IconButton';
 import { Keypad } from '@/components/Keypad';
 import { ScreenBackground } from '@/components/Screen';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, type TransactionType } from '@/domain/types';
@@ -85,6 +86,29 @@ export default function EntryForm() {
   const [note, setNote] = useState(editing?.note ?? '');
   const [date, setDate] = useState(editing ? new Date(editing.at) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+
+  // Snapshot of what the form looked like on mount, so closing without
+  // changing anything doesn't prompt for confirmation.
+  const initial = useRef({ amount, category, account, toAccount, person, note, at: date.getTime() }).current;
+  const isDirty = editing
+    ? amount !== initial.amount ||
+      category !== initial.category ||
+      account !== initial.account ||
+      toAccount !== initial.toAccount ||
+      person !== initial.person ||
+      note !== initial.note ||
+      date.getTime() !== initial.at
+    : amount !== '' || note.trim() !== '';
+
+  function close() {
+    if (isDirty) {
+      setConfirmDiscard(true);
+      return;
+    }
+    router.back();
+  }
 
   const needsCategory = NEEDS_CATEGORY.includes(type);
   const needsPerson = NEEDS_PERSON.includes(type);
@@ -129,6 +153,7 @@ export default function EntryForm() {
     : null;
 
   function save() {
+    if (saving) return;
     if (!numericAmount) {
       toast('Enter an amount first');
       return;
@@ -137,6 +162,7 @@ export default function EntryForm() {
       toast('Add a person for this');
       return;
     }
+    setSaving(true);
     const patch = {
       type,
       amount: numericAmount,
@@ -164,7 +190,7 @@ export default function EntryForm() {
     <ScreenBackground blobs={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 6 }}>
           <AppText variant="heading">{editing ? 'Edit transaction' : TITLE[type]}</AppText>
-          <IconButton glyph="✕" onPress={() => router.back()} />
+          <IconButton glyph="✕" onPress={close} />
         </View>
 
         <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 16 }} keyboardShouldPersistTaps="handled">
@@ -268,12 +294,14 @@ export default function EntryForm() {
 
           <Pressable
             onPress={save}
+            disabled={saving}
             style={{
               backgroundColor: numericAmount ? theme.ink : theme.lineStrong,
               borderRadius: 18,
               minHeight: 52,
               alignItems: 'center',
               justifyContent: 'center',
+              opacity: saving ? 0.6 : 1,
             }}
           >
             <AppText color={numericAmount ? theme.solid : theme.ink3} weight="manrope700">
@@ -281,6 +309,18 @@ export default function EntryForm() {
             </AppText>
           </Pressable>
         </ScrollView>
+
+      <ConfirmDialog
+        visible={confirmDiscard}
+        title="Discard this entry?"
+        body="What you've entered here hasn't been saved yet."
+        confirmLabel="Discard"
+        onCancel={() => setConfirmDiscard(false)}
+        onConfirm={() => {
+          setConfirmDiscard(false);
+          router.back();
+        }}
+      />
     </ScreenBackground>
   );
 }

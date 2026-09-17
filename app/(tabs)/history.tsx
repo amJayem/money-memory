@@ -36,7 +36,7 @@ export default function HistoryScreen() {
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <IconButton glyph="←" onPress={() => router.push('/')} />
+          <IconButton glyph="←" onPress={() => (router.canGoBack() ? router.back() : router.push('/'))} />
           <AppText variant="title">Transactions</AppText>
         </View>
         <GhostButton label="Calendar" onPress={() => router.push('/calendar')} />
