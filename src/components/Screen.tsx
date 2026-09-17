@@ -4,7 +4,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurTargetView } from 'expo-blur';
 import { SafeAreaView, SafeAreaViewProps } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
+import { oklch } from '@/theme/oklch';
 import { BlurTargetContext } from './BlurTargetContext';
+
+/** Design's `blob1`/`blob2`/`blob3`: three fixed circles, distinct per theme mode — position, size and color all differ, not just a light/dark recolor of the same two shapes. */
+const BLOBS = {
+  light: [
+    { top: -100, right: -120, size: 340, opacity: 0.68, color: oklch(0.87, 0.1, 75) },
+    { top: 300, left: -130, size: 300, opacity: 0.62, color: oklch(0.85, 0.08, 250) },
+    { bottom: -80, right: -90, size: 280, opacity: 0.55, color: oklch(0.88, 0.07, 155) },
+  ],
+  dark: [
+    { top: -100, right: -120, size: 340, opacity: 0.72, color: oklch(0.5, 0.13, 260) },
+    { top: 300, left: -130, size: 300, opacity: 0.55, color: oklch(0.46, 0.11, 175) },
+    { bottom: -80, right: -90, size: 280, opacity: 0.5, color: oklch(0.44, 0.1, 300) },
+  ],
+} as const;
 
 /**
  * The warm mesh ground + three blurred color blobs that sit behind every
@@ -15,18 +30,29 @@ import { BlurTargetContext } from './BlurTargetContext';
  */
 export function Backdrop({ blobs = true }: { blobs?: boolean }) {
   const theme = useTheme();
-  const blobColor = theme.mode === 'dark' ? 'rgba(120,140,255,0.16)' : 'rgba(255,200,140,0.35)';
-  const blobColor2 = theme.mode === 'dark' ? 'rgba(255,140,180,0.10)' : 'rgba(150,190,255,0.28)';
+  const set = BLOBS[theme.mode];
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <LinearGradient colors={theme.bgGradient} style={StyleSheet.absoluteFill} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} />
-      {blobs ? (
-        <>
-          <View style={{ position: 'absolute', top: -60, left: -40, width: 260, height: 260, borderRadius: 130, backgroundColor: blobColor, opacity: 0.7 }} />
-          <View style={{ position: 'absolute', top: 220, right: -70, width: 220, height: 220, borderRadius: 110, backgroundColor: blobColor2, opacity: 0.6 }} />
-          <View style={{ position: 'absolute', bottom: -80, left: 30, width: 240, height: 240, borderRadius: 120, backgroundColor: blobColor, opacity: 0.4 }} />
-        </>
-      ) : null}
+      {blobs
+        ? set.map((b, i) => (
+            <View
+              key={i}
+              style={{
+                position: 'absolute',
+                top: 'top' in b ? b.top : undefined,
+                bottom: 'bottom' in b ? b.bottom : undefined,
+                left: 'left' in b ? b.left : undefined,
+                right: 'right' in b ? b.right : undefined,
+                width: b.size,
+                height: b.size,
+                borderRadius: b.size / 2,
+                backgroundColor: b.color,
+                opacity: b.opacity,
+              }}
+            />
+          ))
+        : null}
     </View>
   );
 }
