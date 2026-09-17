@@ -101,16 +101,27 @@ export default function HomeScreen() {
             );
           })}
         </ScrollView>
+        {privacy.hintText ? (
+          <View
+            style={{
+              alignSelf: 'flex-start',
+              marginTop: 9,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 999,
+              backgroundColor: theme.toneBg('accent'),
+            }}
+          >
+            <AppText variant="mono" color={theme.accentColor}>
+              {privacy.hintText}
+            </AppText>
+          </View>
+        ) : null}
         <Pressable onPress={() => router.push('/accounts')} style={{ paddingTop: 9 }}>
           <AppText variant="mono" color={theme.accentColor} style={{ textAlign: 'right' }}>
             All accounts →
           </AppText>
         </Pressable>
-        {privacy.hintText ? (
-          <AppText variant="mono" color={theme.accentColor} style={{ marginTop: 6 }}>
-            {privacy.hintText}
-          </AppText>
-        ) : null}
       </View>
 
       <View style={{ flexDirection: 'row', gap: 9 }}>

@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { StyleSheet, View, ScrollView, ScrollViewProps } from 'react-native';
+import { Platform, StyleSheet, View, ScrollView, ScrollViewProps } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurTargetView } from 'expo-blur';
 import { SafeAreaView, SafeAreaViewProps } from 'react-native-safe-area-context';
@@ -8,18 +8,27 @@ import { oklch } from '@/theme/oklch';
 import { BlurTargetContext } from './BlurTargetContext';
 
 /** Design's `blob1`/`blob2`/`blob3`: three fixed circles, distinct per theme mode — position, size and color all differ, not just a light/dark recolor of the same two shapes. */
+// Sized ~50% larger than the design's raw circles and at lower light-mode
+// opacity (design feedback: at the original .68/.62/.55 the peach circle read
+// as a hard wedge behind the header instead of ambient light — it should be
+// a wash, not a shape).
 const BLOBS = {
   light: [
-    { top: -100, right: -120, size: 340, opacity: 0.68, color: oklch(0.87, 0.1, 75) },
-    { top: 300, left: -130, size: 300, opacity: 0.62, color: oklch(0.85, 0.08, 250) },
-    { bottom: -80, right: -90, size: 280, opacity: 0.55, color: oklch(0.88, 0.07, 155) },
+    { top: -150, right: -180, size: 510, opacity: 0.42, color: oklch(0.87, 0.1, 75) },
+    { top: 250, left: -195, size: 450, opacity: 0.34, color: oklch(0.85, 0.08, 250) },
+    { bottom: -120, right: -135, size: 420, opacity: 0.3, color: oklch(0.88, 0.07, 155) },
   ],
   dark: [
-    { top: -100, right: -120, size: 340, opacity: 0.72, color: oklch(0.5, 0.13, 260) },
-    { top: 300, left: -130, size: 300, opacity: 0.55, color: oklch(0.46, 0.11, 175) },
-    { bottom: -80, right: -90, size: 280, opacity: 0.5, color: oklch(0.44, 0.1, 300) },
+    { top: -150, right: -180, size: 510, opacity: 0.72, color: oklch(0.5, 0.13, 260) },
+    { top: 250, left: -195, size: 450, opacity: 0.55, color: oklch(0.46, 0.11, 175) },
+    { bottom: -120, right: -135, size: 420, opacity: 0.5, color: oklch(0.44, 0.1, 300) },
   ],
 } as const;
+
+// Native has no blur-filter for a plain View; web (the platform this was
+// screenshotted on) supports CSS filter, so the near-doubled blur only
+// applies there — a harmless no-op style key on native.
+const BLOB_BLUR = Platform.OS === 'web' ? ({ filter: 'blur(120px)' } as const) : {};
 
 /**
  * The warm mesh ground + three blurred color blobs that sit behind every
@@ -49,6 +58,7 @@ export function Backdrop({ blobs = true }: { blobs?: boolean }) {
                 borderRadius: b.size / 2,
                 backgroundColor: b.color,
                 opacity: b.opacity,
+                ...BLOB_BLUR,
               }}
             />
           ))
