@@ -56,11 +56,15 @@ export default function TransactionDetailScreen() {
       ? 'Transfers move money between your own accounts — they never count as income or spending.'
       : t.type === 'expense'
         ? `Counted in ${monthLabel} spending and in your ${t.category} category.`
-        : t.type === 'lent'
-          ? `${t.person}'s outstanding balance includes this amount.`
-          : t.type === 'repay_in'
-            ? 'Recorded as money returning to you, not as new income.'
-            : 'Recorded against your balance and this person.';
+        : t.type === 'income'
+          ? `Counted as ${monthLabel} income — doesn't touch your budget.`
+          : t.type === 'lent'
+            ? `${t.person}'s outstanding balance includes this amount.`
+            : t.type === 'repay_in'
+              ? 'Recorded as money returning to you, not as new income.'
+              : t.type === 'borrowed'
+                ? `This is now money you owe ${t.person}.`
+                : `Reduces what you owe ${t.person}.`;
 
   const rows: { label: string; value: string }[] = [
     { label: 'Type', value: TYPE_LABEL[t.type] },
@@ -85,7 +89,8 @@ export default function TransactionDetailScreen() {
       onPress: () => addTransaction(removed),
     });
     setConfirmOpen(false);
-    router.back();
+    if (router.canGoBack()) router.back();
+    else router.push('/');
   }
 
   return (

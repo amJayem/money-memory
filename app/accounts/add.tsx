@@ -30,6 +30,11 @@ export default function AddAccountScreen() {
   const editing = editId ? accounts.find((a) => a.id === editId) : undefined;
   const relatedCount = editing ? transactions.filter((t) => t.account === editing.id || t.toAccount === editing.id).length : 0;
 
+  function goBack() {
+    if (router.canGoBack()) router.back();
+    else router.push('/accounts');
+  }
+
   const [name, setName] = useState(editing?.name ?? '');
   const [type, setType] = useState<AccountType>(editing?.type ?? 'cash');
   const [amount, setAmount] = useState(editing ? String(editing.type === 'credit' ? editing.limit ?? 0 : editing.openingBalance) : '');
@@ -62,7 +67,7 @@ export default function AddAccountScreen() {
       });
       toast('Account added');
     }
-    router.back();
+    goBack();
   }
 
   function askDelete() {
@@ -78,13 +83,13 @@ export default function AddAccountScreen() {
     deleteAccount(editing.id);
     toast('Account deleted');
     setConfirmDelete(false);
-    router.back();
+    goBack();
   }
 
   return (
     <Screen scroll={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
-        <IconButton glyph="←" onPress={() => router.back()} />
+        <IconButton glyph="←" onPress={goBack} />
         <AppText variant="title">{editing ? 'Edit account' : 'Add account'}</AppText>
       </View>
 

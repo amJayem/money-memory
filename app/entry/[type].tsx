@@ -102,12 +102,19 @@ export default function EntryForm() {
       date.getTime() !== initial.at
     : amount !== '' || note.trim() !== '';
 
+  // Falls back to Home if there's no real history to pop (e.g. this screen
+  // was reached directly rather than via the sheet), so closing never errors.
+  function goBack() {
+    if (router.canGoBack()) router.back();
+    else router.push('/');
+  }
+
   function close() {
     if (isDirty) {
       setConfirmDiscard(true);
       return;
     }
-    router.back();
+    goBack();
   }
 
   const needsCategory = NEEDS_CATEGORY.includes(type);
@@ -183,7 +190,7 @@ export default function EntryForm() {
       ...(type === 'expense' ? { lastCategory: category } : {}),
     });
     toast(editing ? 'Transaction updated · everything recalculated' : `${SAVE_TOAST_LABEL[type]} · balances and budget updated`);
-    router.back();
+    goBack();
   }
 
   return (
@@ -318,7 +325,7 @@ export default function EntryForm() {
         onCancel={() => setConfirmDiscard(false)}
         onConfirm={() => {
           setConfirmDiscard(false);
-          router.back();
+          goBack();
         }}
       />
     </ScreenBackground>
