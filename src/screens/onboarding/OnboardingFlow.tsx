@@ -30,6 +30,11 @@ const SLIDES = [
 const ACCOUNT_CHOICES: AccountType[] = ['cash', 'bank', 'wallet', 'credit'];
 const DEFAULT_ON: AccountType[] = ['cash', 'bank', 'wallet'];
 
+interface AccountDetail {
+  name: string;
+  amount: string;
+}
+
 export function OnboardingFlow() {
   const theme = useTheme();
   const updateSettings = useAppStore((s) => s.updateSettings);
@@ -38,6 +43,10 @@ export function OnboardingFlow() {
   const [slide, setSlide] = useState(0);
   const [enabled, setEnabled] = useState<AccountType[]>(DEFAULT_ON);
   const [symbol, setSymbol] = useState('৳');
+  // Starts empty per type — a checked account with nothing typed just falls
+  // back to its default name and a zero balance; nothing here needs clearing
+  // before someone can type their own values.
+  const [details, setDetails] = useState<Record<string, AccountDetail>>({});
 
   useEffect(() => {
     const t = setTimeout(() => setShowSplash(false), 1200);
@@ -48,9 +57,22 @@ export function OnboardingFlow() {
     setEnabled((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]));
   }
 
+  function setDetail(type: AccountType, field: keyof AccountDetail, value: string) {
+    setDetails((prev) => ({ ...prev, [type]: { ...prev[type], [field]: value } }));
+  }
+
   function finish() {
     for (const type of enabled) {
-      addAccount({ id: `${type}-${Date.now()}`, name: ACCOUNT_TYPE_LABEL[type], type, openingBalance: 0, limit: type === 'credit' ? 0 : undefined });
+      const detail = details[type];
+      const name = detail?.name.trim() || ACCOUNT_TYPE_LABEL[type];
+      const value = parseFloat(detail?.amount ?? '') || 0;
+      addAccount({
+        id: `${type}-${Date.now()}`,
+        name,
+        type,
+        openingBalance: type === 'credit' ? 0 : value,
+        limit: type === 'credit' ? value : undefined,
+      });
     }
     updateSettings({ hasOnboarded: true, currencySymbol: symbol.trim() || '৳', enabledAccountTypes: enabled });
   }
@@ -95,41 +117,53 @@ export function OnboardingFlow() {
 
         {isSetup ? (
           <View style={{ gap: 8 }}>
+            <AppText variant="mono">
+              Add a starting balance now, or leave it and add it later from Accounts.
+            </AppText>
             {ACCOUNT_CHOICES.map((type) => {
               const on = enabled.includes(type);
+              const detail = details[type];
               return (
-                <Pressable
-                  key={type}
-                  onPress={() => toggle(type)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 11,
-                    borderWidth: 1,
-                    borderColor: theme.line,
-                    backgroundColor: theme.surface2,
-                    borderRadius: 18,
-                    padding: 13,
-                  }}
-                >
-                  <View style={{ flex: 1 }}>
-                    <AppText variant="body">{ACCOUNT_TYPE_LABEL[type]}</AppText>
-                  </View>
-                  <View
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: 7,
-                      borderWidth: 1.5,
-                      borderColor: on ? theme.accentColor : theme.lineStrong,
-                      backgroundColor: on ? theme.accentColor : 'transparent',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {on ? <AppText color="#fff" style={{ fontSize: 13 }}>✓</AppText> : null}
-                  </View>
-                </Pressable>
+                <View key={type} style={{ borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 18, overflow: 'hidden' }}>
+                  <Pressable onPress={() => toggle(type)} style={{ flexDirection: 'row', alignItems: 'center', gap: 11, padding: 13 }}>
+                    <View style={{ flex: 1 }}>
+                      <AppText variant="body">{ACCOUNT_TYPE_LABEL[type]}</AppText>
+                    </View>
+                    <View
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 7,
+                        borderWidth: 1.5,
+                        borderColor: on ? theme.accentColor : theme.lineStrong,
+                        backgroundColor: on ? theme.accentColor : 'transparent',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {on ? <AppText color="#fff" style={{ fontSize: 13 }}>✓</AppText> : null}
+                    </View>
+                  </Pressable>
+                  {on ? (
+                    <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 13, paddingBottom: 13 }}>
+                      <TextInput
+                        value={detail?.name ?? ''}
+                        onChangeText={(v) => setDetail(type, 'name', v)}
+                        placeholder={ACCOUNT_TYPE_LABEL[type]}
+                        placeholderTextColor={theme.ink3}
+                        style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, backgroundColor: theme.solid, borderRadius: 12, padding: 10, color: theme.ink, fontSize: 13 }}
+                      />
+                      <TextInput
+                        value={detail?.amount ?? ''}
+                        onChangeText={(v) => setDetail(type, 'amount', v.replace(/[^0-9.]/g, ''))}
+                        keyboardType="numeric"
+                        placeholder={type === 'credit' ? 'Limit' : '0'}
+                        placeholderTextColor={theme.ink3}
+                        style={{ width: 92, borderWidth: 1, borderColor: theme.lineStrong, backgroundColor: theme.solid, borderRadius: 12, padding: 10, color: theme.ink, fontSize: 13 }}
+                      />
+                    </View>
+                  ) : null}
+                </View>
               );
             })}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 18, padding: 13, marginTop: 4 }}>
