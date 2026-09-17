@@ -1,15 +1,17 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet } from 'react-native';
+import { Animated, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useToastStore } from '@/store/toastStore';
 import { AppText } from './AppText';
 
-/** Mounted once at the app root; any screen calls useToastStore().show(text). */
+/** Mounted once at the app root; any screen calls useToastStore().show(text, action?). */
 export function ToastHost() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const message = useToastStore((s) => s.message);
+  const action = useToastStore((s) => s.action);
+  const hide = useToastStore((s) => s.hide);
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -20,16 +22,29 @@ export function ToastHost() {
 
   return (
     <Animated.View
-      pointerEvents="none"
+      pointerEvents="box-none"
       style={[
         styles.wrap,
         { bottom: insets.bottom + 96, opacity },
       ]}
     >
-      <Animated.View style={[styles.pill, { backgroundColor: theme.ink }]}>
-        <AppText variant="body" color={theme.solid} style={{ textAlign: 'center' }}>
+      <Animated.View style={[styles.pill, { backgroundColor: theme.ink, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+        <AppText variant="body" color={theme.solid} style={{ textAlign: 'center', flexShrink: 1 }}>
           {message}
         </AppText>
+        {action ? (
+          <Pressable
+            onPress={() => {
+              action.onPress();
+              hide();
+            }}
+            hitSlop={8}
+          >
+            <AppText variant="body" color={theme.tone('accent')} weight="manrope700">
+              {action.label}
+            </AppText>
+          </Pressable>
+        ) : null}
       </Animated.View>
     </Animated.View>
   );

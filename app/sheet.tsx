@@ -1,11 +1,13 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from '@/components/AppText';
+import { useAppStore } from '@/store/appStore';
+import { useToastStore } from '@/store/toastStore';
 import { MIN_TAP_TARGET } from '@/theme/tokens';
 import type { TransactionType } from '@/domain/types';
 import type { Tone } from '@/theme/tokens';
@@ -20,11 +22,19 @@ const OPTIONS: { label: string; sub: string; type: TransactionType; icon: string
 ];
 
 export default function ActionSheet() {
+  const { editId } = useLocalSearchParams<{ editId?: string }>();
   const theme = useTheme();
   const router = useRouter();
+  const accounts = useAppStore((s) => s.accounts);
+  const toast = useToastStore((s) => s.show);
+  const canTransfer = accounts.filter((a) => a.type !== 'credit').length >= 2;
 
   function open(type: TransactionType) {
-    router.replace(`/entry/${type}`);
+    if (type === 'transfer' && !canTransfer) {
+      toast('Add a second account first to move money between accounts');
+      return;
+    }
+    router.replace(editId ? `/entry/${type}?editId=${editId}` : `/entry/${type}`);
   }
 
   return (
@@ -54,35 +64,38 @@ export default function ActionSheet() {
               <View style={{ alignItems: 'center' }}>
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.lineStrong, marginBottom: 14 }} />
                 <AppText variant="title" style={{ fontSize: 18 }}>
-                  What happened with your money?
+                  {editId ? 'Change this to…' : 'What happened with your money?'}
                 </AppText>
                 <AppText variant="body2" style={{ marginTop: 4, textAlign: 'center' }}>
-                  Record it once — balances, budget and loans all update.
+                  {editId ? "Pick what this record should actually be — the amount and note carry over." : 'Record it once — balances, budget and loans all update.'}
                 </AppText>
               </View>
               <View style={{ gap: 8 }}>
-                {OPTIONS.map((o) => (
-                  <Pressable
-                    key={o.type}
-                    onPress={() => open(o.type)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 13, minHeight: MIN_TAP_TARGET, borderWidth: 1, borderColor: theme.line, borderRadius: 17, paddingHorizontal: 14, paddingVertical: 13 }}
-                  >
-                    <View style={{ width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.toneBg(o.tone) }}>
-                      <AppText color={theme.tone(o.tone)} weight="manrope700">
-                        {o.icon}
+                {OPTIONS.map((o) => {
+                  const disabled = o.type === 'transfer' && !canTransfer;
+                  return (
+                    <Pressable
+                      key={o.type}
+                      onPress={() => open(o.type)}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 13, minHeight: MIN_TAP_TARGET, borderWidth: 1, borderColor: theme.line, borderRadius: 17, paddingHorizontal: 14, paddingVertical: 13, opacity: disabled ? 0.45 : 1 }}
+                    >
+                      <View style={{ width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.toneBg(o.tone) }}>
+                        <AppText color={theme.tone(o.tone)} weight="manrope700">
+                          {o.icon}
+                        </AppText>
+                      </View>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <AppText variant="body">{o.label}</AppText>
+                        <AppText variant="mono" style={{ marginTop: 2 }}>
+                          {disabled ? 'Needs a second account first' : o.sub}
+                        </AppText>
+                      </View>
+                      <AppText color={theme.ink3} weight="manrope600">
+                        →
                       </AppText>
-                    </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <AppText variant="body">{o.label}</AppText>
-                      <AppText variant="mono" style={{ marginTop: 2 }}>
-                        {o.sub}
-                      </AppText>
-                    </View>
-                    <AppText color={theme.ink3} weight="manrope600">
-                      →
-                    </AppText>
-                  </Pressable>
-                ))}
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
           </SafeAreaView>

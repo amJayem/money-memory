@@ -33,6 +33,7 @@ export default function TransactionDetailScreen() {
   const accounts = useAppStore((s) => s.accounts);
   const transactions = useAppStore((s) => s.transactions);
   const deleteTransaction = useAppStore((s) => s.deleteTransaction);
+  const addTransaction = useAppStore((s) => s.addTransaction);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const t = transactions.find((x) => x.id === id);
@@ -77,8 +78,12 @@ export default function TransactionDetailScreen() {
   }
 
   function confirmDelete() {
-    deleteTransaction(t!.id);
-    toast('Transaction deleted · everything recalculated');
+    const removed = t!;
+    deleteTransaction(removed.id);
+    toast('Transaction deleted · everything recalculated', {
+      label: 'Undo',
+      onPress: () => addTransaction(removed),
+    });
     setConfirmOpen(false);
     router.back();
   }
@@ -136,7 +141,7 @@ export default function TransactionDetailScreen() {
 
         <View style={{ flexDirection: 'row', gap: 11, marginTop: 14 }}>
           <Pressable
-            onPress={() => router.push(`/entry/${t.type}?editId=${t.id}`)}
+            onPress={() => router.push(`/sheet?editId=${t.id}`)}
             style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 15, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}
           >
             <AppText variant="body">Edit</AppText>

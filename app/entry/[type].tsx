@@ -66,12 +66,21 @@ export default function EntryForm() {
 
   const knownPeople = useMemo(() => Array.from(new Set(transactions.map((t) => t.person).filter((p): p is string => !!p))), [transactions]);
 
+  // Editing through the sheet lets someone change a record's type entirely
+  // (e.g. "expense" -> "income"). When that happens, category/account/person
+  // defaults from the old record no longer make sense for the new type, so
+  // only carry them over when the type is unchanged — amount and note still do.
+  const typeChanged = !!editing && editing.type !== type;
+  const accountPool = type === 'expense' || type === 'lent' ? accounts : nonCreditAccounts;
+
   const [amount, setAmount] = useState(editing ? String(editing.amount) : '');
-  const [category, setCategory] = useState(editing?.category ?? (type === 'income' ? 'Salary' : settings.lastCategory ?? EXPENSE_CATEGORIES[0]));
-  const [account, setAccount] = useState(editing?.account ?? defaultAccountId);
-  const [toAccount, setToAccount] = useState(editing?.toAccount ?? accounts.find((a) => a.id !== defaultAccountId)?.id ?? defaultAccountId);
+  const [category, setCategory] = useState(
+    !typeChanged && editing?.category ? editing.category : type === 'income' ? 'Salary' : settings.lastCategory ?? EXPENSE_CATEGORIES[0],
+  );
+  const [account, setAccount] = useState(!typeChanged && editing && accountPool.some((a) => a.id === editing.account) ? editing.account : defaultAccountId);
+  const [toAccount, setToAccount] = useState(!typeChanged && editing?.toAccount ? editing.toAccount : accounts.find((a) => a.id !== defaultAccountId)?.id ?? defaultAccountId);
   const decodedPersonParam = personParam ? decodeURIComponent(personParam) : undefined;
-  const [person, setPerson] = useState(editing?.person ?? decodedPersonParam ?? knownPeople[0] ?? '');
+  const [person, setPerson] = useState(!typeChanged && editing?.person ? editing.person : decodedPersonParam ?? knownPeople[0] ?? '');
   const [newPersonName, setNewPersonName] = useState('');
   const [note, setNote] = useState(editing?.note ?? '');
   const [date, setDate] = useState(editing ? new Date(editing.at) : new Date());
@@ -83,7 +92,12 @@ export default function EntryForm() {
   const categories = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
   const numericAmount = parseFloat(amount) || 0;
-  const effectivePerson = needsPerson ? newPersonName.trim() || person : '';
+  // A typed name that only differs from an existing person by case or spacing
+  // ("Rahim" vs "rahim ") reuses that person's exact casing instead of
+  // silently starting a second, separate loan ledger for the same person.
+  const typedPerson = newPersonName.trim();
+  const matchedPerson = typedPerson ? knownPeople.find((p) => p.toLowerCase() === typedPerson.toLowerCase()) : undefined;
+  const effectivePerson = needsPerson ? matchedPerson ?? (typedPerson || person) : '';
 
   const accountName = accounts.find((a) => a.id === account)?.name ?? '';
   const toAccountName = accounts.find((a) => a.id === toAccount)?.name ?? '';
@@ -200,13 +214,17 @@ export default function EntryForm() {
 
           {needsDest ? (
             <Section label="Into">
-              <ChipRow>
-                {nonCreditAccounts
-                  .filter((a) => a.id !== account)
-                  .map((a) => (
-                    <Chip key={a.id} label={a.name} active={toAccount === a.id} onPress={() => setToAccount(a.id)} />
-                  ))}
-              </ChipRow>
+              {nonCreditAccounts.filter((a) => a.id !== account).length === 0 ? (
+                <AppText variant="body2">You need a second account to move money between accounts.</AppText>
+              ) : (
+                <ChipRow>
+                  {nonCreditAccounts
+                    .filter((a) => a.id !== account)
+                    .map((a) => (
+                      <Chip key={a.id} label={a.name} active={toAccount === a.id} onPress={() => setToAccount(a.id)} />
+                    ))}
+                </ChipRow>
+              )}
             </Section>
           ) : null}
 
