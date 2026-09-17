@@ -21,9 +21,9 @@ export function isHiddenOnScreen(privacy: boolean, peeking: boolean, scope: Priv
 
 export const PEEK_DURATION_MS = 10_000;
 
-export function privacyHintText(privacy: boolean, peeking: boolean, scope: PrivacyScope): string | null {
+export function privacyHintText(privacy: boolean, peeking: boolean, scope: PrivacyScope, secondsLeft = 0): string | null {
   if (!privacy) return null;
-  if (peeking) return 'Revealed for a few seconds';
+  if (peeking) return `Revealed · hides again in ${secondsLeft}s`;
   if (scope === 'all') return 'All amounts hidden · tap the eye to reveal';
   return 'Hidden here · visible inside each account';
 }

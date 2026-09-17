@@ -28,6 +28,7 @@ export function usePrivacy(screen: string) {
 
   const [now, setNow] = useState(Date.now());
   const peeking = peekUntil !== null && peekUntil > now;
+  const secondsLeft = peeking ? Math.max(0, Math.ceil((peekUntil! - now) / 1000)) : 0;
 
   useEffect(() => {
     if (!peekUntil) return;
@@ -36,11 +37,17 @@ export function usePrivacy(screen: string) {
       cancelPeek();
       return;
     }
+    // Tick once a second so the "hides again in Ns" hint counts down live,
+    // instead of amounts just vanishing without warning when the timer ends.
+    const tick = setInterval(() => setNow(Date.now()), 1000);
     const id = setTimeout(() => {
       cancelPeek();
       setNow(Date.now());
     }, remaining);
-    return () => clearTimeout(id);
+    return () => {
+      clearInterval(tick);
+      clearTimeout(id);
+    };
   }, [peekUntil, cancelPeek]);
 
   const symbol = useAppStore((s) => s.settings.currencySymbol);
@@ -88,7 +95,7 @@ export function usePrivacy(screen: string) {
     fmt,
     fmtTotal,
     tapEye,
-    hintText: privacyHintText(privacy, peeking, scope),
+    hintText: privacyHintText(privacy, peeking, scope, secondsLeft),
     eyeGlyph: !privacy || peeking ? '◉' : '◠',
   };
 }
