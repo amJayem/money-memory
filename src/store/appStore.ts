@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import type { Account, Settings, Transaction } from '@/domain/types';
+import { EXPENSE_CATEGORIES } from '@/domain/types';
 import { SEED_ACCOUNTS, SEED_TRANSACTIONS } from '@/domain/seed';
 import { DEFAULT_ACCENT } from '@/theme/tokens';
 
@@ -19,6 +20,7 @@ const DEFAULT_SETTINGS: Settings = {
   monthlyBudget: 30000,
   lastAccountId: null,
   lastCategory: null,
+  categories: [...EXPENSE_CATEGORIES],
 };
 
 interface PersistedShape {
@@ -39,6 +41,9 @@ interface AppState extends PersistedShape {
   updateAccount: (id: string, patch: Partial<Account>) => void;
   deleteAccount: (id: string) => void;
   updateSettings: (patch: Partial<Settings>) => void;
+  addCategory: (name: string) => void;
+  renameCategory: (oldName: string, newName: string) => void;
+  deleteCategory: (name: string) => void;
   resetAllData: () => void;
   startPeek: () => void;
   cancelPeek: () => void;
@@ -124,6 +129,32 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   updateSettings: (patch) => {
     set((s) => ({ settings: { ...s.settings, ...patch } }));
+    schedulePersist(get);
+  },
+
+  addCategory: (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    set((s) => (s.settings.categories.some((c) => c.toLowerCase() === trimmed.toLowerCase()) ? s : { settings: { ...s.settings, categories: [...s.settings.categories, trimmed] } }));
+    schedulePersist(get);
+  },
+
+  // Renaming relabels every past transaction filed under the old name too, so
+  // history doesn't quietly split between the old and new spelling.
+  renameCategory: (oldName, newName) => {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === oldName) return;
+    set((s) => ({
+      settings: { ...s.settings, categories: s.settings.categories.map((c) => (c === oldName ? trimmed : c)) },
+      transactions: s.transactions.map((t) => (t.category === oldName ? { ...t, category: trimmed } : t)),
+    }));
+    schedulePersist(get);
+  },
+
+  // Callers must check the category is unused first (see app/categories.tsx) —
+  // deleting one still in use would leave those transactions' category dangling.
+  deleteCategory: (name) => {
+    set((s) => ({ settings: { ...s.settings, categories: s.settings.categories.filter((c) => c !== name) } }));
     schedulePersist(get);
   },
 

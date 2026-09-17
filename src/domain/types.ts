@@ -59,6 +59,8 @@ export interface Settings {
   monthlyBudget: number;
   lastAccountId: string | null;
   lastCategory: string | null;
+  /** User-editable expense categories — seeded from EXPENSE_CATEGORIES, renamed/added/removed via the Categories screen. */
+  categories: string[];
 }
 
 export const EXPENSE_CATEGORIES = [

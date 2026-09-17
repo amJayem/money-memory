@@ -13,7 +13,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
 import { ACCENT_THEMES, type AccentTheme } from '@/theme/tokens';
-import { EXPENSE_CATEGORIES, type PrivacyScope } from '@/domain/types';
+import type { PrivacyScope } from '@/domain/types';
 
 export default function SettingsScreen() {
   const theme = useTheme();
@@ -101,7 +101,7 @@ export default function SettingsScreen() {
           value={settings.budgetAlerts}
           onValueChange={(v) => updateSettings({ budgetAlerts: v })}
         />
-        <LinkRow label="Categories" sub={`${EXPENSE_CATEGORIES.length} categories · rename or add`} onPress={() => toast('Category editor is coming soon')} />
+        <LinkRow label="Categories" sub={`${settings.categories.length} categories · rename or add`} onPress={() => router.push('/categories')} />
         <LinkRow label="Accounts" sub={`${accounts.length} accounts`} onPress={() => router.push('/accounts')} />
         <LinkRow label="Backup & export" sub="CSV or full backup file, saved by you" onPress={() => toast(`Backup file prepared · ${transactions.length} transactions`)} last />
         <LinkRow label="Monthly summary" sub={monthLabel} onPress={() => router.push('/report')} last />

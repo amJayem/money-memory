@@ -11,7 +11,7 @@ import { ScreenBackground } from '@/components/Screen';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, type TransactionType } from '@/domain/types';
+import { INCOME_CATEGORIES, type TransactionType } from '@/domain/types';
 import { budgetStatus, liquid, outstandingFor, spent } from '@/domain/money';
 import { echoLine, SAVE_TOAST_LABEL } from '@/domain/echo';
 import { formatAmount } from '@/domain/format';
@@ -76,7 +76,7 @@ export default function EntryForm() {
 
   const [amount, setAmount] = useState(editing ? String(editing.amount) : '');
   const [category, setCategory] = useState(
-    !typeChanged && editing?.category ? editing.category : type === 'income' ? 'Salary' : settings.lastCategory ?? EXPENSE_CATEGORIES[0],
+    !typeChanged && editing?.category ? editing.category : type === 'income' ? 'Salary' : settings.lastCategory ?? settings.categories[0] ?? 'Other',
   );
   const [account, setAccount] = useState(!typeChanged && editing && accountPool.some((a) => a.id === editing.account) ? editing.account : defaultAccountId);
   const [toAccount, setToAccount] = useState(!typeChanged && editing?.toAccount ? editing.toAccount : accounts.find((a) => a.id !== defaultAccountId)?.id ?? defaultAccountId);
@@ -113,7 +113,7 @@ export default function EntryForm() {
   const needsCategory = NEEDS_CATEGORY.includes(type);
   const needsPerson = NEEDS_PERSON.includes(type);
   const needsDest = type === 'transfer';
-  const categories = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const categories = type === 'income' ? INCOME_CATEGORIES : settings.categories;
 
   const numericAmount = parseFloat(amount) || 0;
   // A typed name that only differs from an existing person by case or spacing
