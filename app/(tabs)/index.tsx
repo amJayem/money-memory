@@ -95,45 +95,48 @@ export default function HomeScreen() {
           scrollEventThrottle={32}
           contentContainerStyle={{ paddingHorizontal: 18, gap: 13 }}
         >
-          <WalletCard
-            kicker="Ledger"
-            name="Total available"
-            digits="•••• ALL"
-            holderLabel="All accounts"
-            amount={privacy.fmtTotal(liquid)}
-            sub={
-              [
-                orderedAccounts.filter((a) => a.type === 'cash').length ? `${orderedAccounts.filter((a) => a.type === 'cash').length} cash` : '',
-                orderedAccounts.filter((a) => a.type === 'bank' || a.type === 'savings').length
-                  ? `${orderedAccounts.filter((a) => a.type === 'bank' || a.type === 'savings').length} accounts`
-                  : '',
-                orderedAccounts.filter((a) => a.type === 'wallet').length ? `${orderedAccounts.filter((a) => a.type === 'wallet').length} wallet` : '',
-              ]
-                .filter(Boolean)
-                .join(' · ')
-            }
-            palette={paletteFor('total')}
-            isTotal
-            eyeGlyph={privacy.eyeGlyph}
-            onEyePress={() => privacy.tapEye(toast)}
-          />
+          <Pressable onPress={() => router.push('/accounts')}>
+            <WalletCard
+              kicker="Ledger"
+              name="Total available"
+              digits="•••• ALL"
+              holderLabel="All accounts"
+              amount={privacy.fmtTotal(liquid)}
+              sub={
+                [
+                  orderedAccounts.filter((a) => a.type === 'cash').length ? `${orderedAccounts.filter((a) => a.type === 'cash').length} cash` : '',
+                  orderedAccounts.filter((a) => a.type === 'bank' || a.type === 'savings').length
+                    ? `${orderedAccounts.filter((a) => a.type === 'bank' || a.type === 'savings').length} accounts`
+                    : '',
+                  orderedAccounts.filter((a) => a.type === 'wallet').length ? `${orderedAccounts.filter((a) => a.type === 'wallet').length} wallet` : '',
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+              }
+              palette={paletteFor('total')}
+              isTotal
+              eyeGlyph={privacy.eyeGlyph}
+              onEyePress={() => privacy.tapEye(toast)}
+            />
+          </Pressable>
           {orderedAccounts.map((a) => {
             const credit = a.type === 'credit';
             const used = credit ? creditUsed(a, transactions) : 0;
             const pctUsed = credit ? Math.min(100, (used / Math.max(1, a.limit ?? 1)) * 100) : 0;
             return (
-              <WalletCard
-                key={a.id}
-                kicker={credit ? 'Credit card · borrowed' : ACCOUNT_TYPE_LABEL[a.type]}
-                name={a.name}
-                digits={digitsFor(a.id)}
-                holderLabel="Account holder"
-                amount={credit ? privacy.fmtTotal(creditLeft(a, transactions)) : privacy.fmtTotal(balance(a, transactions))}
-                sub={credit ? (privacy.hiddenHere ? 'Credit left · not your money' : `${formatAmount(used, settings.currencySymbol)} used of ${formatAmount(a.limit ?? 0, settings.currencySymbol)}`) : 'Available to spend'}
-                palette={paletteFor(a.type)}
-                hasMeter={credit}
-                pctUsed={pctUsed}
-              />
+              <Pressable key={a.id} onPress={() => router.push(`/accounts/add?editId=${a.id}`)}>
+                <WalletCard
+                  kicker={credit ? 'Credit card · borrowed' : ACCOUNT_TYPE_LABEL[a.type]}
+                  name={a.name}
+                  digits={digitsFor(a.id)}
+                  holderLabel="Account holder"
+                  amount={credit ? privacy.fmtTotal(creditLeft(a, transactions)) : privacy.fmtTotal(balance(a, transactions))}
+                  sub={credit ? (privacy.hiddenHere ? 'Credit left · not your money' : `${formatAmount(used, settings.currencySymbol)} used of ${formatAmount(a.limit ?? 0, settings.currencySymbol)}`) : 'Available to spend'}
+                  palette={paletteFor(a.type)}
+                  hasMeter={credit}
+                  pctUsed={pctUsed}
+                />
+              </Pressable>
             );
           })}
         </ScrollView>
