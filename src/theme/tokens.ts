@@ -5,8 +5,8 @@ export type AccentTheme = 'indigo' | 'slate' | 'teal' | 'forest' | 'amber' | 'pl
 export type Tone = 'pos' | 'neg' | 'warn' | 'neutral' | 'accent';
 
 export const ACCENT_THEMES: Record<AccentTheme, { label: string; hue: number }> = {
-  indigo: { label: 'Indigo', hue: 265 },
-  slate: { label: 'Slate blue', hue: 250 },
+  indigo: { label: 'Electric blue', hue: 262 },
+  slate: { label: 'Deep sea', hue: 240 },
   teal: { label: 'Teal', hue: 195 },
   forest: { label: 'Forest', hue: 155 },
   amber: { label: 'Amber', hue: 70 },
@@ -40,16 +40,16 @@ export function methodColor(index: number, mode: ThemeMode): string {
   return mode === 'dark' ? oklch(0.7, 0.1, hue) : oklch(0.6, 0.11, hue);
 }
 
-/** Wallet-card gradient palettes by account type (§5, `paletteOf`). */
+/** Wallet-card gradient palettes by account type (§5, `paletteOf`) — vivid blue bank-card tones. */
 export const WALLET_PALETTE: Record<string, [string, string, string]> = {
-  total: ['#2f3d63', '#222c48', '#161d2f'],
-  cash: ['#6a5a3c', '#4a3f2a', '#332b1d'],
-  bank: ['#3d4d7a', '#2b3757', '#1d263c'],
-  wallet: ['#5a3f66', '#412e4a', '#2c1f33'],
-  savings: ['#2f5a55', '#22423f', '#172c2a'],
-  credit: ['#4a4a55', '#35353d', '#24242a'],
-  debit: ['#3a4a5e', '#293643', '#1c252e'],
-  other: ['#454a52', '#31353b', '#212429'],
+  total: ['#16265f', '#3457dd', '#14225f'],
+  cash: ['#17285e', '#3559c8', '#1b2f6e'],
+  bank: ['#13234f', '#2f56c4', '#16265c'],
+  wallet: ['#1d1f56', '#4a48c4', '#221f61'],
+  savings: ['#102c52', '#2560a8', '#123a6e'],
+  credit: ['#1b2340', '#2a3350', '#171d33'],
+  debit: ['#142450', '#2d4ba4', '#172c68'],
+  other: ['#1c2340', '#2e3a5c', '#1a2138'],
 };
 
 export const ACCOUNT_TYPE_LABEL: Record<string, string> = {
@@ -77,39 +77,39 @@ export interface ThemeTokens {
   liftInsetColor: string;
 }
 
-/** Base surface/ink tokens, light vs dark (§5). */
+/** Base surface/ink tokens, light vs dark (§5) — cool porcelain/midnight-navy scheme, not warm. */
 export function baseTokens(mode: ThemeMode): ThemeTokens {
   if (mode === 'dark') {
     return {
       mode,
-      bg: '#101216',
-      bgGradient: ['#171a20', '#101216', '#0b0c0f'],
-      solid: '#1b1d22',
-      surfaceGradient: ['rgba(255,255,255,0.13)', 'rgba(255,255,255,0.05)'],
-      surface2: 'rgba(255,255,255,0.10)',
-      line: 'rgba(255,255,255,0.16)',
-      lineStrong: 'rgba(255,255,255,0.3)',
-      ink: '#f7f6f3',
-      ink2: 'rgba(247,246,243,0.78)',
-      ink3: 'rgba(247,246,243,0.62)',
-      lift: { shadowColor: '#000000', shadowOpacity: 0.34, shadowRadius: 34, shadowOffset: { width: 0, height: 12 } },
-      liftInsetColor: 'rgba(255,255,255,0.22)',
+      bg: '#080d1c',
+      bgGradient: ['#131d3a', '#0a1128', '#060a17'],
+      solid: '#111a31',
+      surfaceGradient: ['rgba(130,164,255,0.16)', 'rgba(120,150,255,0.05)'],
+      surface2: 'rgba(140,170,255,0.11)',
+      line: 'rgba(150,180,255,0.17)',
+      lineStrong: 'rgba(160,190,255,0.32)',
+      ink: '#f2f6ff',
+      ink2: 'rgba(242,246,255,0.8)',
+      ink3: 'rgba(242,246,255,0.64)',
+      lift: { shadowColor: 'rgba(2,6,20,1)', shadowOpacity: 0.55, shadowRadius: 40, shadowOffset: { width: 0, height: 14 } },
+      liftInsetColor: 'rgba(180,205,255,0.2)',
     };
   }
   return {
     mode,
-    bg: '#eae5db',
-    bgGradient: ['#f4eee4', '#e6dfd3', '#dbd6ce'],
-    solid: '#fbfaf7',
-    surfaceGradient: ['rgba(255,255,255,0.74)', 'rgba(255,255,255,0.48)'],
-    surface2: 'rgba(20,18,16,0.07)',
-    line: 'rgba(255,255,255,0.75)',
-    lineStrong: 'rgba(20,18,16,0.2)',
-    ink: '#141210',
-    ink2: 'rgba(20,18,16,0.76)',
-    ink3: 'rgba(20,18,16,0.68)',
-    lift: { shadowColor: 'rgba(60,44,28,1)', shadowOpacity: 0.1, shadowRadius: 30, shadowOffset: { width: 0, height: 10 } },
-    liftInsetColor: 'rgba(255,255,255,0.9)',
+    bg: '#eaeef7',
+    bgGradient: ['#f6f8fd', '#e9eef8', '#dfe6f4'],
+    solid: '#ffffff',
+    surfaceGradient: ['rgba(255,255,255,0.88)', 'rgba(255,255,255,0.62)'],
+    surface2: 'rgba(15,25,65,0.055)',
+    line: 'rgba(255,255,255,0.9)',
+    lineStrong: 'rgba(15,25,65,0.16)',
+    ink: '#0f1941',
+    ink2: 'rgba(15,25,65,0.76)',
+    ink3: 'rgba(15,25,65,0.66)',
+    lift: { shadowColor: 'rgba(22,38,88,1)', shadowOpacity: 0.11, shadowRadius: 30, shadowOffset: { width: 0, height: 10 } },
+    liftInsetColor: 'rgba(255,255,255,0.95)',
   };
 }
 
@@ -124,7 +124,7 @@ export function tone(name: Tone, mode: ThemeMode, accentHue: number): string {
       case 'warn':
         return oklch(0.82, 0.13, 80);
       case 'accent':
-        return oklch(0.79, 0.11, accentHue);
+        return oklch(0.78, 0.16, accentHue);
       default:
         return oklch(0.75, 0.06, 250);
     }
@@ -137,7 +137,7 @@ export function tone(name: Tone, mode: ThemeMode, accentHue: number): string {
     case 'warn':
       return oklch(0.58, 0.12, 70);
     case 'accent':
-      return oklch(0.5, 0.13, accentHue);
+      return oklch(0.52, 0.19, accentHue);
     default:
       return oklch(0.5, 0.07, 250);
   }

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import React, { useState } from 'react';
+import { NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/AppText';
@@ -33,12 +33,26 @@ const QUICK_ACTIONS: { label: string; type: 'expense' | 'income' | 'lent' | 'tra
   { label: 'Moved', type: 'transfer', icon: '⇄', tone: 'neutral' },
 ];
 
+const WALLET_CARD_STEP = 309; // card width 296 + 13 gap
+
+/** Design's masked card-number readout — a stable pseudo-random 4-digit tail derived from the account id. */
+function digitsFor(id: string): string {
+  const n = 1000 + (id.split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % 9000);
+  return `•••• ${n}`;
+}
+
 export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
   const toast = useToastStore((s) => s.show);
   const { accounts, transactions, settings, spentAmount, liquid, owed, budget } = useLedger();
   const privacy = usePrivacy('home');
+  const [walletIndex, setWalletIndex] = useState(0);
+
+  function onWalletScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
+    const i = Math.round(e.nativeEvent.contentOffset.x / WALLET_CARD_STEP);
+    if (i !== walletIndex) setWalletIndex(i);
+  }
 
   const today = new Date();
   const monthLabel = today.toLocaleDateString('en-US', { month: 'long' });
@@ -72,12 +86,32 @@ export default function HomeScreen() {
       </View>
 
       <View style={{ marginHorizontal: -18 }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={309} decelerationRate="fast" contentContainerStyle={{ paddingHorizontal: 18, gap: 13 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={WALLET_CARD_STEP}
+          decelerationRate="fast"
+          onScroll={onWalletScroll}
+          scrollEventThrottle={32}
+          contentContainerStyle={{ paddingHorizontal: 18, gap: 13 }}
+        >
           <WalletCard
-            kicker="Money Memory"
+            kicker="Ledger"
             name="Total available"
+            digits="•••• ALL"
+            holderLabel="All accounts"
             amount={privacy.fmtTotal(liquid)}
-            sub={`${orderedAccounts.filter((a) => a.type !== 'credit').length} accounts`}
+            sub={
+              [
+                orderedAccounts.filter((a) => a.type === 'cash').length ? `${orderedAccounts.filter((a) => a.type === 'cash').length} cash` : '',
+                orderedAccounts.filter((a) => a.type === 'bank' || a.type === 'savings').length
+                  ? `${orderedAccounts.filter((a) => a.type === 'bank' || a.type === 'savings').length} accounts`
+                  : '',
+                orderedAccounts.filter((a) => a.type === 'wallet').length ? `${orderedAccounts.filter((a) => a.type === 'wallet').length} wallet` : '',
+              ]
+                .filter(Boolean)
+                .join(' · ')
+            }
             palette={paletteFor('total')}
             isTotal
             eyeGlyph={privacy.eyeGlyph}
@@ -92,6 +126,8 @@ export default function HomeScreen() {
                 key={a.id}
                 kicker={credit ? 'Credit card · borrowed' : ACCOUNT_TYPE_LABEL[a.type]}
                 name={a.name}
+                digits={digitsFor(a.id)}
+                holderLabel="Account holder"
                 amount={credit ? privacy.fmtTotal(creditLeft(a, transactions)) : privacy.fmtTotal(balance(a, transactions))}
                 sub={credit ? (privacy.hiddenHere ? 'Credit left · not your money' : `${formatAmount(used, settings.currencySymbol)} used of ${formatAmount(a.limit ?? 0, settings.currencySymbol)}`) : 'Available to spend'}
                 palette={paletteFor(a.type)}
@@ -101,27 +137,50 @@ export default function HomeScreen() {
             );
           })}
         </ScrollView>
-        {privacy.hintText ? (
-          <View
-            style={{
-              alignSelf: 'flex-start',
-              marginTop: 9,
-              paddingHorizontal: 10,
-              paddingVertical: 5,
-              borderRadius: 999,
-              backgroundColor: theme.toneBg('accent'),
-            }}
-          >
-            <AppText variant="mono" color={theme.accentColor}>
-              {privacy.hintText}
-            </AppText>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 18, paddingTop: 9 }}>
+          <View style={{ flexDirection: 'row', gap: 5 }}>
+            {[0, ...orderedAccounts.map((_, i) => i + 1)].map((i) => (
+              <View
+                key={i}
+                style={{
+                  width: i === walletIndex ? 16 : 6,
+                  height: 6,
+                  borderRadius: 999,
+                  backgroundColor: i === walletIndex ? theme.ink : theme.lineStrong,
+                }}
+              />
+            ))}
           </View>
-        ) : null}
-        <Pressable onPress={() => router.push('/accounts')} style={{ paddingTop: 9 }}>
-          <AppText variant="mono" color={theme.accentColor} style={{ textAlign: 'right' }}>
-            All accounts →
+          <Pressable onPress={() => router.push('/accounts')}>
+            <AppText variant="mono" color={theme.accentColor}>
+              All accounts →
+            </AppText>
+          </Pressable>
+        </View>
+
+        <View style={{ paddingHorizontal: 18, paddingTop: 7, gap: 3 }}>
+          {privacy.hintText ? (
+            <View
+              style={{
+                alignSelf: 'flex-start',
+                paddingHorizontal: 10,
+                paddingVertical: 5,
+                borderRadius: 999,
+                backgroundColor: theme.toneBg('accent'),
+              }}
+            >
+              <AppText variant="mono" color={theme.accentColor}>
+                {privacy.hintText}
+              </AppText>
+            </View>
+          ) : null}
+          <AppText variant="mono">
+            {['Money you can spend right now', owed > 0 ? `${privacy.fmt(owed)} lent out isn't counted` : '', accounts.some((a) => a.type === 'credit') ? 'card credit excluded' : '']
+              .filter(Boolean)
+              .join(' · ')}
           </AppText>
-        </Pressable>
+        </View>
       </View>
 
       <View style={{ flexDirection: 'row', gap: 9 }}>

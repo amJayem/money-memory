@@ -7,21 +7,17 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { oklch } from '@/theme/oklch';
 import { BlurTargetContext } from './BlurTargetContext';
 
-/** Design's `blob1`/`blob2`/`blob3`: three fixed circles, distinct per theme mode — position, size and color all differ, not just a light/dark recolor of the same two shapes. */
-// Sized ~50% larger than the design's raw circles and at lower light-mode
-// opacity (design feedback: at the original .68/.62/.55 the peach circle read
-// as a hard wedge behind the header instead of ambient light — it should be
-// a wash, not a shape).
+/** Design's `blob1`/`blob2`/`blob3`: three fixed circles, distinct per theme mode — position, size and color all differ, not just a light/dark recolor of the same two shapes. Cool blue/violet mesh, not warm. */
 const BLOBS = {
   light: [
-    { top: -150, right: -180, size: 510, opacity: 0.42, color: oklch(0.87, 0.1, 75) },
-    { top: 250, left: -195, size: 450, opacity: 0.34, color: oklch(0.85, 0.08, 250) },
-    { bottom: -120, right: -135, size: 420, opacity: 0.3, color: oklch(0.88, 0.07, 155) },
+    { top: -210, right: -210, size: 520, opacity: 0.5, color: oklch(0.87, 0.09, 265) },
+    { top: 240, left: -230, size: 480, opacity: 0.38, color: oklch(0.86, 0.08, 235) },
+    { bottom: -190, right: -170, size: 460, opacity: 0.3, color: oklch(0.86, 0.08, 295) },
   ],
   dark: [
-    { top: -150, right: -180, size: 510, opacity: 0.72, color: oklch(0.5, 0.13, 260) },
-    { top: 250, left: -195, size: 450, opacity: 0.55, color: oklch(0.46, 0.11, 175) },
-    { bottom: -120, right: -135, size: 420, opacity: 0.5, color: oklch(0.44, 0.1, 300) },
+    { top: -210, right: -210, size: 520, opacity: 0.78, color: oklch(0.52, 0.19, 265) },
+    { top: 240, left: -230, size: 480, opacity: 0.58, color: oklch(0.5, 0.15, 235) },
+    { bottom: -190, right: -170, size: 460, opacity: 0.5, color: oklch(0.46, 0.14, 295) },
   ],
 } as const;
 
