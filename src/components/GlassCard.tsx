@@ -42,13 +42,13 @@ export function GlassCard({ radius = RADII.card, padding = 18, style, children, 
         tint={theme.mode}
         blurMethod="dimezisBlurView"
         blurTarget={blurTarget ?? undefined}
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
       />
       <LinearGradient
         colors={theme.surfaceGradient as unknown as [string, string]}
         start={{ x: 0.15, y: 0 }}
         end={{ x: 0.85, y: 1 }}
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
       />
       <View style={{ padding }}>{children}</View>
     </View>

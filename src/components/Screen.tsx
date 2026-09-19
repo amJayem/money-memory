@@ -3,10 +3,11 @@ import { StyleSheet, View, ScrollView, ScrollViewProps } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurTargetView } from 'expo-blur';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
-import { SafeAreaView, SafeAreaViewProps } from 'react-native-safe-area-context';
+import { SafeAreaView, SafeAreaViewProps, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { oklch } from '@/theme/oklch';
 import { BlurTargetContext } from './BlurTargetContext';
+import { FAB_CLEARANCE, TAB_BAR_CONTENT_HEIGHT } from './CustomTabBar';
 
 /** Design's `blob1`/`blob2`/`blob3`: three fixed circles, distinct per theme mode — position, size and color all differ, not just a light/dark recolor of the same two shapes. Cool blue/violet mesh, not warm. */
 const BLOBS = {
@@ -61,7 +62,7 @@ export function Backdrop({ blobs = true }: { blobs?: boolean }) {
                 <Defs>
                   <RadialGradient id={id} cx="50%" cy="50%" r="50%">
                     <Stop offset="0%" stopColor={b.color} stopOpacity={b.opacity} />
-                    <Stop offset="45%" stopColor={b.color} stopOpacity={b.opacity * 0.7} />
+                    <Stop offset="60%" stopColor={b.color} stopOpacity={b.opacity} />
                     <Stop offset="100%" stopColor={b.color} stopOpacity={0} />
                   </RadialGradient>
                 </Defs>
@@ -109,12 +110,17 @@ interface Props extends ScrollViewProps {
 }
 
 /** Standard screen shell: backdrop + safe area + (optionally) a scroll container with room for the tab bar/FAB. */
-export function Screen({ scroll = true, bottomInset = 140, children, contentContainerStyle, ...rest }: Props) {
+export function Screen({ scroll = true, bottomInset, children, contentContainerStyle, ...rest }: Props) {
+  const insets = useSafeAreaInsets();
+  // Measured, not guessed: clear whichever of the bar's own content or the
+  // FAB's overhang reaches further up, plus the safe-area inset and a 24px
+  // breathing-room margin above it.
+  const resolvedBottomInset = bottomInset ?? insets.bottom + Math.max(TAB_BAR_CONTENT_HEIGHT, FAB_CLEARANCE) + 24;
   return (
     <ScreenBackground>
       {scroll ? (
         <ScrollView
-          contentContainerStyle={[{ paddingHorizontal: 18, paddingBottom: bottomInset, gap: 13 }, contentContainerStyle]}
+          contentContainerStyle={[{ paddingHorizontal: 18, paddingBottom: resolvedBottomInset, gap: 13 }, contentContainerStyle]}
           showsVerticalScrollIndicator={false}
           {...rest}
         >

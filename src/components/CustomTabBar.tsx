@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePathname, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
@@ -8,11 +8,16 @@ import { useNavBarStore } from '@/store/navBarStore';
 import { AppText } from './AppText';
 
 const TABS = [
-  { path: '/', name: 'index', glyph: '▤', label: 'Home' },
+  { path: '/', name: 'index', glyph: '⌂', label: 'Home' },
   { path: '/history', name: 'history', glyph: '≡', label: 'History' },
-  { path: '/loans', name: 'loans', glyph: '◎', label: 'Loans' },
-  { path: '/stats', name: 'stats', glyph: '◨', label: 'Stats' },
+  { path: '/loans', name: 'loans', glyph: '⚖', label: 'Loans' },
+  { path: '/stats', name: 'stats', glyph: '▦', label: 'Stats' },
 ] as const;
+
+// Shared with Screen.tsx so the scroll container's bottom padding is measured
+// against the bar's real geometry instead of a guessed constant.
+export const TAB_BAR_CONTENT_HEIGHT = 62; // paddingTop 9 + tab minHeight 44 + paddingBottom 9, excluding the safe-area inset
+export const FAB_CLEARANCE = 94; // FAB's top edge sits 36 (its own bottom offset) + 58 (height) above the safe-area line
 
 /**
  * 5-slot bar (Home · History · FAB gap · Loans · Stats) — the FAB is a
@@ -68,8 +73,17 @@ export function CustomTabBar() {
   return (
     <Animated.View style={[styles.wrap, { transform: [{ translateY }] }]} pointerEvents="box-none">
       <View style={styles.barContainer}>
-        <BlurView intensity={50} tint={theme.mode} style={StyleSheet.absoluteFill} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.surface2 }]} />
+        {Platform.OS === 'web' ? (
+          <>
+            <BlurView intensity={50} tint={theme.mode} style={StyleSheet.absoluteFill} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.surface2 }]} />
+          </>
+        ) : (
+          // Native has no reliable backdrop-blur target for a bar mounted
+          // outside any screen's BlurTargetView, so it renders as a near-opaque
+          // solid fill instead — legible beats "glassy but see-through".
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.solid, opacity: theme.mode === 'dark' ? 0.96 : 0.98 }]} />
+        )}
         <View style={[styles.row, { borderTopColor: theme.line, paddingBottom: 9 + insets.bottom }]}>
           {left.map(renderTab)}
           <View style={styles.fabGap} />
