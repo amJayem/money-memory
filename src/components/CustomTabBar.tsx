@@ -58,7 +58,7 @@ export function CustomTabBar() {
     return (
       <Pressable key={tab.name} onPress={() => router.navigate(tab.path)} style={styles.tab}>
         <AppText style={{ fontSize: 19, color }}>{tab.glyph}</AppText>
-        <AppText variant="label" color={color} style={{ marginTop: 3, fontSize: 9.5, letterSpacing: 0.4 }}>
+        <AppText variant="body2" weight="manrope600" color={color} style={{ marginTop: 3, fontSize: 10 }}>
           {tab.label}
         </AppText>
       </Pressable>
@@ -76,8 +76,8 @@ export function CustomTabBar() {
           {right.map(renderTab)}
         </View>
       </View>
-      <Pressable onPress={() => router.push('/sheet')} style={[styles.fab, { backgroundColor: theme.ink, shadowColor: theme.lift.shadowColor, bottom: insets.bottom + 36 }]}>
-        <AppText color={theme.solid} style={{ fontSize: 26, marginTop: -2 }}>
+      <Pressable onPress={() => router.push('/sheet')} style={[styles.fab, { backgroundColor: theme.accentColor, shadowColor: theme.lift.shadowColor, bottom: insets.bottom + 36 }]}>
+        <AppText color="#fff" style={{ fontSize: 26, marginTop: -2 }}>
           +
         </AppText>
       </Pressable>

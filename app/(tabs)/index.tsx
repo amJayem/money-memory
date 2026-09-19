@@ -27,11 +27,13 @@ function greeting(): string {
   return 'Good night';
 }
 
-const QUICK_ACTIONS: { label: string; type: 'expense' | 'income' | 'lent' | 'transfer'; icon: string; tone: 'neg' | 'pos' | 'warn' | 'neutral' }[] = [
+const QUICK_ACTIONS: { label: string; type: 'expense' | 'income' | 'transfer' | 'lent' | 'borrowed' | 'repay_in'; icon: string; tone: 'neg' | 'pos' | 'warn' | 'neutral' }[] = [
   { label: 'Spent', type: 'expense', icon: '−', tone: 'neg' },
-  { label: 'Received', type: 'income', icon: '+', tone: 'pos' },
-  { label: 'Lent', type: 'lent', icon: '→', tone: 'warn' },
+  { label: 'Got', type: 'income', icon: '+', tone: 'pos' },
   { label: 'Moved', type: 'transfer', icon: '⇄', tone: 'neutral' },
+  { label: 'Lent', type: 'lent', icon: '→', tone: 'warn' },
+  { label: 'Borrowed', type: 'borrowed', icon: '←', tone: 'warn' },
+  { label: 'Repaid', type: 'repay_in', icon: '↩', tone: 'pos' },
 ];
 
 const WALLET_CARD_STEP = 309; // card width 296 + 13 gap
@@ -95,7 +97,7 @@ export default function HomeScreen() {
           decelerationRate="fast"
           onScroll={onWalletScroll}
           scrollEventThrottle={32}
-          contentContainerStyle={{ paddingHorizontal: 18, gap: 13 }}
+          contentContainerStyle={{ paddingHorizontal: 18, paddingVertical: 2, gap: 13 }}
         >
           <Pressable onPress={() => router.push('/accounts')}>
             <WalletCard
@@ -158,7 +160,7 @@ export default function HomeScreen() {
             ))}
           </View>
           <Pressable onPress={() => router.push('/accounts')}>
-            <AppText variant="mono" color={theme.accentColor}>
+            <AppText variant="body2" weight="manrope600" color={theme.accentColor} style={{ fontSize: 12.5 }}>
               All accounts →
             </AppText>
           </Pressable>
@@ -188,9 +190,9 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 9 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9 }}>
         {QUICK_ACTIONS.map((q) => (
-          <Pressable key={q.type} onPress={() => router.push(`/entry/${q.type}`)} style={{ flex: 1 }}>
+          <Pressable key={q.type} onPress={() => router.push(`/entry/${q.type}`)} style={{ width: '31.5%' }}>
             <GlassCard radius={18} padding={13}>
               <View style={{ alignItems: 'center', gap: 7 }}>
                 <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.toneBg(q.tone) }}>
@@ -278,7 +280,7 @@ export default function HomeScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10 }}>
           <AppText variant="heading">Recent activity</AppText>
           <Pressable onPress={() => router.push('/history')}>
-            <AppText variant="mono" color={theme.accentColor}>
+            <AppText variant="body2" weight="manrope600" color={theme.accentColor} style={{ fontSize: 12.5 }}>
               See all
             </AppText>
           </Pressable>

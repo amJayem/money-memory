@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
-import { Platform, StyleSheet, View, ScrollView, ScrollViewProps } from 'react-native';
+import { StyleSheet, View, ScrollView, ScrollViewProps } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurTargetView } from 'expo-blur';
+import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { SafeAreaView, SafeAreaViewProps } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { oklch } from '@/theme/oklch';
@@ -21,17 +22,19 @@ const BLOBS = {
   ],
 } as const;
 
-// Native has no blur-filter for a plain View; web (the platform this was
-// screenshotted on) supports CSS filter, so the near-doubled blur only
-// applies there — a harmless no-op style key on native.
-const BLOB_BLUR = Platform.OS === 'web' ? ({ filter: 'blur(120px)' } as const) : {};
-
 /**
  * The warm mesh ground + three blurred color blobs that sit behind every
  * regular screen (brief §7). Full-screen overlays (entry form) use the same
  * gradient with `blobs={false}` — the design's `formStyle` is a flatter
  * 2-stop version of this gradient with no blob decoration, to stay calm
  * while the keypad is in use.
+ *
+ * Rendered as an SVG radial gradient rather than a plain tinted circle: RN's
+ * View has no blur-filter on native (only web honours CSS `filter`), so a
+ * flat circle+opacity reads as a hard-edged disc on Android/iOS. A radial
+ * gradient fading to fully transparent well before the edge gives the same
+ * "diffuse light behind glass" falloff on every platform without relying on
+ * a blur filter at all.
  */
 export function Backdrop({ blobs = true }: { blobs?: boolean }) {
   const theme = useTheme();
@@ -40,24 +43,32 @@ export function Backdrop({ blobs = true }: { blobs?: boolean }) {
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <LinearGradient colors={theme.bgGradient} style={StyleSheet.absoluteFill} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} />
       {blobs
-        ? set.map((b, i) => (
-            <View
-              key={i}
-              style={{
-                position: 'absolute',
-                top: 'top' in b ? b.top : undefined,
-                bottom: 'bottom' in b ? b.bottom : undefined,
-                left: 'left' in b ? b.left : undefined,
-                right: 'right' in b ? b.right : undefined,
-                width: b.size,
-                height: b.size,
-                borderRadius: b.size / 2,
-                backgroundColor: b.color,
-                opacity: b.opacity,
-                ...BLOB_BLUR,
-              }}
-            />
-          ))
+        ? set.map((b, i) => {
+            const id = `blob-${theme.mode}-${i}`;
+            return (
+              <Svg
+                key={i}
+                width={b.size}
+                height={b.size}
+                style={{
+                  position: 'absolute',
+                  top: 'top' in b ? b.top : undefined,
+                  bottom: 'bottom' in b ? b.bottom : undefined,
+                  left: 'left' in b ? b.left : undefined,
+                  right: 'right' in b ? b.right : undefined,
+                }}
+              >
+                <Defs>
+                  <RadialGradient id={id} cx="50%" cy="50%" r="50%">
+                    <Stop offset="0%" stopColor={b.color} stopOpacity={b.opacity} />
+                    <Stop offset="45%" stopColor={b.color} stopOpacity={b.opacity * 0.7} />
+                    <Stop offset="100%" stopColor={b.color} stopOpacity={0} />
+                  </RadialGradient>
+                </Defs>
+                <Circle cx={b.size / 2} cy={b.size / 2} r={b.size / 2} fill={`url(#${id})`} />
+              </Svg>
+            );
+          })
         : null}
     </View>
   );
@@ -98,7 +109,7 @@ interface Props extends ScrollViewProps {
 }
 
 /** Standard screen shell: backdrop + safe area + (optionally) a scroll container with room for the tab bar/FAB. */
-export function Screen({ scroll = true, bottomInset = 122, children, contentContainerStyle, ...rest }: Props) {
+export function Screen({ scroll = true, bottomInset = 140, children, contentContainerStyle, ...rest }: Props) {
   return (
     <ScreenBackground>
       {scroll ? (

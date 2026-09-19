@@ -57,8 +57,8 @@ export function WalletCard({ kicker, name, amount, sub, digits, holderLabel, pal
       </Animated.View>
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <AppText color="#fff" weight="manrope800" style={{ fontSize: 13, letterSpacing: 1.8 }}>
-            MONEY MEMORY
+          <AppText color="#fff" weight="manrope800" style={{ fontSize: 15, letterSpacing: 2.1 }}>
+            LEDGER
           </AppText>
           {isTotal ? (
             <Pressable onPress={onEyePress} style={styles.eyeBtn}>
