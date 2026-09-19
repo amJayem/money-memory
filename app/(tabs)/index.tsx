@@ -11,6 +11,7 @@ import { WalletCard, paletteFor } from '@/components/WalletCard';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
+import { useHideNavBarOnScroll } from '@/hooks/useHideNavBarOnScroll';
 import { useToastStore } from '@/store/toastStore';
 import { balance, budgetStatusLine, creditLeft, creditUsed } from '@/domain/money';
 import { formatAmount } from '@/domain/format';
@@ -69,9 +70,10 @@ export default function HomeScreen() {
 
   const recent = sortedTransactions(transactions).slice(0, 6);
   const peopleOwing = new Set(transactions.filter((t) => t.type === 'lent').map((t) => t.person)).size;
+  const onHomeScroll = useHideNavBarOnScroll();
 
   return (
-    <Screen>
+    <Screen onScroll={onHomeScroll} scrollEventThrottle={16}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: 4 }}>
         <View>
           <AppText variant="label">{greeting()}</AppText>

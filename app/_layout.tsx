@@ -16,6 +16,7 @@ import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { useAppStore } from '@/store/appStore';
 import { OnboardingFlow } from '@/screens/onboarding/OnboardingFlow';
 import { ToastHost } from '@/components/ToastHost';
+import { CustomTabBar } from '@/components/CustomTabBar';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -38,7 +39,13 @@ function ThemedStack() {
 
 function AppShell() {
   const hasOnboarded = useAppStore((s) => s.settings.hasOnboarded);
-  return hasOnboarded ? <ThemedStack /> : <OnboardingFlow />;
+  if (!hasOnboarded) return <OnboardingFlow />;
+  return (
+    <>
+      <ThemedStack />
+      <CustomTabBar />
+    </>
+  );
 }
 
 export default function RootLayout() {
