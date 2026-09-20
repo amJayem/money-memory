@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import type { Account, Settings, Transaction } from '@/domain/types';
-import { EXPENSE_CATEGORIES } from '@/domain/types';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@/domain/types';
 import { SEED_ACCOUNTS, SEED_TRANSACTIONS } from '@/domain/seed';
 import { DEFAULT_ACCENT } from '@/theme/tokens';
 
@@ -21,6 +21,7 @@ const DEFAULT_SETTINGS: Settings = {
   lastAccountId: null,
   lastCategory: null,
   categories: [...EXPENSE_CATEGORIES],
+  incomeCategories: [...INCOME_CATEGORIES],
 };
 
 interface PersistedShape {
@@ -44,6 +45,7 @@ interface AppState extends PersistedShape {
   addCategory: (name: string) => void;
   renameCategory: (oldName: string, newName: string) => void;
   deleteCategory: (name: string) => void;
+  addIncomeCategory: (name: string) => void;
   resetAllData: () => void;
   startPeek: () => void;
   cancelPeek: () => void;
@@ -155,6 +157,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   // deleting one still in use would leave those transactions' category dangling.
   deleteCategory: (name) => {
     set((s) => ({ settings: { ...s.settings, categories: s.settings.categories.filter((c) => c !== name) } }));
+    schedulePersist(get);
+  },
+
+  // Mirrors addCategory for income — used when someone types a name under
+  // "Other" on an income entry, so it becomes a normal pickable chip after.
+  addIncomeCategory: (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    set((s) => (s.settings.incomeCategories.some((c) => c.toLowerCase() === trimmed.toLowerCase()) ? s : { settings: { ...s.settings, incomeCategories: [...s.settings.incomeCategories, trimmed] } }));
     schedulePersist(get);
   },
 

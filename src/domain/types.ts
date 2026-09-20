@@ -61,6 +61,8 @@ export interface Settings {
   lastCategory: string | null;
   /** User-editable expense categories — seeded from EXPENSE_CATEGORIES, renamed/added/removed via the Categories screen. */
   categories: string[];
+  /** User-editable income categories — seeded from INCOME_CATEGORIES, grows when someone types a new one under "Other". */
+  incomeCategories: string[];
 }
 
 export const EXPENSE_CATEGORIES = [

@@ -11,7 +11,7 @@ import { ScreenBackground } from '@/components/Screen';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
-import { INCOME_CATEGORIES, type TransactionType } from '@/domain/types';
+import type { TransactionType } from '@/domain/types';
 import { budgetStatus, liquid, outstandingFor, spent } from '@/domain/money';
 import { echoLine, SAVE_TOAST_LABEL } from '@/domain/echo';
 import { formatAmount } from '@/domain/format';
@@ -56,6 +56,8 @@ export default function EntryForm() {
   const addTransaction = useAppStore((s) => s.addTransaction);
   const updateTransaction = useAppStore((s) => s.updateTransaction);
   const updateSettings = useAppStore((s) => s.updateSettings);
+  const addCategory = useAppStore((s) => s.addCategory);
+  const addIncomeCategory = useAppStore((s) => s.addIncomeCategory);
 
   const editing = editId ? transactions.find((t) => t.id === editId) : undefined;
   // Live previews (budget left, outstanding-to-them, total available) must not
@@ -84,6 +86,10 @@ export default function EntryForm() {
   const [person, setPerson] = useState(!typeChanged && editing?.person ? editing.person : decodedPersonParam ?? knownPeople[0] ?? '');
   const [newPersonName, setNewPersonName] = useState('');
   const [note, setNote] = useState(editing?.note ?? '');
+  // "Other" opens an inline field instead of silently filing the transaction
+  // under the literal word "Other" — a typed name is remembered as a real
+  // category, but leaving it blank still saves fine as "Other".
+  const [customCategory, setCustomCategory] = useState('');
   const [date, setDate] = useState(editing ? new Date(editing.at) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -120,7 +126,7 @@ export default function EntryForm() {
   const needsCategory = NEEDS_CATEGORY.includes(type);
   const needsPerson = NEEDS_PERSON.includes(type);
   const needsDest = type === 'transfer';
-  const categories = type === 'income' ? INCOME_CATEGORIES : settings.categories;
+  const categories = type === 'income' ? settings.incomeCategories : settings.categories;
 
   const numericAmount = parseFloat(amount) || 0;
   // A typed name that only differs from an existing person by case or spacing
@@ -129,6 +135,13 @@ export default function EntryForm() {
   const typedPerson = newPersonName.trim();
   const matchedPerson = typedPerson ? knownPeople.find((p) => p.toLowerCase() === typedPerson.toLowerCase()) : undefined;
   const effectivePerson = needsPerson ? matchedPerson ?? (typedPerson || person) : '';
+
+  // Same idea for "Other": a typed name that matches an existing category by
+  // case reuses it instead of creating a near-duplicate; an empty field just
+  // keeps the transaction filed under the literal "Other".
+  const typedCategory = customCategory.trim();
+  const matchedCategory = typedCategory ? categories.find((c) => c.toLowerCase() === typedCategory.toLowerCase()) : undefined;
+  const effectiveCategory = category === 'Other' ? matchedCategory ?? (typedCategory || 'Other') : category;
 
   const accountName = accounts.find((a) => a.id === account)?.name ?? '';
   const toAccountName = accounts.find((a) => a.id === toAccount)?.name ?? '';
@@ -149,7 +162,7 @@ export default function EntryForm() {
         symbol: settings.currencySymbol,
         accountName,
         toAccountName,
-        category,
+        category: effectiveCategory,
         person: effectivePerson,
         budgetTotal: settings.monthlyBudget,
         spentSoFar: spent(calcTransactions, settings.countLentAsSpending),
@@ -170,10 +183,17 @@ export default function EntryForm() {
       return;
     }
     setSaving(true);
+    // A typed "Other" name that isn't already a known category gets saved as
+    // one, so it shows up as a normal chip the next time instead of having
+    // to be retyped under "Other" every time.
+    if (needsCategory && category === 'Other' && typedCategory && !matchedCategory) {
+      if (type === 'income') addIncomeCategory(typedCategory);
+      else addCategory(typedCategory);
+    }
     const patch = {
       type,
       amount: numericAmount,
-      category: needsCategory ? category : undefined,
+      category: needsCategory ? effectiveCategory : undefined,
       account,
       toAccount: needsDest ? toAccount : undefined,
       person: needsPerson ? effectivePerson : undefined,
@@ -187,7 +207,7 @@ export default function EntryForm() {
     }
     updateSettings({
       lastAccountId: account,
-      ...(type === 'expense' ? { lastCategory: category } : {}),
+      ...(type === 'expense' ? { lastCategory: effectiveCategory } : {}),
     });
     toast(editing ? 'Transaction updated · everything recalculated' : `${SAVE_TOAST_LABEL[type]} · balances and budget updated`);
     goBack();
@@ -212,9 +232,26 @@ export default function EntryForm() {
             <Section label="Category">
               <ChipRow>
                 {categories.map((c) => (
-                  <Chip key={c} label={c} active={category === c} onPress={() => setCategory(c)} />
+                  <Chip
+                    key={c}
+                    label={c}
+                    active={category === c}
+                    onPress={() => {
+                      setCategory(c);
+                      if (c !== 'Other') setCustomCategory('');
+                    }}
+                  />
                 ))}
               </ChipRow>
+              {category === 'Other' ? (
+                <TextInput
+                  value={customCategory}
+                  onChangeText={setCustomCategory}
+                  placeholder="Name this category — optional, stays as Other if blank"
+                  placeholderTextColor={theme.ink3}
+                  style={{ marginTop: 10, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 12, color: theme.ink, fontSize: 13.5 }}
+                />
+              ) : null}
             </Section>
           ) : null}
 
