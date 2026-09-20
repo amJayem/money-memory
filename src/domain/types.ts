@@ -63,6 +63,10 @@ export interface Settings {
   categories: string[];
   /** User-editable income categories — seeded from INCOME_CATEGORIES, grows when someone types a new one under "Other". */
   incomeCategories: string[];
+  /** Daily "record today's spending" local notification — off by default, time is user-chosen. */
+  reminderEnabled: boolean;
+  reminderHour: number;
+  reminderMinute: number;
 }
 
 export const EXPENSE_CATEGORIES = [

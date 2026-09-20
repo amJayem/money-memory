@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Platform, Pressable, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/AppText';
 import { IconButton } from '@/components/IconButton';
@@ -14,6 +15,13 @@ import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
 import { ACCENT_THEMES, type AccentTheme } from '@/theme/tokens';
 import type { PrivacyScope } from '@/domain/types';
+import { syncDailyReminder } from '@/notifications/dailyReminder';
+
+function formatTime(hour: number, minute: number): string {
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const h12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${h12}:${String(minute).padStart(2, '0')} ${period}`;
+}
 
 export default function SettingsScreen() {
   const theme = useTheme();
@@ -29,6 +37,7 @@ export default function SettingsScreen() {
   const [accentModal, setAccentModal] = useState(false);
   const [privacyScopeModal, setPrivacyScopeModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showReminderTime, setShowReminderTime] = useState(false);
 
   const isDark = theme.mode === 'dark';
   const monthLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -36,6 +45,23 @@ export default function SettingsScreen() {
   function commitCurrency(v: string) {
     setCurrency(v);
     updateSettings({ currencySymbol: v.trim() || '৳' });
+  }
+
+  async function setReminderEnabled(enabled: boolean) {
+    const ok = await syncDailyReminder(enabled, settings.reminderHour, settings.reminderMinute);
+    if (enabled && !ok) {
+      toast(Platform.OS === 'web' ? 'Reminders need a real device build — not available in this web preview' : 'Notifications are blocked — allow them for Money Memory in your phone settings');
+      return;
+    }
+    updateSettings({ reminderEnabled: enabled });
+  }
+
+  async function setReminderTime(date: Date) {
+    setShowReminderTime(Platform.OS === 'ios');
+    const hour = date.getHours();
+    const minute = date.getMinutes();
+    updateSettings({ reminderHour: hour, reminderMinute: minute });
+    if (settings.reminderEnabled) await syncDailyReminder(true, hour, minute);
   }
 
   return (
@@ -101,6 +127,15 @@ export default function SettingsScreen() {
           value={settings.budgetAlerts}
           onValueChange={(v) => updateSettings({ budgetAlerts: v })}
         />
+        <SwitchRow
+          label="Daily reminder"
+          sub={settings.reminderEnabled ? `Every day at ${formatTime(settings.reminderHour, settings.reminderMinute)}` : 'Off — nudges you to log today’s spending'}
+          value={settings.reminderEnabled}
+          onValueChange={setReminderEnabled}
+        />
+        {settings.reminderEnabled ? (
+          <SelectRow label="Reminder time" sub="Tap to change when it fires" value={formatTime(settings.reminderHour, settings.reminderMinute)} onPress={() => setShowReminderTime(true)} />
+        ) : null}
         <LinkRow label="Categories" sub={`${settings.categories.length} categories · rename or add`} onPress={() => router.push('/categories')} />
         <LinkRow label="Accounts" sub={`${accounts.length} accounts`} onPress={() => router.push('/accounts')} />
         <LinkRow label="Backup & export" sub="CSV or full backup file, saved by you" onPress={() => toast(`Backup file prepared · ${transactions.length} transactions`)} last />
@@ -117,6 +152,17 @@ export default function SettingsScreen() {
       </View>
 
       <GhostButton label="Delete all data" tone="neg" fullWidth onPress={() => setConfirmDelete(true)} />
+
+      {showReminderTime ? (
+        <DateTimePicker
+          value={new Date(2000, 0, 1, settings.reminderHour, settings.reminderMinute)}
+          mode="time"
+          onChange={(_, selected) => {
+            if (selected) setReminderTime(selected);
+            else setShowReminderTime(false);
+          }}
+        />
+      ) : null}
 
       <SelectModal
         visible={accentModal}

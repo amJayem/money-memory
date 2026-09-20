@@ -17,6 +17,7 @@ import { useAppStore } from '@/store/appStore';
 import { OnboardingFlow } from '@/screens/onboarding/OnboardingFlow';
 import { ToastHost } from '@/components/ToastHost';
 import { CustomTabBar } from '@/components/CustomTabBar';
+import { useDailyReminderSync } from '@/hooks/useDailyReminderSync';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -39,6 +40,7 @@ function ThemedStack() {
 
 function AppShell() {
   const hasOnboarded = useAppStore((s) => s.settings.hasOnboarded);
+  useDailyReminderSync();
   if (!hasOnboarded) return <OnboardingFlow />;
   return (
     <>

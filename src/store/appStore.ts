@@ -22,6 +22,9 @@ const DEFAULT_SETTINGS: Settings = {
   lastCategory: null,
   categories: [...EXPENSE_CATEGORIES],
   incomeCategories: [...INCOME_CATEGORIES],
+  reminderEnabled: false,
+  reminderHour: 9,
+  reminderMinute: 0,
 };
 
 interface PersistedShape {
