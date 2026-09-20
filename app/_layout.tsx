@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useFonts } from 'expo-font';
+import { StatusBar } from 'expo-status-bar';
 // Imported from each weight's own subpath (not the package root) so Metro
 // only bundles the 6 font files we actually use, not all ~22 weights the
 // packages ship — the root index re-exports every weight unconditionally.
@@ -39,11 +40,21 @@ function ThemedStack() {
 }
 
 function AppShell() {
+  const theme = useTheme();
   const hasOnboarded = useAppStore((s) => s.settings.hasOnboarded);
   useDailyReminderSync();
-  if (!hasOnboarded) return <OnboardingFlow />;
+  const statusBar = <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />;
+  if (!hasOnboarded) {
+    return (
+      <>
+        {statusBar}
+        <OnboardingFlow />
+      </>
+    );
+  }
   return (
     <>
+      {statusBar}
       <ThemedStack />
       <CustomTabBar />
     </>

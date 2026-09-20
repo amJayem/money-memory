@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Platform, Pressable, TextInput, View } from 'react-native';
+import { Modal, Platform, Pressable, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Screen } from '@/components/Screen';
@@ -14,8 +15,10 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
 import { ACCENT_THEMES, type AccentTheme } from '@/theme/tokens';
-import type { PrivacyScope } from '@/domain/types';
+import type { Appearance, PrivacyScope } from '@/domain/types';
 import { syncDailyReminder } from '@/notifications/dailyReminder';
+
+const APPEARANCE_LABELS: Record<Appearance, string> = { light: 'Light', dark: 'Night', system: 'System' };
 
 function formatTime(hour: number, minute: number): string {
   const period = hour >= 12 ? 'PM' : 'AM';
@@ -35,11 +38,12 @@ export default function SettingsScreen() {
 
   const [currency, setCurrency] = useState(settings.currencySymbol);
   const [accentModal, setAccentModal] = useState(false);
+  const [appearanceModal, setAppearanceModal] = useState(false);
   const [privacyScopeModal, setPrivacyScopeModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showReminderTime, setShowReminderTime] = useState(false);
+  const [pendingReminderTime, setPendingReminderTime] = useState(() => new Date(2000, 0, 1, settings.reminderHour, settings.reminderMinute));
 
-  const isDark = theme.mode === 'dark';
   const monthLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   function commitCurrency(v: string) {
@@ -56,8 +60,7 @@ export default function SettingsScreen() {
     updateSettings({ reminderEnabled: enabled });
   }
 
-  async function setReminderTime(date: Date) {
-    setShowReminderTime(Platform.OS === 'ios');
+  async function commitReminderTime(date: Date) {
     const hour = date.getHours();
     const minute = date.getMinutes();
     updateSettings({ reminderHour: hour, reminderMinute: minute });
@@ -97,11 +100,11 @@ export default function SettingsScreen() {
           value={ACCENT_THEMES[settings.accentTheme].label}
           onPress={() => setAccentModal(true)}
         />
-        <SwitchRow
-          label="Dark appearance"
-          sub={isDark ? 'Dark — easier at night' : 'Light — easier in daylight'}
-          value={isDark}
-          onValueChange={(v) => updateSettings({ appearance: v ? 'dark' : 'light' })}
+        <SelectRow
+          label="Appearance"
+          sub={settings.appearance === 'system' ? 'Follows your phone’s setting' : APPEARANCE_LABELS[settings.appearance]}
+          value={APPEARANCE_LABELS[settings.appearance]}
+          onPress={() => setAppearanceModal(true)}
         />
         <SwitchRow
           label="Privacy mode"
@@ -134,7 +137,15 @@ export default function SettingsScreen() {
           onValueChange={setReminderEnabled}
         />
         {settings.reminderEnabled ? (
-          <SelectRow label="Reminder time" sub="Tap to change when it fires" value={formatTime(settings.reminderHour, settings.reminderMinute)} onPress={() => setShowReminderTime(true)} />
+          <SelectRow
+            label="Reminder time"
+            sub="Tap to change when it fires"
+            value={formatTime(settings.reminderHour, settings.reminderMinute)}
+            onPress={() => {
+              setPendingReminderTime(new Date(2000, 0, 1, settings.reminderHour, settings.reminderMinute));
+              setShowReminderTime(true);
+            }}
+          />
         ) : null}
         <LinkRow label="Categories" sub={`${settings.categories.length} categories · rename or add`} onPress={() => router.push('/categories')} />
         <LinkRow label="Accounts" sub={`${accounts.length} accounts`} onPress={() => router.push('/accounts')} />
@@ -153,16 +164,46 @@ export default function SettingsScreen() {
 
       <GhostButton label="Delete all data" tone="neg" fullWidth onPress={() => setConfirmDelete(true)} />
 
-      {showReminderTime ? (
-        <DateTimePicker
-          value={new Date(2000, 0, 1, settings.reminderHour, settings.reminderMinute)}
-          mode="time"
-          onChange={(_, selected) => {
-            if (selected) setReminderTime(selected);
-            else setShowReminderTime(false);
-          }}
-        />
-      ) : null}
+      <Modal visible={showReminderTime} transparent animationType="fade" onRequestClose={() => setShowReminderTime(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(10,10,12,0.45)', justifyContent: 'flex-end' }} onPress={() => setShowReminderTime(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View style={{ backgroundColor: theme.solid, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderColor: theme.line }}>
+              <SafeAreaView edges={['bottom']}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14 }}>
+                  <Pressable onPress={() => setShowReminderTime(false)} hitSlop={8}>
+                    <AppText variant="body" color={theme.ink3}>
+                      Cancel
+                    </AppText>
+                  </Pressable>
+                  <AppText variant="body" weight="manrope700">
+                    Reminder time
+                  </AppText>
+                  <Pressable
+                    onPress={() => {
+                      setShowReminderTime(false);
+                      commitReminderTime(pendingReminderTime);
+                    }}
+                    hitSlop={8}
+                  >
+                    <AppText variant="body" weight="manrope700" color={theme.accentColor}>
+                      Done
+                    </AppText>
+                  </Pressable>
+                </View>
+                <DateTimePicker
+                  value={pendingReminderTime}
+                  mode="time"
+                  display="spinner"
+                  themeVariant={theme.mode}
+                  onChange={(_, selected) => {
+                    if (selected) setPendingReminderTime(selected);
+                  }}
+                />
+              </SafeAreaView>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <SelectModal
         visible={accentModal}
@@ -171,6 +212,18 @@ export default function SettingsScreen() {
         options={(Object.keys(ACCENT_THEMES) as AccentTheme[]).map((k) => ({ value: k, label: ACCENT_THEMES[k].label }))}
         onSelect={(v) => updateSettings({ accentTheme: v as AccentTheme })}
         onClose={() => setAccentModal(false)}
+      />
+      <SelectModal
+        visible={appearanceModal}
+        title="Appearance"
+        value={settings.appearance}
+        options={[
+          { value: 'light', label: 'Light' },
+          { value: 'dark', label: 'Night' },
+          { value: 'system', label: 'System' },
+        ]}
+        onSelect={(v) => updateSettings({ appearance: v as Appearance })}
+        onClose={() => setAppearanceModal(false)}
       />
       <SelectModal
         visible={privacyScopeModal}
