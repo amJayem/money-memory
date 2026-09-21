@@ -17,6 +17,7 @@ import { useToastStore } from '@/store/toastStore';
 import { ACCENT_THEMES, type AccentTheme } from '@/theme/tokens';
 import type { Appearance, PrivacyScope } from '@/domain/types';
 import { syncDailyReminder } from '@/notifications/dailyReminder';
+import { exportTransactionsCsv } from '@/export/exportTransactions';
 
 const APPEARANCE_LABELS: Record<Appearance, string> = { light: 'Light', dark: 'Night', system: 'System' };
 
@@ -42,6 +43,7 @@ export default function SettingsScreen() {
   const [privacyScopeModal, setPrivacyScopeModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showReminderTime, setShowReminderTime] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
   const [pendingReminderTime, setPendingReminderTime] = useState(() => new Date(2000, 0, 1, settings.reminderHour, settings.reminderMinute));
 
   const monthLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -58,6 +60,23 @@ export default function SettingsScreen() {
       return;
     }
     updateSettings({ reminderEnabled: enabled });
+  }
+
+  async function exportCsv() {
+    if (exportingCsv) return;
+    if (transactions.length === 0) {
+      toast('Nothing to export yet');
+      return;
+    }
+    setExportingCsv(true);
+    try {
+      const ok = await exportTransactionsCsv(transactions, accounts, settings.currencySymbol);
+      if (!ok) toast('No way to share files on this device');
+    } catch {
+      toast('Export failed — try again');
+    } finally {
+      setExportingCsv(false);
+    }
   }
 
   async function commitReminderTime(date: Date) {
@@ -149,7 +168,12 @@ export default function SettingsScreen() {
         ) : null}
         <LinkRow label="Categories" sub={`${settings.categories.length} categories · rename or add`} onPress={() => router.push('/categories')} />
         <LinkRow label="Accounts" sub={`${accounts.length} accounts`} onPress={() => router.push('/accounts')} />
-        <LinkRow label="Backup & export" sub="CSV or full backup file, saved by you" onPress={() => toast(`Backup file prepared · ${transactions.length} transactions`)} last />
+        <LinkRow
+          label="Export CSV"
+          sub={exportingCsv ? 'Preparing file…' : `${transactions.length} transactions · saved by you`}
+          onPress={exportCsv}
+          last
+        />
         <LinkRow label="Monthly summary" sub={monthLabel} onPress={() => router.push('/report')} last />
       </GlassCard>
 
