@@ -120,12 +120,26 @@ function ClassicBar({ translateY, pathname, router, insets }: BarProps) {
   );
 }
 
+// A flat (non-gradient) translucent tint for the Android/no-real-blur path.
+// GlassCard's fix showed the artifact came from a translucent *gradient*
+// behind text (Android's renderer samples one assumed backdrop color and
+// the two gradient stops disagree with it); a single flat color has no such
+// disagreement, so it's safe to keep this one translucent for the frosted
+// look without reintroducing that bug.
+function pillTint(mode: 'light' | 'dark'): string {
+  return mode === 'dark' ? 'rgba(17,26,49,0.82)' : 'rgba(255,255,255,0.82)';
+}
+
 /**
  * A rounded, inset "pill" bar — icons only, the active one sitting inside a
- * filled circular highlight, floating above the safe-area edge with side
- * margins instead of running edge-to-edge. Kept fully opaque (theme.solid)
- * rather than a translucent glass fill: see GlassCard for why a translucent
- * background behind text/icons is avoided app-wide on Android.
+ * filled rounded-square highlight, floating above the safe-area edge with
+ * side margins instead of running edge-to-edge.
+ *
+ * True frosted blur (iOS's real, hardware-backed blur) is used where it's
+ * safe. On Android, expo-blur's only real blur mode ('dimezisBlurView')
+ * previously crashed the render thread during screen transitions — see
+ * GlassCard — so Android instead gets a flat translucent tint: it reads as
+ * "glassy" without the risk.
  */
 function FloatingBar({ translateY, pathname, router, insets }: BarProps) {
   const theme = useTheme();
@@ -144,23 +158,29 @@ function FloatingBar({ translateY, pathname, router, insets }: BarProps) {
   }
 
   return (
-    <Animated.View style={[styles.wrap, { bottom: insets.bottom + 14, transform: [{ translateY }] }]} pointerEvents="box-none">
+    <Animated.View style={[styles.wrap, { bottom: insets.bottom + 18, transform: [{ translateY }] }]} pointerEvents="box-none">
       <View
         style={[
-          styles.floatingPill,
+          styles.floatingPillShadow,
           {
-            backgroundColor: theme.solid,
-            borderColor: theme.line,
             shadowColor: theme.lift.shadowColor,
             shadowOpacity: theme.lift.shadowOpacity,
             shadowRadius: theme.lift.shadowRadius,
             shadowOffset: theme.lift.shadowOffset,
+            elevation: 6,
           },
         ]}
       >
-        {left.map(renderTab)}
-        <View style={styles.fabGap} />
-        {right.map(renderTab)}
+        <View style={[styles.floatingPill, { borderColor: theme.line }]}>
+          {Platform.OS === 'ios' ? (
+            <BlurView intensity={60} tint={theme.mode} style={StyleSheet.absoluteFill} />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: pillTint(theme.mode) }]} />
+          )}
+          {left.map(renderTab)}
+          <View style={styles.fabGap} />
+          {right.map(renderTab)}
+        </View>
       </View>
       <Pressable onPress={() => router.push('/sheet')} style={[styles.floatingFab, { backgroundColor: theme.accentColor, shadowColor: theme.lift.shadowColor }]}>
         <AppText color="#fff" style={{ fontSize: 26, marginTop: -2 }}>
@@ -211,15 +231,18 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
+  floatingPillShadow: {
+    width: '86%',
+    borderRadius: 39,
+  },
   floatingPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '86%',
-    height: 64,
-    borderRadius: 32,
+    height: 78,
+    borderRadius: 39,
     borderWidth: 1,
     paddingHorizontal: 10,
-    elevation: 6,
+    overflow: 'hidden',
   },
   floatingTab: {
     flex: 1,
@@ -228,9 +251,9 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   floatingTabHighlight: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 46,
+    height: 46,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
