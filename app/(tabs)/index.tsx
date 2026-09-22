@@ -104,7 +104,8 @@ export default function HomeScreen() {
         >
           <Pressable onPress={() => router.push('/accounts')}>
             <WalletCard
-              kicker="Ledger"
+              kicker="Overview"
+              simple
               name="Total available"
               digits="•••• ALL"
               holderLabel="All accounts"
@@ -134,6 +135,7 @@ export default function HomeScreen() {
               <Pressable key={a.id} onPress={() => router.push(`/accounts/add?editId=${a.id}`)}>
                 <WalletCard
                   kicker={credit ? 'Credit card · borrowed' : ACCOUNT_TYPE_LABEL[a.type]}
+                  simple={a.type === 'cash'}
                   name={a.name}
                   digits={digitsFor(a.id)}
                   holderLabel="Account holder"

@@ -20,6 +20,8 @@ interface Props {
   eyeGlyph?: string;
   hasMeter?: boolean;
   pctUsed?: number;
+  /** Drops the bank-card hardware (chip, NFC wave, masked digits) — for cards that aren't real physical cards, like the all-accounts total or a cash wallet. */
+  simple?: boolean;
 }
 
 /**
@@ -27,7 +29,7 @@ interface Props {
  * physical bank card you swipe, never another glass panel: gold chip, NFC
  * wave, masked digits, cardholder row, with a diagonal shine sweep.
  */
-export function WalletCard({ kicker, name, amount, sub, digits, holderLabel, palette, isTotal, onEyePress, eyeGlyph, hasMeter, pctUsed }: Props) {
+export function WalletCard({ kicker, name, amount, sub, digits, holderLabel, palette, isTotal, onEyePress, eyeGlyph, hasMeter, pctUsed, simple }: Props) {
   const sweep = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -57,37 +59,35 @@ export function WalletCard({ kicker, name, amount, sub, digits, holderLabel, pal
       </Animated.View>
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <AppText color="#fff" weight="manrope800" style={{ fontSize: 15, letterSpacing: 2.1 }}>
-            LEDGER
-          </AppText>
+          <View style={styles.kickerPill}>
+            <AppText variant="label" color="#fff" style={{ letterSpacing: 1 }}>
+              {kicker}
+            </AppText>
+          </View>
           {isTotal ? (
             <Pressable onPress={onEyePress} style={styles.eyeBtn}>
               <AppText color="#fff">{eyeGlyph ?? '◉'}</AppText>
             </Pressable>
-          ) : (
-            <View style={styles.kickerPill}>
-              <AppText variant="label" color="#fff" style={{ letterSpacing: 1 }}>
-                {kicker}
-              </AppText>
-            </View>
-          )}
+          ) : null}
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, marginTop: 13 }}>
-          <View style={styles.chip}>
-            <View style={styles.chipBar} />
-            <View style={styles.chipBar} />
-            <View style={styles.chipBar} />
+        {simple ? null : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, marginTop: 13 }}>
+            <View style={styles.chip}>
+              <View style={styles.chipBar} />
+              <View style={styles.chipBar} />
+              <View style={styles.chipBar} />
+            </View>
+            <View style={styles.wave}>
+              <View style={[styles.waveArc, { width: 6, height: 6, top: 5.5, opacity: 0.9 }]} />
+              <View style={[styles.waveArc, { width: 11, height: 11, top: 3, opacity: 0.7 }]} />
+              <View style={[styles.waveArc, { width: 16, height: 16, top: 0.5, opacity: 0.48 }]} />
+            </View>
+            <AppText color="#fff" weight="manrope600" style={{ fontSize: 13.5, letterSpacing: 1.8 }}>
+              {digits}
+            </AppText>
           </View>
-          <View style={styles.wave}>
-            <View style={[styles.waveArc, { width: 6, height: 6, top: 5.5, opacity: 0.9 }]} />
-            <View style={[styles.waveArc, { width: 11, height: 11, top: 3, opacity: 0.7 }]} />
-            <View style={[styles.waveArc, { width: 16, height: 16, top: 0.5, opacity: 0.48 }]} />
-          </View>
-          <AppText color="#fff" weight="manrope600" style={{ fontSize: 13.5, letterSpacing: 1.8 }}>
-            {digits}
-          </AppText>
-        </View>
+        )}
 
         <View style={{ flex: 1 }} />
 
