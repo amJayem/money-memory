@@ -91,7 +91,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <Screen bottomInset={200}>
+    <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
         <IconButton glyph="←" onPress={() => router.back()} />
         <AppText variant="title">Settings</AppText>
