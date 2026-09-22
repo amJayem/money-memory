@@ -132,8 +132,8 @@ function pillTint(mode: 'light' | 'dark'): string {
 
 /**
  * A rounded, inset "pill" bar — icons only, the active one sitting inside a
- * filled rounded-square highlight, floating above the safe-area edge with
- * side margins instead of running edge-to-edge.
+ * solid filled circle (accent color, white glyph), floating above the
+ * safe-area edge with side margins instead of running edge-to-edge.
  *
  * True frosted blur (iOS's real, hardware-backed blur) is used where it's
  * safe. On Android, expo-blur's only real blur mode ('dimezisBlurView')
@@ -150,8 +150,8 @@ function FloatingBar({ translateY, pathname, router, insets }: BarProps) {
     const focused = pathname === tab.path;
     return (
       <Pressable key={tab.name} onPress={() => router.navigate(tab.path)} style={styles.floatingTab}>
-        <View style={[styles.floatingTabHighlight, focused ? { backgroundColor: theme.toneBg('accent') } : null]}>
-          <AppText style={{ fontSize: 19, color: focused ? theme.accentColor : theme.ink3 }}>{tab.glyph}</AppText>
+        <View style={[styles.floatingTabHighlight, focused ? { backgroundColor: theme.accentColor } : null]}>
+          <AppText style={{ fontSize: 19, color: focused ? '#fff' : theme.ink3 }}>{tab.glyph}</AppText>
         </View>
       </Pressable>
     );
@@ -164,14 +164,14 @@ function FloatingBar({ translateY, pathname, router, insets }: BarProps) {
           styles.floatingPillShadow,
           {
             shadowColor: theme.lift.shadowColor,
-            shadowOpacity: theme.lift.shadowOpacity,
-            shadowRadius: theme.lift.shadowRadius,
+            shadowOpacity: theme.lift.shadowOpacity * 1.6,
+            shadowRadius: theme.lift.shadowRadius * 0.8,
             shadowOffset: theme.lift.shadowOffset,
-            elevation: 6,
+            elevation: 10,
           },
         ]}
       >
-        <View style={[styles.floatingPill, { borderColor: theme.line }]}>
+        <View style={[styles.floatingPill, { borderColor: theme.lineStrong }]}>
           {Platform.OS === 'ios' ? (
             <BlurView intensity={60} tint={theme.mode} style={StyleSheet.absoluteFill} />
           ) : (
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   floatingTabHighlight: {
     width: 46,
     height: 46,
-    borderRadius: 16,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     top: -22,
     width: 58,
     height: 58,
-    borderRadius: 29,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     shadowOpacity: 0.3,
