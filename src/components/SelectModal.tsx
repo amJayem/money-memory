@@ -38,7 +38,16 @@ export function SelectModal({ visible, title, options, value, onSelect, onClose 
                       onSelect(o.value);
                       onClose();
                     }}
-                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: MIN_TAP_TARGET, paddingHorizontal: 6 }}
+                    android_ripple={{ color: theme.line }}
+                    style={({ pressed }) => ({
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      minHeight: MIN_TAP_TARGET,
+                      paddingHorizontal: 10,
+                      borderRadius: 12,
+                      backgroundColor: pressed ? theme.surface2 : 'transparent',
+                    })}
                   >
                     <AppText variant="body">{o.label}</AppText>
                     {value === o.value ? <AppText color={theme.accentColor}>✓</AppText> : null}

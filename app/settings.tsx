@@ -341,7 +341,7 @@ function Row({ label, sub, last, children }: { label: string; sub?: string; last
 function NavRow({ label, sub, trailing, onPress, last }: { label: string; sub: string; trailing?: string; onPress: () => void; last?: boolean }) {
   const theme = useTheme();
   return (
-    <Pressable onPress={onPress}>
+    <Pressable onPress={onPress} android_ripple={{ color: theme.line }} style={({ pressed }) => ({ backgroundColor: pressed && Platform.OS === 'ios' ? theme.surface2 : 'transparent' })}>
       <Row label={label} sub={sub} last={last}>
         {trailing ? (
           <AppText color={theme.ink3} style={{ fontSize: 11.5 }}>
@@ -362,17 +362,19 @@ function Dropdown({ value, onPress }: { value: string; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
-      style={{
+      android_ripple={{ color: theme.lineStrong }}
+      style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 5,
         height: 34,
         paddingHorizontal: 10,
         borderRadius: 12,
-        backgroundColor: theme.surface2,
+        backgroundColor: pressed && Platform.OS === 'ios' ? theme.lineStrong : theme.surface2,
         borderWidth: 1,
         borderColor: theme.line,
-      }}
+        overflow: 'hidden',
+      })}
     >
       <AppText weight="manrope700" style={{ fontSize: 11.5 }}>
         {value}
@@ -389,7 +391,12 @@ function AccentDots({ value, onPress }: { value: AccentTheme; onPress: () => voi
   const theme = useTheme();
   const keys = Object.keys(ACCENT_THEMES) as AccentTheme[];
   return (
-    <Pressable onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+    <Pressable
+      onPress={onPress}
+      android_ripple={{ color: theme.line, radius: 90 }}
+      hitSlop={8}
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, opacity: pressed && Platform.OS === 'ios' ? 0.6 : 1 })}
+    >
       {keys.map((k) => {
         const active = k === value;
         const size = active ? 18 : 14;
