@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/AppText';
 import { IconButton } from '@/components/IconButton';
@@ -199,8 +198,10 @@ export default function BudgetScreen() {
 function StepButton({ glyph, onPress }: { glyph: string; onPress: () => void }) {
   const theme = useTheme();
   return (
-    <Pressable onPress={onPress} style={{ width: 44, height: 44, borderRadius: 13, borderWidth: 1, borderColor: theme.lineStrong, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
-      <LinearGradient colors={theme.surfaceGradient as unknown as [string, string]} style={StyleSheet.absoluteFill} />
+    <Pressable
+      onPress={onPress}
+      style={{ width: 44, height: 44, borderRadius: 13, borderWidth: 1, borderColor: theme.lineStrong, backgroundColor: theme.solid, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}
+    >
       <AppText variant="heading">{glyph}</AppText>
     </Pressable>
   );

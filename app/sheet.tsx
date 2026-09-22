@@ -1,8 +1,6 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from '@/components/AppText';
@@ -48,17 +46,13 @@ export default function ActionSheet() {
             borderColor: theme.line,
             borderBottomWidth: 0,
             overflow: 'hidden',
+            backgroundColor: theme.solid,
             shadowColor: '#08080a',
             shadowOpacity: 0.28,
             shadowRadius: 50,
             shadowOffset: { width: 0, height: -18 },
           }}
         >
-          <BlurView intensity={70} tint={theme.mode} style={StyleSheet.absoluteFill} />
-          <LinearGradient
-            colors={theme.mode === 'dark' ? ['rgba(30,32,38,0.86)', 'rgba(18,19,23,0.94)'] : ['rgba(255,255,255,0.9)', 'rgba(252,250,246,0.96)']}
-            style={StyleSheet.absoluteFill}
-          />
           <SafeAreaView edges={['bottom']}>
             <View style={{ padding: 22, gap: 16 }}>
               <View style={{ alignItems: 'center' }}>

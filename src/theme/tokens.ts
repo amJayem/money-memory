@@ -66,7 +66,6 @@ export interface ThemeTokens {
   bg: string;
   bgGradient: [string, string, string];
   solid: string;
-  surfaceGradient: [string, string];
   surface2: string;
   line: string;
   lineStrong: string;
@@ -85,7 +84,6 @@ export function baseTokens(mode: ThemeMode): ThemeTokens {
       bg: '#080d1c',
       bgGradient: ['#131d3a', '#0a1128', '#060a17'],
       solid: '#111a31',
-      surfaceGradient: ['rgba(130,164,255,0.16)', 'rgba(120,150,255,0.05)'],
       surface2: 'rgba(140,170,255,0.11)',
       line: 'rgba(150,180,255,0.17)',
       lineStrong: 'rgba(160,190,255,0.32)',
@@ -101,7 +99,6 @@ export function baseTokens(mode: ThemeMode): ThemeTokens {
     bg: '#eaeef7',
     bgGradient: ['#f6f8fd', '#e9eef8', '#dfe6f4'],
     solid: '#ffffff',
-    surfaceGradient: ['rgba(255,255,255,0.88)', 'rgba(255,255,255,0.62)'],
     surface2: 'rgba(15,25,65,0.055)',
     line: 'rgba(255,255,255,0.9)',
     lineStrong: 'rgba(15,25,65,0.16)',

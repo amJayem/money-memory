@@ -1,7 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Pressable, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from './AppText';
 
@@ -39,6 +37,7 @@ export function Keypad({ value, onChange }: Props) {
               borderRadius: 15,
               borderWidth: 1,
               borderColor: theme.line,
+              backgroundColor: theme.solid,
               overflow: 'hidden',
               alignItems: 'center',
               justifyContent: 'center',
@@ -49,8 +48,6 @@ export function Keypad({ value, onChange }: Props) {
               elevation: 2,
             }}
           >
-            <BlurView intensity={40} tint={theme.mode} style={StyleSheet.absoluteFill} />
-            <LinearGradient colors={theme.surfaceGradient as unknown as [string, string]} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={StyleSheet.absoluteFill} />
             <AppText style={{ fontSize: 19, color: theme.ink }} weight="manrope600">
               {k}
             </AppText>

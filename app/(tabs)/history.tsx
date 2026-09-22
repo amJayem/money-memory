@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/AppText';
 import { IconButton } from '@/components/IconButton';
@@ -40,9 +38,7 @@ export default function HistoryScreen() {
         <GhostButton label="Calendar" onPress={() => router.push('/calendar')} />
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: theme.line, borderRadius: 16, paddingHorizontal: 13, minHeight: 46, overflow: 'hidden' }}>
-        <BlurView intensity={40} tint={theme.mode} style={StyleSheet.absoluteFill} />
-        <LinearGradient colors={theme.surfaceGradient as unknown as [string, string]} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={StyleSheet.absoluteFill} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.solid, borderRadius: 16, paddingHorizontal: 13, minHeight: 46, overflow: 'hidden' }}>
         <AppText color={theme.ink3}>⌕</AppText>
         <TextInput
           value={query}

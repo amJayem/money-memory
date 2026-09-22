@@ -1,7 +1,5 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from './AppText';
 import { MIN_TAP_TARGET } from '@/theme/tokens';
@@ -25,16 +23,20 @@ export function IconButton({ glyph, onPress, variant = 'surface' }: Props) {
       style={[
         styles.base,
         variant === 'surface'
-          ? { borderWidth: 1, borderColor: theme.line, overflow: 'hidden', shadowColor: theme.lift.shadowColor, shadowOpacity: theme.lift.shadowOpacity, shadowRadius: theme.lift.shadowRadius, shadowOffset: theme.lift.shadowOffset, elevation: 3 }
+          ? {
+              backgroundColor: theme.solid,
+              borderWidth: 1,
+              borderColor: theme.line,
+              overflow: 'hidden',
+              shadowColor: theme.lift.shadowColor,
+              shadowOpacity: theme.lift.shadowOpacity,
+              shadowRadius: theme.lift.shadowRadius,
+              shadowOffset: theme.lift.shadowOffset,
+              elevation: 3,
+            }
           : null,
       ]}
     >
-      {variant === 'surface' ? (
-        <>
-          <BlurView intensity={40} tint={theme.mode} style={StyleSheet.absoluteFill} />
-          <LinearGradient colors={theme.surfaceGradient as unknown as [string, string]} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={StyleSheet.absoluteFill} />
-        </>
-      ) : null}
       <View>
         <AppText variant="body" color={theme.ink2} style={{ fontSize: 16 }}>
           {glyph}
