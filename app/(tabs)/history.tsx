@@ -74,7 +74,7 @@ export default function HistoryScreen() {
       </View>
 
       {groups.length === 0 ? (
-        <View style={{ padding: 32, alignItems: 'center', gap: 8, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.lineStrong, borderRadius: 22 }}>
+        <View style={{ padding: 32, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 22 }}>
           <AppText variant="heading">{transactions.length === 0 ? 'No transactions yet' : 'Nothing matched that'}</AppText>
           <AppText variant="body2" style={{ textAlign: 'center' }}>
             {transactions.length === 0

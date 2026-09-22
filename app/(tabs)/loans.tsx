@@ -101,7 +101,7 @@ export default function LoansScreen() {
       </GlassCard>
 
       {filtered.length === 0 ? (
-        <View style={{ padding: 32, alignItems: 'center', gap: 8, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.lineStrong, borderRadius: 22 }}>
+        <View style={{ padding: 32, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 22 }}>
           <AppText variant="heading">{tab === 'lent' ? 'Nobody owes you yet' : "You haven't borrowed from anyone"}</AppText>
           <AppText variant="body2" style={{ textAlign: 'center' }}>
             {tab === 'lent' ? 'When you lend money to someone, they show up here.' : 'When you borrow money, it shows up here.'}

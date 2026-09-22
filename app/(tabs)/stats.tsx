@@ -50,7 +50,7 @@ export default function StatsScreen() {
       </View>
 
       {statTotal === 0 ? (
-        <View style={{ padding: 32, alignItems: 'center', gap: 8, borderWidth: 1, borderStyle: 'dashed', borderColor: theme.lineStrong, borderRadius: 22 }}>
+        <View style={{ padding: 32, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 22 }}>
           <AppText variant="heading">Not enough data yet</AppText>
           <AppText variant="body2" style={{ textAlign: 'center' }}>
             Record a few transactions and this fills in with where your money goes, how you pay and when you spend.
