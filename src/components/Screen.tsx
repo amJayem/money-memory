@@ -1,12 +1,10 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { StyleSheet, View, ScrollView, ScrollViewProps } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurTargetView } from 'expo-blur';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { SafeAreaView, SafeAreaViewProps, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { oklch } from '@/theme/oklch';
-import { BlurTargetContext } from './BlurTargetContext';
 import { FAB_CLEARANCE, TAB_BAR_CONTENT_HEIGHT } from './CustomTabBar';
 
 /** Design's `blob1`/`blob2`/`blob3`: three fixed circles, distinct per theme mode — position, size and color all differ, not just a light/dark recolor of the same two shapes. Cool blue/violet mesh, not warm. */
@@ -91,16 +89,13 @@ export function ScreenBackground({
   ...rest
 }: { children: React.ReactNode; blobs?: boolean } & SafeAreaViewProps) {
   const theme = useTheme();
-  const blurTargetRef = useRef<View>(null);
   return (
-    <BlurTargetView ref={blurTargetRef} style={{ flex: 1, backgroundColor: theme.bg }}>
-      <BlurTargetContext.Provider value={blurTargetRef}>
-        <Backdrop blobs={blobs} />
-        <SafeAreaView style={[{ flex: 1 }, style]} edges={edges} {...rest}>
-          {children}
-        </SafeAreaView>
-      </BlurTargetContext.Provider>
-    </BlurTargetView>
+    <View style={{ flex: 1, backgroundColor: theme.bg }}>
+      <Backdrop blobs={blobs} />
+      <SafeAreaView style={[{ flex: 1 }, style]} edges={edges} {...rest}>
+        {children}
+      </SafeAreaView>
+    </View>
   );
 }
 

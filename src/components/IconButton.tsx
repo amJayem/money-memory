@@ -5,7 +5,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from './AppText';
 import { MIN_TAP_TARGET } from '@/theme/tokens';
-import { useBlurTarget } from './BlurTargetContext';
 
 interface Props {
   glyph: string;
@@ -20,7 +19,6 @@ interface Props {
  */
 export function IconButton({ glyph, onPress, variant = 'surface' }: Props) {
   const theme = useTheme();
-  const blurTarget = useBlurTarget();
   return (
     <Pressable
       onPress={onPress}
@@ -33,7 +31,7 @@ export function IconButton({ glyph, onPress, variant = 'surface' }: Props) {
     >
       {variant === 'surface' ? (
         <>
-          <BlurView intensity={40} tint={theme.mode} blurMethod="dimezisBlurView" blurTarget={blurTarget ?? undefined} style={StyleSheet.absoluteFill} />
+          <BlurView intensity={40} tint={theme.mode} style={StyleSheet.absoluteFill} />
           <LinearGradient colors={theme.surfaceGradient as unknown as [string, string]} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={StyleSheet.absoluteFill} />
         </>
       ) : null}

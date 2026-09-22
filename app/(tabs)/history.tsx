@@ -13,7 +13,6 @@ import { TransactionRow } from '@/components/TransactionRow';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
-import { useBlurTarget } from '@/components/BlurTargetContext';
 import { groupByDay, matchesFilter, matchesQuery, transactionIcon, transactionSub, transactionTitle, type TxFilter } from '@/domain/search';
 
 const FILTERS: TxFilter[] = ['All', 'Money out', 'Money in', 'Transfers', 'Loans', 'Cash', 'Cards'];
@@ -21,7 +20,6 @@ const FILTERS: TxFilter[] = ['All', 'Money out', 'Money in', 'Transfers', 'Loans
 export default function HistoryScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const blurTarget = useBlurTarget();
   const { accounts, transactions, settings } = useLedger();
   const privacy = usePrivacy('transactions');
   const params = useLocalSearchParams<{ category?: string }>();
@@ -43,7 +41,7 @@ export default function HistoryScreen() {
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: theme.line, borderRadius: 16, paddingHorizontal: 13, minHeight: 46, overflow: 'hidden' }}>
-        <BlurView intensity={40} tint={theme.mode} blurMethod="dimezisBlurView" blurTarget={blurTarget ?? undefined} style={StyleSheet.absoluteFill} />
+        <BlurView intensity={40} tint={theme.mode} style={StyleSheet.absoluteFill} />
         <LinearGradient colors={theme.surfaceGradient as unknown as [string, string]} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={StyleSheet.absoluteFill} />
         <AppText color={theme.ink3}>⌕</AppText>
         <TextInput

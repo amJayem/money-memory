@@ -79,9 +79,8 @@ export function CustomTabBar() {
             <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.surface2 }]} />
           </>
         ) : (
-          // Native has no reliable backdrop-blur target for a bar mounted
-          // outside any screen's BlurTargetView, so it renders as a near-opaque
-          // solid fill instead — legible beats "glassy but see-through".
+          // Native blur (expo-blur's dimezisBlurView) is avoided app-wide — see
+          // GlassCard — so this renders as a near-opaque solid fill instead.
           <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.solid, opacity: theme.mode === 'dark' ? 0.96 : 0.98 }]} />
         )}
         <View style={[styles.row, { borderTopColor: theme.line, paddingBottom: 9 + insets.bottom }]}>
