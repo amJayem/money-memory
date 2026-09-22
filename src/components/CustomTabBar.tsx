@@ -136,10 +136,17 @@ function pillBorder(mode: 'light' | 'dark'): string {
   return mode === 'dark' ? 'rgba(150,180,255,0.4)' : 'rgba(70,100,240,0.22)';
 }
 
+// The active tab's own glass circle — a translucent accent tint plus a
+// faint matching border, not a solid fill. Flat rgba, not a gradient, for
+// the same reason as pillTint: safe from the text-line rendering artifact.
+function activeTabTint(mode: 'light' | 'dark'): string {
+  return mode === 'dark' ? 'rgba(120,150,255,0.24)' : 'rgba(70,100,240,0.14)';
+}
+
 /**
  * A rounded, inset "pill" bar — icons only, the active one sitting inside a
- * solid filled circle (theme.ink, deliberately not the FAB's accent color so
- * the two don't read as the same control), floating above the safe-area edge
+ * translucent accent-tinted glass circle (not the FAB's solid fill, so the
+ * two don't read as the same control), floating above the safe-area edge
  * with side margins instead of running edge-to-edge.
  *
  * True frosted blur (iOS's real, hardware-backed blur) is used where it's
@@ -169,17 +176,19 @@ function FloatingBar({ translateY, pathname, router, insets }: BarProps) {
             overflow: 'hidden',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: focused ? theme.ink : 'transparent',
+            backgroundColor: focused ? activeTabTint(theme.mode) : 'transparent',
+            borderWidth: focused ? 1 : 0,
+            borderColor: pillBorder(theme.mode),
           }}
         >
-          <AppText style={{ fontSize: 19, color: focused ? theme.solid : theme.ink3 }}>{tab.glyph}</AppText>
+          <AppText style={{ fontSize: 19, color: focused ? theme.accentColor : theme.ink3 }}>{tab.glyph}</AppText>
         </View>
       </Pressable>
     );
   }
 
   return (
-    <Animated.View style={[styles.wrap, { bottom: insets.bottom + 18, transform: [{ translateY }] }]} pointerEvents="box-none">
+    <Animated.View style={[styles.wrap, { bottom: insets.bottom + 4, transform: [{ translateY }] }]} pointerEvents="box-none">
       <View
         style={[
           styles.floatingPillShadow,
