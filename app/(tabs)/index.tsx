@@ -13,7 +13,7 @@ import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { useHideNavBarOnScroll } from '@/hooks/useHideNavBarOnScroll';
 import { useToastStore } from '@/store/toastStore';
-import { balance, budgetStatusLine, creditLeft, creditUsed } from '@/domain/money';
+import { balance, budgetStatusLine, creditLeft, creditUsed, peopleAgg } from '@/domain/money';
 import { formatAmount } from '@/domain/format';
 import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
 import { ACCOUNT_TYPE_LABEL } from '@/theme/tokens';
@@ -72,6 +72,9 @@ export default function HomeScreen() {
 
   const recent = sortedTransactions(transactions).slice(0, 6);
   const peopleOwing = new Set(transactions.filter((t) => t.type === 'lent').map((t) => t.person)).size;
+  const lentLedger = peopleAgg(transactions, 'lent');
+  const totalLentAll = lentLedger.reduce((s, p) => s + p.given, 0);
+  const totalRecoveredAll = lentLedger.reduce((s, p) => s + p.back, 0);
   const onHomeScroll = useHideNavBarOnScroll();
 
   return (
@@ -252,6 +255,11 @@ export default function HomeScreen() {
             <AppText variant="body2" style={{ marginTop: 4 }}>
               {peopleOwing} {peopleOwing === 1 ? 'person' : 'people'}
             </AppText>
+            {totalLentAll > 0 ? (
+              <AppText variant="mono" style={{ marginTop: 9, paddingTop: 9, borderTopWidth: 1, borderTopColor: theme.line }}>
+                Lent {privacy.fmt(totalLentAll)} · back {privacy.fmt(totalRecoveredAll)}
+              </AppText>
+            ) : null}
           </GlassCard>
         </Pressable>
         <View style={{ flex: 1 }}>
