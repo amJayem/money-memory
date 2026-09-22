@@ -265,7 +265,7 @@ export default function SettingsScreen() {
         visible={confirmDelete}
         title="Delete all data?"
         body="This clears every account, transaction and setting on this device. This can't be undone."
-        confirmLabel="Delete everything"
+        confirmLabel="Delete all"
         onCancel={() => setConfirmDelete(false)}
         onConfirm={() => {
           resetAllData();
