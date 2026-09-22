@@ -130,6 +130,12 @@ function pillTint(mode: 'light' | 'dark'): string {
   return mode === 'dark' ? 'rgba(17,26,49,0.82)' : 'rgba(255,255,255,0.82)';
 }
 
+// A subtle accent-blue-tinted ring rather than a neutral gray hairline —
+// closer to the cool, faintly-glowing edge in the reference design.
+function pillBorder(mode: 'light' | 'dark'): string {
+  return mode === 'dark' ? 'rgba(150,180,255,0.4)' : 'rgba(70,100,240,0.22)';
+}
+
 /**
  * A rounded, inset "pill" bar — icons only, the active one sitting inside a
  * solid filled circle (accent color, white glyph), floating above the
@@ -171,7 +177,7 @@ function FloatingBar({ translateY, pathname, router, insets }: BarProps) {
           },
         ]}
       >
-        <View style={[styles.floatingPill, { borderColor: theme.lineStrong }]}>
+        <View style={[styles.floatingPill, { borderColor: pillBorder(theme.mode) }]}>
           {Platform.OS === 'ios' ? (
             <BlurView intensity={60} tint={theme.mode} style={StyleSheet.absoluteFill} />
           ) : (
@@ -260,10 +266,10 @@ const styles = StyleSheet.create({
   floatingFab: {
     position: 'absolute',
     alignSelf: 'center',
-    top: -22,
+    top: -14,
     width: 58,
     height: 58,
-    borderRadius: 20,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     shadowOpacity: 0.3,
