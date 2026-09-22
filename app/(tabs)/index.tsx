@@ -242,7 +242,7 @@ export default function HomeScreen() {
         </GlassCard>
       </Pressable>
 
-      <View style={{ flexDirection: 'row', gap: 11 }}>
+      <View style={{ flexDirection: 'row', gap: 11, alignItems: 'flex-start' }}>
         <Pressable onPress={() => router.push('/loans')} style={{ flex: 1 }}>
           <GlassCard padding={15}>
             <AppText variant="label">You are owed</AppText>

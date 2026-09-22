@@ -22,10 +22,10 @@ export function ConfirmDialog({ visible, title, body, confirmLabel, onConfirm, o
           <AppText variant="heading">{title}</AppText>
           <AppText variant="body2">{body}</AppText>
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Pressable onPress={onCancel} style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable onPress={onCancel} style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, minHeight: 46, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' }}>
               <AppText variant="body">Keep it</AppText>
             </Pressable>
-            <Pressable onPress={onConfirm} style={{ flex: 1, backgroundColor: theme.tone('neg'), borderRadius: 14, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable onPress={onConfirm} style={{ flex: 1, backgroundColor: theme.tone('neg'), borderRadius: 14, minHeight: 46, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' }}>
               <AppText color="#fff" weight="manrope700">
                 {confirmLabel}
               </AppText>
