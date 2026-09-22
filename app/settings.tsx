@@ -14,7 +14,8 @@ import { GhostButton } from '@/components/GhostButton';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
-import { ACCENT_THEMES, type AccentTheme } from '@/theme/tokens';
+import { ACCENT_THEMES, ACCOUNT_TYPE_LABEL, type AccentTheme } from '@/theme/tokens';
+import { oklch } from '@/theme/oklch';
 import type { Appearance, NavStyle, PrivacyScope } from '@/domain/types';
 import { syncDailyReminder } from '@/notifications/dailyReminder';
 import { exportTransactionsCsv } from '@/export/exportTransactions';
@@ -49,6 +50,7 @@ export default function SettingsScreen() {
   const [pendingReminderTime, setPendingReminderTime] = useState(() => new Date(2000, 0, 1, settings.reminderHour, settings.reminderMinute));
 
   const monthLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const accountTypesSub = [...new Set(accounts.map((a) => ACCOUNT_TYPE_LABEL[a.type]?.split(' ')[0]).filter(Boolean))].join(', ') || 'None yet';
 
   function commitCurrency(v: string) {
     setCurrency(v);
@@ -89,101 +91,91 @@ export default function SettingsScreen() {
   }
 
   return (
-    <Screen>
+    <Screen bottomInset={200}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
         <IconButton glyph="←" onPress={() => router.back()} />
-        <AppText variant="title">More</AppText>
+        <AppText variant="title">Settings</AppText>
       </View>
 
-      <GlassCard>
-        <AppText variant="label" style={{ marginBottom: 8 }}>
-          Currency symbol
-        </AppText>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+      <GroupHeading title="Money" />
+      <Card>
+        <Row label="Currency symbol" sub="Relabels the app · never converts">
           <TextInput
             value={currency}
             onChangeText={commitCurrency}
             maxLength={4}
             placeholder="৳"
             placeholderTextColor={theme.ink3}
-            style={{ width: 74, minHeight: 46, textAlign: 'center', borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 14, color: theme.ink, fontSize: 16, fontWeight: '700' }}
-          />
-          <AppText variant="body2" style={{ flex: 1 }}>
-            Relabels the app immediately — never converts past amounts.
-          </AppText>
-        </View>
-      </GlassCard>
-
-      <GlassCard padding={6}>
-        <SelectRow
-          label="Accent theme"
-          sub={`${ACCENT_THEMES[settings.accentTheme].label} · colours highlights, charts and the app mark`}
-          value={ACCENT_THEMES[settings.accentTheme].label}
-          onPress={() => setAccentModal(true)}
-        />
-        <SelectRow
-          label="Appearance"
-          sub={settings.appearance === 'system' ? 'Follows your phone’s setting' : APPEARANCE_LABELS[settings.appearance]}
-          value={APPEARANCE_LABELS[settings.appearance]}
-          onPress={() => setAppearanceModal(true)}
-        />
-        <SelectRow
-          label="Navigation style"
-          sub={settings.navStyle === 'floating' ? 'Rounded floating pill' : 'Classic edge-to-edge bar'}
-          value={NAV_STYLE_LABELS[settings.navStyle]}
-          onPress={() => setNavStyleModal(true)}
-        />
-        <SwitchRow
-          label="Privacy mode"
-          sub={settings.privacy ? 'The eye on Home reveals hidden amounts for 10 seconds' : 'Amounts are visible on every screen'}
-          value={settings.privacy}
-          onValueChange={(v) => updateSettings({ privacy: v })}
-        />
-        <SelectRow
-          label="What privacy hides"
-          sub={settings.privacyScope === 'all' ? 'Every amount in the app — cards, transactions, loans' : 'Dashboard cards only · open an account and the balance is visible'}
-          value={settings.privacyScope === 'all' ? 'Everything' : 'Dashboard only'}
-          onPress={() => setPrivacyScopeModal(true)}
-        />
-        <SwitchRow
-          label="Count lent money as spending"
-          sub={settings.countLentAsSpending ? 'Loans reduce your budget like an expense' : 'Loans stay out of your budget until written off'}
-          value={settings.countLentAsSpending}
-          onValueChange={(v) => updateSettings({ countLentAsSpending: v })}
-        />
-        <SwitchRow
-          label="Budget alerts"
-          sub={settings.budgetAlerts ? 'At 80% and when you pass the budget' : 'No notifications'}
-          value={settings.budgetAlerts}
-          onValueChange={(v) => updateSettings({ budgetAlerts: v })}
-        />
-        <SwitchRow
-          label="Daily reminder"
-          sub={settings.reminderEnabled ? `Every day at ${formatTime(settings.reminderHour, settings.reminderMinute)}` : 'Off — nudges you to log today’s spending'}
-          value={settings.reminderEnabled}
-          onValueChange={setReminderEnabled}
-        />
-        {settings.reminderEnabled ? (
-          <SelectRow
-            label="Reminder time"
-            sub="Tap to change when it fires"
-            value={formatTime(settings.reminderHour, settings.reminderMinute)}
-            onPress={() => {
-              setPendingReminderTime(new Date(2000, 0, 1, settings.reminderHour, settings.reminderMinute));
-              setShowReminderTime(true);
+            style={{
+              width: 52,
+              height: 38,
+              textAlign: 'center',
+              borderWidth: 1,
+              borderColor: theme.line,
+              backgroundColor: theme.surface2,
+              borderRadius: 12,
+              color: theme.ink,
+              fontSize: 16,
+              fontWeight: '700',
             }}
           />
+        </Row>
+        <Row label="Count lent money as spending" sub={settings.countLentAsSpending ? 'On — loans reduce your budget' : 'Off — loans stay out of your budget'} last>
+          <AppSwitch value={settings.countLentAsSpending} onValueChange={(v) => updateSettings({ countLentAsSpending: v })} compact />
+        </Row>
+      </Card>
+
+      <GroupHeading title="Appearance" />
+      <Card>
+        <Row label="Accent theme" sub={ACCENT_THEMES[settings.accentTheme].label}>
+          <AccentDots value={settings.accentTheme} onPress={() => setAccentModal(true)} />
+        </Row>
+        <Row label="Theme" sub={settings.appearance === 'system' ? 'Follows your phone' : APPEARANCE_LABELS[settings.appearance]}>
+          <Dropdown value={APPEARANCE_LABELS[settings.appearance]} onPress={() => setAppearanceModal(true)} />
+        </Row>
+        <Row label="Navigation style" sub={settings.navStyle === 'floating' ? 'Rounded floating pill' : 'Classic edge-to-edge bar'} last>
+          <Dropdown value={NAV_STYLE_LABELS[settings.navStyle]} onPress={() => setNavStyleModal(true)} />
+        </Row>
+      </Card>
+
+      <GroupHeading title="Privacy" />
+      <Card>
+        <Row label="Privacy mode" sub={settings.privacy ? 'On — tap the eye to reveal' : 'Off — amounts visible everywhere'}>
+          <AppSwitch value={settings.privacy} onValueChange={(v) => updateSettings({ privacy: v })} compact />
+        </Row>
+        <Row label="What it hides" sub="Tap the eye to reveal for 10s" last>
+          <Dropdown value={settings.privacyScope === 'all' ? 'Everything' : 'Dashboard'} onPress={() => setPrivacyScopeModal(true)} />
+        </Row>
+      </Card>
+
+      <GroupHeading title="Notifications" />
+      <Card>
+        <Row label="Budget alerts" sub={settings.budgetAlerts ? 'At 80% and when you pass it' : 'No notifications'} last={!settings.reminderEnabled}>
+          <AppSwitch value={settings.budgetAlerts} onValueChange={(v) => updateSettings({ budgetAlerts: v })} compact />
+        </Row>
+        <Row label="Daily reminder" sub={settings.reminderEnabled ? `Every day at ${formatTime(settings.reminderHour, settings.reminderMinute)}` : 'Off — nudges you to log spending'} last={!settings.reminderEnabled}>
+          <AppSwitch value={settings.reminderEnabled} onValueChange={setReminderEnabled} compact />
+        </Row>
+        {settings.reminderEnabled ? (
+          <Row label="Reminder time" sub="Tap to change when it fires" last>
+            <Dropdown
+              value={formatTime(settings.reminderHour, settings.reminderMinute)}
+              onPress={() => {
+                setPendingReminderTime(new Date(2000, 0, 1, settings.reminderHour, settings.reminderMinute));
+                setShowReminderTime(true);
+              }}
+            />
+          </Row>
         ) : null}
-        <LinkRow label="Categories" sub={`${settings.categories.length} categories · rename or add`} onPress={() => router.push('/categories')} />
-        <LinkRow label="Accounts" sub={`${accounts.length} accounts`} onPress={() => router.push('/accounts')} />
-        <LinkRow
-          label="Export CSV"
-          sub={exportingCsv ? 'Preparing file…' : `${transactions.length} transactions · saved by you`}
-          onPress={exportCsv}
-          last
-        />
-        <LinkRow label="Monthly summary" sub={monthLabel} onPress={() => router.push('/report')} last />
-      </GlassCard>
+      </Card>
+
+      <GroupHeading title="Your data" />
+      <Card>
+        <NavRow label="Categories" sub="Rename or add" trailing={String(settings.categories.length)} onPress={() => router.push('/categories')} />
+        <NavRow label="Accounts" sub={accountTypesSub} trailing={String(accounts.length)} onPress={() => router.push('/accounts')} />
+        <NavRow label="Export CSV" sub={exportingCsv ? 'Preparing file…' : `${transactions.length} transactions`} onPress={exportCsv} />
+        <NavRow label="Monthly summary" sub={monthLabel} onPress={() => router.push('/report')} last />
+      </Card>
 
       <View style={{ borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 22, padding: 18 }}>
         <AppText variant="body" weight="manrope700">
@@ -247,7 +239,7 @@ export default function SettingsScreen() {
       />
       <SelectModal
         visible={appearanceModal}
-        title="Appearance"
+        title="Theme"
         value={settings.appearance}
         options={[
           { value: 'light', label: 'Light' },
@@ -270,7 +262,7 @@ export default function SettingsScreen() {
       />
       <SelectModal
         visible={privacyScopeModal}
-        title="What privacy hides"
+        title="What it hides"
         value={settings.privacyScope}
         options={[
           { value: 'dashboard', label: 'Dashboard only' },
@@ -296,59 +288,128 @@ export default function SettingsScreen() {
   );
 }
 
-function RowShell({ children, last }: { children: React.ReactNode; last?: boolean }) {
-  return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 13, minHeight: 44, padding: 13, marginBottom: last ? 0 : 0 }}>{children}</View>;
+/** Small uppercase mono label that sits above a Card, never inside one — the one place monospace still appears on this screen. */
+function GroupHeading({ title }: { title: string }) {
+  const theme = useTheme();
+  return (
+    <AppText variant="label" color={theme.ink3} style={{ paddingLeft: 4, marginBottom: -4 }}>
+      {title}
+    </AppText>
+  );
 }
 
-function RowText({ label, sub }: { label: string; sub: string }) {
+function Card({ children }: { children: React.ReactNode }) {
   return (
-    <View style={{ flex: 1, minWidth: 0 }}>
-      <AppText variant="body" style={{ fontSize: 13.5 }}>
-        {label}
-      </AppText>
-      <AppText variant="mono" style={{ marginTop: 2, textTransform: 'none', letterSpacing: 0, fontSize: 11.5 }}>
-        {sub}
-      </AppText>
+    <GlassCard radius={20} padding={0}>
+      {children}
+    </GlassCard>
+  );
+}
+
+/** Row shell + label/sub-line. `sub` is Manrope, not mono — the biggest readability change from the old list. */
+function Row({ label, sub, last, children }: { label: string; sub?: string; last?: boolean; children?: React.ReactNode }) {
+  const theme = useTheme();
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        minHeight: 56,
+        paddingVertical: 13,
+        paddingHorizontal: 14,
+        borderBottomWidth: last ? 0 : 1,
+        borderBottomColor: theme.line,
+      }}
+    >
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <AppText variant="body" weight="manrope700" style={{ fontSize: 13.5 }}>
+          {label}
+        </AppText>
+        {sub ? (
+          <AppText variant="body2" color={theme.ink3} numberOfLines={1} style={{ fontSize: 11.5, lineHeight: 15, marginTop: 2 }}>
+            {sub}
+          </AppText>
+        ) : null}
+      </View>
+      {children}
     </View>
   );
 }
 
-function LinkRow({ label, sub, onPress, last }: { label: string; sub: string; onPress: () => void; last?: boolean }) {
+/** A navigation row: the whole row is pressable, trailing count + a '›' drill-in chevron — never '→'. */
+function NavRow({ label, sub, trailing, onPress, last }: { label: string; sub: string; trailing?: string; onPress: () => void; last?: boolean }) {
   const theme = useTheme();
   return (
     <Pressable onPress={onPress}>
-      <RowShell last={last}>
-        <RowText label={label} sub={sub} />
-        <AppText color={theme.ink3} weight="manrope600" style={{ fontSize: 15 }}>
-          →
+      <Row label={label} sub={sub} last={last}>
+        {trailing ? (
+          <AppText color={theme.ink3} style={{ fontSize: 11.5 }}>
+            {trailing}
+          </AppText>
+        ) : null}
+        <AppText color={theme.ink3} weight="manrope700" style={{ fontSize: 17 }}>
+          ›
         </AppText>
-      </RowShell>
+      </Row>
     </Pressable>
   );
 }
 
-function SwitchRow({ label, sub, value, onValueChange }: { label: string; sub: string; value: boolean; onValueChange: (v: boolean) => void }) {
+/** The pill-shaped value control: current value + a chevron, distinguishing it from a plain button. */
+function Dropdown({ value, onPress }: { value: string; onPress: () => void }) {
+  const theme = useTheme();
   return (
-    <RowShell>
-      <RowText label={label} sub={sub} />
-      <AppSwitch value={value} onValueChange={onValueChange} />
-    </RowShell>
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        height: 34,
+        paddingHorizontal: 10,
+        borderRadius: 12,
+        backgroundColor: theme.surface2,
+        borderWidth: 1,
+        borderColor: theme.line,
+      }}
+    >
+      <AppText weight="manrope700" style={{ fontSize: 11.5 }}>
+        {value}
+      </AppText>
+      <AppText color={theme.ink3} style={{ fontSize: 9 }}>
+        ▾
+      </AppText>
+    </Pressable>
   );
 }
 
-function SelectRow({ label, sub, value, onPress }: { label: string; sub: string; value: string; onPress: () => void }) {
+/** Accent theme's own control — six colour dots (the active one ringed) instead of a text button, since a theme picker can't describe itself in words. */
+function AccentDots({ value, onPress }: { value: AccentTheme; onPress: () => void }) {
   const theme = useTheme();
+  const keys = Object.keys(ACCENT_THEMES) as AccentTheme[];
   return (
-    <RowShell>
-      <RowText label={label} sub={sub} />
-      <Pressable
-        onPress={onPress}
-        style={{ minHeight: 44, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 13, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' }}
-      >
-        <AppText variant="body" style={{ fontSize: 12.5 }}>
-          {value}
-        </AppText>
-      </Pressable>
-    </RowShell>
+    <Pressable onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      {keys.map((k) => {
+        const active = k === value;
+        const size = active ? 18 : 14;
+        return (
+          <View
+            key={k}
+            style={{
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              backgroundColor: oklch(0.68, 0.19, ACCENT_THEMES[k].hue),
+              borderWidth: active ? 2 : 1,
+              borderColor: active ? '#fff' : theme.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.14)',
+            }}
+          />
+        );
+      })}
+      <AppText color={theme.ink3} style={{ fontSize: 9, marginLeft: 2 }}>
+        ▾
+      </AppText>
+    </Pressable>
   );
 }
