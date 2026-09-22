@@ -138,8 +138,9 @@ function pillBorder(mode: 'light' | 'dark'): string {
 
 /**
  * A rounded, inset "pill" bar — icons only, the active one sitting inside a
- * solid filled circle (accent color, white glyph), floating above the
- * safe-area edge with side margins instead of running edge-to-edge.
+ * solid filled circle (theme.ink, deliberately not the FAB's accent color so
+ * the two don't read as the same control), floating above the safe-area edge
+ * with side margins instead of running edge-to-edge.
  *
  * True frosted blur (iOS's real, hardware-backed blur) is used where it's
  * safe. On Android, expo-blur's only real blur mode ('dimezisBlurView')
@@ -155,9 +156,23 @@ function FloatingBar({ translateY, pathname, router, insets }: BarProps) {
   function renderTab(tab: (typeof TABS)[number]) {
     const focused = pathname === tab.path;
     return (
-      <Pressable key={tab.name} onPress={() => router.navigate(tab.path)} style={styles.floatingTab}>
-        <View style={[styles.floatingTabHighlight, focused ? { backgroundColor: theme.accentColor } : null]}>
-          <AppText style={{ fontSize: 19, color: focused ? '#fff' : theme.ink3 }}>{tab.glyph}</AppText>
+      // android_ripple is disabled here: by default Android's ripple fills the
+      // whole rectangular touch area (this Pressable spans the full tab slot),
+      // not just the rounded highlight below — that stray rectangle is what
+      // could flash as a "square background" behind the circle after a tap.
+      <Pressable key={tab.name} onPress={() => router.navigate(tab.path)} style={styles.floatingTab} android_ripple={{ color: 'transparent' }}>
+        <View
+          style={{
+            width: 46,
+            height: 46,
+            borderRadius: 23,
+            overflow: 'hidden',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: focused ? theme.ink : 'transparent',
+          }}
+        >
+          <AppText style={{ fontSize: 19, color: focused ? theme.solid : theme.ink3 }}>{tab.glyph}</AppText>
         </View>
       </Pressable>
     );
@@ -188,7 +203,11 @@ function FloatingBar({ translateY, pathname, router, insets }: BarProps) {
           {right.map(renderTab)}
         </View>
       </View>
-      <Pressable onPress={() => router.push('/sheet')} style={[styles.floatingFab, { backgroundColor: theme.accentColor, shadowColor: theme.lift.shadowColor }]}>
+      <Pressable
+        onPress={() => router.push('/sheet')}
+        style={[styles.floatingFab, { backgroundColor: theme.accentColor, shadowColor: theme.lift.shadowColor }]}
+        android_ripple={{ color: 'transparent' }}
+      >
         <AppText color="#fff" style={{ fontSize: 26, marginTop: -2 }}>
           +
         </AppText>
@@ -255,13 +274,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 44,
-  },
-  floatingTabHighlight: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   floatingFab: {
     position: 'absolute',
