@@ -50,6 +50,7 @@ interface AppState extends PersistedShape {
   renameCategory: (oldName: string, newName: string) => void;
   deleteCategory: (name: string) => void;
   addIncomeCategory: (name: string) => void;
+  loadSampleData: () => void;
   resetAllData: () => void;
   startPeek: () => void;
   cancelPeek: () => void;
@@ -81,14 +82,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch {
       // Corrupt or unreadable storage falls through to a fresh seed below.
     }
-    // A brand-new install lands on the seeded demo ledger rather than an empty
-    // one — already "set up" (brief §3), so onboarding's account/currency
-    // picker is skipped. A genuinely empty start is still reachable by
-    // deleting all data in Settings, which does route back through onboarding.
+    // A brand-new install starts genuinely empty and runs onboarding — real
+    // users shouldn't land on a ledger full of someone else's fake accounts
+    // and transactions. Onboarding itself offers a "load sample data" option
+    // (loadSampleData, below) for anyone who wants to explore first.
     set({
-      accounts: SEED_ACCOUNTS,
-      transactions: SEED_TRANSACTIONS,
-      settings: { ...DEFAULT_SETTINGS, hasOnboarded: true },
+      accounts: [],
+      transactions: [],
+      settings: DEFAULT_SETTINGS,
       hydrated: true,
     });
   },
@@ -170,6 +171,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     const trimmed = name.trim();
     if (!trimmed) return;
     set((s) => (s.settings.incomeCategories.some((c) => c.toLowerCase() === trimmed.toLowerCase()) ? s : { settings: { ...s.settings, incomeCategories: [...s.settings.incomeCategories, trimmed] } }));
+    schedulePersist(get);
+  },
+
+  // Onboarding's "explore with sample data" choice — loads the same demo
+  // ledger a fresh install used to start with automatically, for anyone who
+  // wants to poke around before adding their own real accounts.
+  loadSampleData: () => {
+    set({
+      accounts: SEED_ACCOUNTS,
+      transactions: SEED_TRANSACTIONS,
+      settings: { ...DEFAULT_SETTINGS, hasOnboarded: true },
+    });
     schedulePersist(get);
   },
 

@@ -39,6 +39,7 @@ export function OnboardingFlow() {
   const theme = useTheme();
   const updateSettings = useAppStore((s) => s.updateSettings);
   const addAccount = useAppStore((s) => s.addAccount);
+  const loadSampleData = useAppStore((s) => s.loadSampleData);
   const [showSplash, setShowSplash] = useState(true);
   const [slide, setSlide] = useState(0);
   const [enabled, setEnabled] = useState<AccountType[]>(DEFAULT_ON);
@@ -75,6 +76,12 @@ export function OnboardingFlow() {
       });
     }
     updateSettings({ hasOnboarded: true, currencySymbol: symbol.trim() || '৳', enabledAccountTypes: enabled });
+  }
+
+  // For anyone who'd rather poke around before adding real accounts —
+  // loads the same demo ledger a fresh install used to start with.
+  function exploreWithSampleData() {
+    loadSampleData();
   }
 
   if (showSplash) {
@@ -178,6 +185,14 @@ export function OnboardingFlow() {
           </View>
         ) : null}
       </View>
+
+      {isSetup ? (
+        <Pressable onPress={exploreWithSampleData} style={{ alignSelf: 'center', paddingVertical: 6, marginBottom: 4 }}>
+          <AppText variant="body2" color={theme.ink3} style={{ textDecorationLine: 'underline' }}>
+            Or explore with sample data first
+          </AppText>
+        </Pressable>
+      ) : null}
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingBottom: 18 }}>
         <View style={{ flexDirection: 'row', gap: 6, flex: 1 }}>
