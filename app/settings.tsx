@@ -15,11 +15,12 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
 import { ACCENT_THEMES, type AccentTheme } from '@/theme/tokens';
-import type { Appearance, PrivacyScope } from '@/domain/types';
+import type { Appearance, NavStyle, PrivacyScope } from '@/domain/types';
 import { syncDailyReminder } from '@/notifications/dailyReminder';
 import { exportTransactionsCsv } from '@/export/exportTransactions';
 
 const APPEARANCE_LABELS: Record<Appearance, string> = { light: 'Light', dark: 'Night', system: 'System' };
+const NAV_STYLE_LABELS: Record<NavStyle, string> = { classic: 'Classic', floating: 'Floating' };
 
 function formatTime(hour: number, minute: number): string {
   const period = hour >= 12 ? 'PM' : 'AM';
@@ -40,6 +41,7 @@ export default function SettingsScreen() {
   const [currency, setCurrency] = useState(settings.currencySymbol);
   const [accentModal, setAccentModal] = useState(false);
   const [appearanceModal, setAppearanceModal] = useState(false);
+  const [navStyleModal, setNavStyleModal] = useState(false);
   const [privacyScopeModal, setPrivacyScopeModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showReminderTime, setShowReminderTime] = useState(false);
@@ -124,6 +126,12 @@ export default function SettingsScreen() {
           sub={settings.appearance === 'system' ? 'Follows your phone’s setting' : APPEARANCE_LABELS[settings.appearance]}
           value={APPEARANCE_LABELS[settings.appearance]}
           onPress={() => setAppearanceModal(true)}
+        />
+        <SelectRow
+          label="Navigation style"
+          sub={settings.navStyle === 'floating' ? 'Rounded floating pill' : 'Classic edge-to-edge bar'}
+          value={NAV_STYLE_LABELS[settings.navStyle]}
+          onPress={() => setNavStyleModal(true)}
         />
         <SwitchRow
           label="Privacy mode"
@@ -248,6 +256,17 @@ export default function SettingsScreen() {
         ]}
         onSelect={(v) => updateSettings({ appearance: v as Appearance })}
         onClose={() => setAppearanceModal(false)}
+      />
+      <SelectModal
+        visible={navStyleModal}
+        title="Navigation style"
+        value={settings.navStyle}
+        options={[
+          { value: 'classic', label: 'Classic' },
+          { value: 'floating', label: 'Floating' },
+        ]}
+        onSelect={(v) => updateSettings({ navStyle: v as NavStyle })}
+        onClose={() => setNavStyleModal(false)}
       />
       <SelectModal
         visible={privacyScopeModal}

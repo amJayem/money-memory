@@ -45,6 +45,7 @@ export interface Transaction {
 
 export type PrivacyScope = 'dashboard' | 'all';
 export type Appearance = 'light' | 'dark' | 'system';
+export type NavStyle = 'classic' | 'floating';
 
 export interface Settings {
   hasOnboarded: boolean;
@@ -67,6 +68,8 @@ export interface Settings {
   reminderEnabled: boolean;
   reminderHour: number;
   reminderMinute: number;
+  /** Bottom nav shape: 'classic' (edge-to-edge bar) or 'floating' (rounded pill with margins). */
+  navStyle: NavStyle;
 }
 
 export const EXPENSE_CATEGORIES = [

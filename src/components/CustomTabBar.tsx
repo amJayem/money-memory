@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useNavBarStore } from '@/store/navBarStore';
+import { useAppStore } from '@/store/appStore';
 import { AppText } from './AppText';
 
 const TABS = [
@@ -15,7 +16,8 @@ const TABS = [
 ] as const;
 
 // Shared with Screen.tsx so the scroll container's bottom padding is measured
-// against the bar's real geometry instead of a guessed constant.
+// against the bar's real geometry instead of a guessed constant. Sized for
+// the taller (classic) bar so it's a safe overestimate for the floating one.
 export const TAB_BAR_CONTENT_HEIGHT = 62; // paddingTop 9 + tab minHeight 44 + paddingBottom 9, excluding the safe-area inset
 export const FAB_CLEARANCE = 94; // FAB's top edge sits 36 (its own bottom offset) + 58 (height) above the safe-area line
 
@@ -24,12 +26,16 @@ export const FAB_CLEARANCE = 94; // FAB's top edge sits 36 (its own bottom offse
  * sibling overlay, not a tab (§1, §6). Mounted once at the root so it's
  * present on every screen, not only the four tab routes; a scrollable
  * screen can hide/reveal it via useHideNavBarOnScroll + useNavBarStore.
+ *
+ * Two visual shells share this same routing/show-hide logic — "classic"
+ * (edge-to-edge bar with labels) and "floating" (a rounded pill with side
+ * margins and icon-only tabs, chosen in Settings → Navigation style).
  */
 export function CustomTabBar() {
-  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const pathname = usePathname();
+  const navStyle = useAppStore((s) => s.settings.navStyle);
   const visible = useNavBarStore((s) => s.visible);
   const show = useNavBarStore((s) => s.show);
 
@@ -54,6 +60,22 @@ export function CustomTabBar() {
 
   if (isModalRoute) return null;
 
+  return navStyle === 'floating' ? (
+    <FloatingBar translateY={translateY} pathname={pathname} router={router} insets={insets} />
+  ) : (
+    <ClassicBar translateY={translateY} pathname={pathname} router={router} insets={insets} />
+  );
+}
+
+interface BarProps {
+  translateY: Animated.Value;
+  pathname: string;
+  router: ReturnType<typeof useRouter>;
+  insets: { bottom: number };
+}
+
+function ClassicBar({ translateY, pathname, router, insets }: BarProps) {
+  const theme = useTheme();
   const left = TABS.slice(0, 2);
   const right = TABS.slice(2);
 
@@ -90,6 +112,57 @@ export function CustomTabBar() {
         </View>
       </View>
       <Pressable onPress={() => router.push('/sheet')} style={[styles.fab, { backgroundColor: theme.accentColor, shadowColor: theme.lift.shadowColor, bottom: insets.bottom + 36 }]}>
+        <AppText color="#fff" style={{ fontSize: 26, marginTop: -2 }}>
+          +
+        </AppText>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+/**
+ * A rounded, inset "pill" bar — icons only, the active one sitting inside a
+ * filled circular highlight, floating above the safe-area edge with side
+ * margins instead of running edge-to-edge. Kept fully opaque (theme.solid)
+ * rather than a translucent glass fill: see GlassCard for why a translucent
+ * background behind text/icons is avoided app-wide on Android.
+ */
+function FloatingBar({ translateY, pathname, router, insets }: BarProps) {
+  const theme = useTheme();
+  const left = TABS.slice(0, 2);
+  const right = TABS.slice(2);
+
+  function renderTab(tab: (typeof TABS)[number]) {
+    const focused = pathname === tab.path;
+    return (
+      <Pressable key={tab.name} onPress={() => router.navigate(tab.path)} style={styles.floatingTab}>
+        <View style={[styles.floatingTabHighlight, focused ? { backgroundColor: theme.toneBg('accent') } : null]}>
+          <AppText style={{ fontSize: 19, color: focused ? theme.accentColor : theme.ink3 }}>{tab.glyph}</AppText>
+        </View>
+      </Pressable>
+    );
+  }
+
+  return (
+    <Animated.View style={[styles.wrap, { bottom: insets.bottom + 14, transform: [{ translateY }] }]} pointerEvents="box-none">
+      <View
+        style={[
+          styles.floatingPill,
+          {
+            backgroundColor: theme.solid,
+            borderColor: theme.line,
+            shadowColor: theme.lift.shadowColor,
+            shadowOpacity: theme.lift.shadowOpacity,
+            shadowRadius: theme.lift.shadowRadius,
+            shadowOffset: theme.lift.shadowOffset,
+          },
+        ]}
+      >
+        {left.map(renderTab)}
+        <View style={styles.fabGap} />
+        {right.map(renderTab)}
+      </View>
+      <Pressable onPress={() => router.push('/sheet')} style={[styles.floatingFab, { backgroundColor: theme.accentColor, shadowColor: theme.lift.shadowColor }]}>
         <AppText color="#fff" style={{ fontSize: 26, marginTop: -2 }}>
           +
         </AppText>
@@ -137,5 +210,42 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
+  },
+  floatingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '86%',
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    elevation: 6,
+  },
+  floatingTab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  floatingTabHighlight: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  floatingFab: {
+    position: 'absolute',
+    alignSelf: 'center',
+    top: -22,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
   },
 });
