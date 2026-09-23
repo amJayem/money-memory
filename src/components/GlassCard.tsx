@@ -43,8 +43,8 @@ export function GlassCard({ radius = RADII.card, padding = 18, style, children, 
       ]}
       {...rest}
     >
-      <View style={{ borderRadius: radius, borderWidth: 1, borderColor: theme.line, overflow: 'hidden', backgroundColor: theme.solid }}>
-        <View style={{ padding }}>{children}</View>
+      <View style={{ flex: 1, borderRadius: radius, borderWidth: 1, borderColor: theme.line, overflow: 'hidden', backgroundColor: theme.solid }}>
+        <View style={{ flex: 1, padding }}>{children}</View>
       </View>
     </View>
   );

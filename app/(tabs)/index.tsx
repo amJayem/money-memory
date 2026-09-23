@@ -253,9 +253,9 @@ export default function HomeScreen() {
         </GlassCard>
       </Pressable>
 
-      <View style={{ flexDirection: 'row', gap: 11, alignItems: 'flex-start' }}>
+      <View style={{ flexDirection: 'row', gap: 11, alignItems: 'stretch' }}>
         <Pressable onPress={() => router.push('/loans')} style={{ flex: 1 }}>
-          <GlassCard padding={15}>
+          <GlassCard padding={15} style={{ flex: 1 }}>
             <AppText variant="label">You are owed</AppText>
             <AppText variant="amount" color={theme.tone('warn')} style={{ fontSize: 23, marginTop: 8 }}>
               {privacy.fmt(owed)}
@@ -271,7 +271,7 @@ export default function HomeScreen() {
           </GlassCard>
         </Pressable>
         <View style={{ flex: 1 }}>
-          <GlassCard padding={15}>
+          <GlassCard padding={15} style={{ flex: 1 }}>
             <AppText variant="label">This month</AppText>
             <AppText variant="body2" style={{ marginTop: 8 }}>
               Money in
