@@ -112,8 +112,16 @@ export function OnboardingFlow() {
         <GhostButton label="Skip" onPress={finish} />
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', gap: 26, paddingVertical: 12 }} keyboardShouldPersistTaps="handled">
+      {/* justifyContent: 'center' here was actively fighting Android's adjustResize:
+          each keyboard-driven window resize re-centers the flex content, which could
+          shove the footer (Next button, progress dots) out of the shrunk viewport
+          entirely — confirmed on-device, the footer dropped out of the layout tree
+          while a lower field was focused. Top-aligned flow has no such instability. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView
+        contentContainerStyle={isSetup ? { gap: 26, paddingVertical: 12 } : { flexGrow: 1, justifyContent: 'center', gap: 26, paddingVertical: 12 }}
+        keyboardShouldPersistTaps="handled"
+      >
         <View>
           <AppText variant="title" style={{ fontSize: 27 }}>
             {s.title}
