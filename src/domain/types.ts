@@ -70,6 +70,8 @@ export interface Settings {
   reminderMinute: number;
   /** Bottom nav shape: 'classic' (edge-to-edge bar) or 'floating' (rounded pill with margins). */
   navStyle: NavStyle;
+  /** Per-category monthly limits the user has explicitly set — empty until they add one. Keyed by category name. */
+  categoryBudgets: Record<string, number>;
 }
 
 export const EXPENSE_CATEGORIES = [
@@ -84,11 +86,3 @@ export const EXPENSE_CATEGORIES = [
 ] as const;
 
 export const INCOME_CATEGORIES = ['Salary', 'Freelance', 'Gift', 'Refund', 'Other'] as const;
-
-export const CATEGORY_BUDGETS: [string, number][] = [
-  ['Food', 8000],
-  ['Shopping', 6000],
-  ['Transport', 4000],
-  ['Bills', 7000],
-  ['Entertainment', 3000],
-];

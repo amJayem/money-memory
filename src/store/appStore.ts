@@ -28,6 +28,7 @@ const DEFAULT_SETTINGS: Settings = {
   reminderHour: 9,
   reminderMinute: 0,
   navStyle: 'classic',
+  categoryBudgets: {},
 };
 
 interface PersistedShape {
@@ -52,6 +53,8 @@ interface AppState extends PersistedShape {
   renameCategory: (oldName: string, newName: string) => void;
   deleteCategory: (name: string) => void;
   addIncomeCategory: (name: string) => void;
+  setCategoryBudget: (name: string, amount: number) => void;
+  removeCategoryBudget: (name: string) => void;
   loadSampleData: () => void;
   resetAllData: () => void;
   startPeek: () => void;
@@ -173,6 +176,20 @@ export const useAppStore = create<AppState>((set, get) => ({
     const trimmed = name.trim();
     if (!trimmed) return;
     set((s) => (s.settings.incomeCategories.some((c) => c.toLowerCase() === trimmed.toLowerCase()) ? s : { settings: { ...s.settings, incomeCategories: [...s.settings.incomeCategories, trimmed] } }));
+    schedulePersist(get);
+  },
+
+  setCategoryBudget: (name, amount) => {
+    if (amount <= 0) return;
+    set((s) => ({ settings: { ...s.settings, categoryBudgets: { ...s.settings.categoryBudgets, [name]: amount } } }));
+    schedulePersist(get);
+  },
+
+  removeCategoryBudget: (name) => {
+    set((s) => {
+      const { [name]: _removed, ...rest } = s.settings.categoryBudgets;
+      return { settings: { ...s.settings, categoryBudgets: rest } };
+    });
     schedulePersist(get);
   },
 
