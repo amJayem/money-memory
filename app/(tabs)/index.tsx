@@ -225,24 +225,30 @@ export default function HomeScreen() {
                 </AppText>
               </View>
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-              <View>
-                <AppText variant="label">left to spend</AppText>
-                <AppText variant="amount" color={theme.tone(budget.tone)}>
-                  {privacy.fmt(Math.max(0, budget.left))}
-                </AppText>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <AppText variant="mono">
-                  Spent <AppText variant="body">{privacy.fmt(budget.spent)}</AppText>
-                </AppText>
-                <AppText variant="mono">
-                  Budget <AppText variant="body">{privacy.fmt(budget.budget)}</AppText>
-                </AppText>
-              </View>
-            </View>
-            <ProgressBar barPct={budget.barPct} overPct={budget.overPct} tone={budget.tone} />
-            <AppText variant="body2">{budgetStatusLine(budget, monthLabel, daysRemaining, (n) => formatAmount(n, settings.currencySymbol))}</AppText>
+            {budget.noBudget ? (
+              <AppText variant="body2">Set a monthly budget to see what's left to spend, right here.</AppText>
+            ) : (
+              <>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                  <View>
+                    <AppText variant="label">left to spend</AppText>
+                    <AppText variant="amount" color={theme.tone(budget.tone)}>
+                      {privacy.fmt(Math.max(0, budget.left))}
+                    </AppText>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <AppText variant="mono">
+                      Spent <AppText variant="body">{privacy.fmt(budget.spent)}</AppText>
+                    </AppText>
+                    <AppText variant="mono">
+                      Budget <AppText variant="body">{privacy.fmt(budget.budget)}</AppText>
+                    </AppText>
+                  </View>
+                </View>
+                <ProgressBar barPct={budget.barPct} overPct={budget.overPct} tone={budget.tone} />
+                <AppText variant="body2">{budgetStatusLine(budget, monthLabel, daysRemaining, (n) => formatAmount(n, settings.currencySymbol))}</AppText>
+              </>
+            )}
           </View>
         </GlassCard>
       </Pressable>

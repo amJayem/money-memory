@@ -17,7 +17,9 @@ const DEFAULT_SETTINGS: Settings = {
   privacyScope: 'dashboard',
   countLentAsSpending: false,
   budgetAlerts: true,
-  monthlyBudget: 30000,
+  // 0 means "not set" (see money.ts's budgetStatus/noBudget) — a real user's
+  // budget is their call to make from the Budget screen, never assumed.
+  monthlyBudget: 0,
   lastAccountId: null,
   lastCategory: null,
   categories: [...EXPENSE_CATEGORIES],
@@ -181,7 +183,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       accounts: SEED_ACCOUNTS,
       transactions: SEED_TRANSACTIONS,
-      settings: { ...DEFAULT_SETTINGS, hasOnboarded: true },
+      // The demo sets its own budget so the feature has something to show —
+      // this is explicitly opt-in exploration, not a real user's default.
+      settings: { ...DEFAULT_SETTINGS, hasOnboarded: true, monthlyBudget: 30000 },
     });
     schedulePersist(get);
   },
