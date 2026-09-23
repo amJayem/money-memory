@@ -23,7 +23,7 @@ const SLIDES = [
   },
   {
     title: "Let's set up your money",
-    body: 'Pick the kinds of accounts you actually use, and tell us your currency symbol.',
+    body: 'Pick the kinds of accounts you actually use, your currency symbol, and a monthly budget if you want one.',
   },
 ];
 
@@ -44,6 +44,10 @@ export function OnboardingFlow() {
   const [slide, setSlide] = useState(0);
   const [enabled, setEnabled] = useState<AccountType[]>(DEFAULT_ON);
   const [symbol, setSymbol] = useState('৳');
+  // Empty (not a prefilled figure) — a monthly budget is only ever set here
+  // if the user actually types one; left blank, onboarding leaves it unset
+  // exactly like a real "no budget" account (see appStore's DEFAULT_SETTINGS).
+  const [budgetInput, setBudgetInput] = useState('');
   // Starts empty per type — a checked account with nothing typed just falls
   // back to its default name and a zero balance; nothing here needs clearing
   // before someone can type their own values.
@@ -75,7 +79,12 @@ export function OnboardingFlow() {
         limit: type === 'credit' ? value : undefined,
       });
     }
-    updateSettings({ hasOnboarded: true, currencySymbol: symbol.trim() || '৳', enabledAccountTypes: enabled });
+    updateSettings({
+      hasOnboarded: true,
+      currencySymbol: symbol.trim() || '৳',
+      enabledAccountTypes: enabled,
+      monthlyBudget: parseFloat(budgetInput) || 0,
+    });
   }
 
   // For anyone who'd rather poke around before adding real accounts —
@@ -190,6 +199,22 @@ export function OnboardingFlow() {
                 </AppText>
               </View>
               <PlainInput value={symbol} onChangeText={(v) => setSymbol(v.slice(0, 4))} />
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 18, padding: 13 }}>
+              <View style={{ flex: 1 }}>
+                <AppText variant="body">Monthly budget — optional</AppText>
+                <AppText variant="mono" style={{ marginTop: 2 }}>
+                  Leave blank and set one later if you'd rather not yet
+                </AppText>
+              </View>
+              <TextInput
+                value={budgetInput}
+                onChangeText={(v) => setBudgetInput(v.replace(/[^0-9.]/g, ''))}
+                keyboardType="numeric"
+                placeholder="0"
+                placeholderTextColor={theme.ink3}
+                style={{ width: 92, minHeight: 46, textAlign: 'center', borderWidth: 1, borderColor: theme.lineStrong, backgroundColor: theme.solid, borderRadius: 12, color: theme.ink, fontSize: 15, fontWeight: '700' }}
+              />
             </View>
           </View>
         ) : null}
