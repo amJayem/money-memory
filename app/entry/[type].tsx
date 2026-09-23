@@ -216,19 +216,21 @@ export default function EntryForm() {
   return (
     <ScreenBackground blobs={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 6 }}>
-          <AppText variant="heading">{editing ? 'Edit transaction' : TITLE[type]}</AppText>
-          <IconButton glyph="✕" onPress={close} />
-        </View>
+        <AppText variant="heading">{editing ? 'Edit transaction' : TITLE[type]}</AppText>
+        <IconButton glyph="✕" onPress={close} />
+      </View>
 
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 16 }} keyboardShouldPersistTaps="handled">
-          <View style={{ alignItems: 'center', paddingVertical: 14 }}>
-            <AppText style={{ fontSize: amount.length > 7 ? 30 : amount.length > 5 ? 36 : 42 }} variant="amount">
-              {settings.currencySymbol}
-              {amount || '0'}
-            </AppText>
-          </View>
+      {/* Pinned above the scroll, not inside it — this is what you're typing, so it must
+          never scroll out of view while the keypad (also pinned, below) is in use. */}
+      <View style={{ alignItems: 'center', paddingVertical: 10 }}>
+        <AppText style={{ fontSize: amount.length > 7 ? 30 : amount.length > 5 ? 36 : 42 }} variant="amount">
+          {settings.currencySymbol}
+          {amount || '0'}
+        </AppText>
+      </View>
 
-          {needsCategory ? (
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 16 }} keyboardShouldPersistTaps="handled">
+        {needsCategory ? (
             <Section label="Category">
               <ChipRow>
                 {categories.map((c) => (
@@ -333,26 +335,30 @@ export default function EntryForm() {
               <AppText variant="body2">{echo}</AppText>
             </View>
           ) : null}
+      </ScrollView>
 
-          <Keypad value={amount} onChange={setAmount} />
+      {/* Also pinned, not scrolled — the keypad and Save button stay reachable
+          without hunting for them below a long list of category/account chips. */}
+      <View style={{ paddingHorizontal: 18, paddingTop: 10, paddingBottom: 16, gap: 12 }}>
+        <Keypad value={amount} onChange={setAmount} />
 
-          <Pressable
-            onPress={save}
-            disabled={saving}
-            style={{
-              backgroundColor: numericAmount ? theme.ink : theme.lineStrong,
-              borderRadius: 18,
-              minHeight: 52,
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: saving ? 0.6 : 1,
-            }}
-          >
-            <AppText color={numericAmount ? theme.solid : theme.ink3} weight="manrope700">
-              {numericAmount ? `Save ${formatAmount(numericAmount, settings.currencySymbol)}` : 'Save transaction'}
-            </AppText>
-          </Pressable>
-        </ScrollView>
+        <Pressable
+          onPress={save}
+          disabled={saving}
+          style={{
+            backgroundColor: numericAmount ? theme.ink : theme.lineStrong,
+            borderRadius: 18,
+            minHeight: 52,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: saving ? 0.6 : 1,
+          }}
+        >
+          <AppText color={numericAmount ? theme.solid : theme.ink3} weight="manrope700">
+            {numericAmount ? `Save ${formatAmount(numericAmount, settings.currencySymbol)}` : 'Save transaction'}
+          </AppText>
+        </Pressable>
+      </View>
 
       <ConfirmDialog
         visible={confirmDiscard}

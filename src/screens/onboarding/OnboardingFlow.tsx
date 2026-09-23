@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from '@/components/AppText';
 import { ScreenBackground } from '@/components/Screen';
@@ -112,7 +112,8 @@ export function OnboardingFlow() {
         <GhostButton label="Skip" onPress={finish} />
       </View>
 
-      <View style={{ flex: 1, justifyContent: 'center', gap: 26 }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', gap: 26, paddingVertical: 12 }} keyboardShouldPersistTaps="handled">
         <View>
           <AppText variant="title" style={{ fontSize: 27 }}>
             {s.title}
@@ -184,7 +185,7 @@ export function OnboardingFlow() {
             </View>
           </View>
         ) : null}
-      </View>
+      </ScrollView>
 
       {isSetup ? (
         <Pressable onPress={exploreWithSampleData} style={{ alignSelf: 'center', paddingVertical: 6, marginBottom: 4 }}>
@@ -217,6 +218,7 @@ export function OnboardingFlow() {
           </AppText>
         </Pressable>
       </View>
+      </KeyboardAvoidingView>
     </ScreenBackground>
   );
 }
