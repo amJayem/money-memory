@@ -6,6 +6,8 @@ import { RADII } from '@/theme/tokens';
 interface Props extends ViewProps {
   radius?: number;
   padding?: number;
+  /** Stretches the card (and its content) to fill the height its flex parent gives it — for equal-height cards in a row. Off by default, since most cards size to their own content. */
+  fill?: boolean;
 }
 
 /**
@@ -26,7 +28,7 @@ interface Props extends ViewProps {
  * `elevation` on the same Android view is a separate known combination that
  * can fail to clip children to the rounded corners.
  */
-export function GlassCard({ radius = RADII.card, padding = 18, style, children, ...rest }: Props) {
+export function GlassCard({ radius = RADII.card, padding = 18, fill = false, style, children, ...rest }: Props) {
   const theme = useTheme();
   return (
     <View
@@ -39,12 +41,13 @@ export function GlassCard({ radius = RADII.card, padding = 18, style, children, 
           shadowOffset: theme.lift.shadowOffset,
           elevation: 4,
         },
+        fill && { flex: 1 },
         style,
       ]}
       {...rest}
     >
-      <View style={{ flex: 1, borderRadius: radius, borderWidth: 1, borderColor: theme.line, overflow: 'hidden', backgroundColor: theme.solid }}>
-        <View style={{ flex: 1, padding }}>{children}</View>
+      <View style={{ flex: fill ? 1 : undefined, borderRadius: radius, borderWidth: 1, borderColor: theme.line, overflow: 'hidden', backgroundColor: theme.solid }}>
+        <View style={{ flex: fill ? 1 : undefined, padding }}>{children}</View>
       </View>
     </View>
   );

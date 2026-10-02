@@ -117,6 +117,9 @@ export default function HomeScreen() {
                     ? `${orderedAccounts.filter((a) => a.type === 'bank' || a.type === 'savings').length} accounts`
                     : '',
                   orderedAccounts.filter((a) => a.type === 'wallet').length ? `${orderedAccounts.filter((a) => a.type === 'wallet').length} wallet` : '',
+                  orderedAccounts.filter((a) => a.type === 'debit' || a.type === 'credit').length
+                    ? `${orderedAccounts.filter((a) => a.type === 'debit' || a.type === 'credit').length} card`
+                    : '',
                 ]
                   .filter(Boolean)
                   .join(' · ')
@@ -255,7 +258,7 @@ export default function HomeScreen() {
 
       <View style={{ flexDirection: 'row', gap: 11, alignItems: 'stretch' }}>
         <Pressable onPress={() => router.push('/loans')} style={{ flex: 1 }}>
-          <GlassCard padding={15} style={{ flex: 1 }}>
+          <GlassCard padding={15} fill>
             <AppText variant="label">You are owed</AppText>
             <AppText variant="amount" color={theme.tone('warn')} style={{ fontSize: 23, marginTop: 8 }}>
               {privacy.fmt(owed)}
@@ -271,7 +274,7 @@ export default function HomeScreen() {
           </GlassCard>
         </Pressable>
         <View style={{ flex: 1 }}>
-          <GlassCard padding={15} style={{ flex: 1 }}>
+          <GlassCard padding={15} fill>
             <AppText variant="label">This month</AppText>
             <AppText variant="body2" style={{ marginTop: 8 }}>
               Money in

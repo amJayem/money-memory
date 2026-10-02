@@ -82,11 +82,11 @@ export default function AccountsScreen() {
                       {sub}
                     </AppText>
                   </View>
-                  <View style={{ alignItems: 'flex-end' }}>
+                  <View style={{ alignItems: 'flex-end', maxWidth: 120 }}>
                     <AppText variant="amount" style={{ fontSize: 15 }}>
                       {privacy.fmt(bal)}
                     </AppText>
-                    <AppText variant="mono" style={{ marginTop: 2 }} color={credit ? theme.tone('warn') : theme.ink3}>
+                    <AppText variant="mono" style={{ marginTop: 2, textAlign: 'right' }} color={credit ? theme.tone('warn') : theme.ink3}>
                       {tag}
                     </AppText>
                   </View>
