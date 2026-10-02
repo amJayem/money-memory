@@ -19,6 +19,8 @@ import { oklch } from '@/theme/oklch';
 import type { Appearance, NavStyle, PrivacyScope } from '@/domain/types';
 import { syncDailyReminder } from '@/notifications/dailyReminder';
 import { exportTransactionsCsv } from '@/export/exportTransactions';
+import { exportBackup } from '@/export/exportBackup';
+import { pickBackupFile } from '@/export/importBackup';
 
 const APPEARANCE_LABELS: Record<Appearance, string> = { light: 'Light', dark: 'Night', system: 'System' };
 const NAV_STYLE_LABELS: Record<NavStyle, string> = { classic: 'Classic', floating: 'Floating' };
@@ -37,6 +39,7 @@ export default function SettingsScreen() {
   const accounts = useAppStore((s) => s.accounts);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const resetAllData = useAppStore((s) => s.resetAllData);
+  const restoreBackup = useAppStore((s) => s.restoreBackup);
   const transactions = useAppStore((s) => s.transactions);
 
   const [currency, setCurrency] = useState(settings.currencySymbol);
@@ -47,6 +50,9 @@ export default function SettingsScreen() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showReminderTime, setShowReminderTime] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
+  const [exportingBackup, setExportingBackup] = useState(false);
+  const [importingBackup, setImportingBackup] = useState(false);
+  const [pendingRestore, setPendingRestore] = useState<Awaited<ReturnType<typeof pickBackupFile>>>(null);
   const [pendingReminderTime, setPendingReminderTime] = useState(() => new Date(2000, 0, 1, settings.reminderHour, settings.reminderMinute));
 
   const monthLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -80,6 +86,32 @@ export default function SettingsScreen() {
       toast('Export failed — try again');
     } finally {
       setExportingCsv(false);
+    }
+  }
+
+  async function exportBackupFile() {
+    if (exportingBackup) return;
+    setExportingBackup(true);
+    try {
+      const ok = await exportBackup(accounts, transactions, settings);
+      if (!ok) toast('No way to share files on this device');
+    } catch {
+      toast('Backup failed — try again');
+    } finally {
+      setExportingBackup(false);
+    }
+  }
+
+  async function importBackupFile() {
+    if (importingBackup) return;
+    setImportingBackup(true);
+    try {
+      const backup = await pickBackupFile();
+      if (backup) setPendingRestore(backup);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'That file could not be read');
+    } finally {
+      setImportingBackup(false);
     }
   }
 
@@ -174,6 +206,8 @@ export default function SettingsScreen() {
         <NavRow label="Categories" sub="Rename or add" trailing={String(settings.categories.length)} onPress={() => router.push('/categories')} />
         <NavRow label="Accounts" sub={accountTypesSub} trailing={String(accounts.length)} onPress={() => router.push('/accounts')} />
         <NavRow label="Export CSV" sub={exportingCsv ? 'Preparing file…' : `${transactions.length} transactions`} onPress={exportCsv} />
+        <NavRow label="Export backup" sub={exportingBackup ? 'Preparing file…' : 'Full restore file for another phone'} onPress={exportBackupFile} />
+        <NavRow label="Import backup" sub={importingBackup ? 'Reading file…' : 'Replaces everything on this device'} onPress={importBackupFile} />
         <NavRow label="Monthly summary" sub={monthLabel} onPress={() => router.push('/report')} last />
       </Card>
 
@@ -270,6 +304,25 @@ export default function SettingsScreen() {
         ]}
         onSelect={(v) => updateSettings({ privacyScope: v as PrivacyScope })}
         onClose={() => setPrivacyScopeModal(false)}
+      />
+
+      <ConfirmDialog
+        visible={!!pendingRestore}
+        title="Restore this backup?"
+        body={
+          pendingRestore
+            ? `This replaces everything currently on this device with the backup from ${new Date(pendingRestore.exportedAt).toLocaleDateString()} — ${pendingRestore.accounts.length} accounts, ${pendingRestore.transactions.length} transactions. This can't be undone.`
+            : ''
+        }
+        confirmLabel="Restore"
+        onCancel={() => setPendingRestore(null)}
+        onConfirm={() => {
+          if (!pendingRestore) return;
+          restoreBackup(pendingRestore);
+          setPendingRestore(null);
+          toast('Backup restored');
+          router.replace('/');
+        }}
       />
 
       <ConfirmDialog

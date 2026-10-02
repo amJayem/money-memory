@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import type { Account, Settings, Transaction } from '@/domain/types';
+import type { BackupFile } from '@/domain/backup';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@/domain/types';
 import { SEED_ACCOUNTS, SEED_TRANSACTIONS } from '@/domain/seed';
 import { DEFAULT_ACCENT } from '@/theme/tokens';
@@ -57,6 +58,7 @@ interface AppState extends PersistedShape {
   removeCategoryBudget: (name: string) => void;
   loadSampleData: () => void;
   resetAllData: () => void;
+  restoreBackup: (backup: BackupFile) => void;
   startPeek: () => void;
   cancelPeek: () => void;
 }
@@ -212,6 +214,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   // onboarding, since the brief's "delete all" implies a true fresh start.
   resetAllData: () => {
     set({ accounts: [], transactions: [], settings: DEFAULT_SETTINGS });
+    schedulePersist(get);
+  },
+
+  // Replaces the entire ledger with an imported backup, same as resetAllData
+  // but restoring real data instead of wiping it — merged onto DEFAULT_SETTINGS
+  // like hydrate() does, so a backup from an older app version that predates
+  // a newer settings field still restores with that field's default intact.
+  restoreBackup: (backup) => {
+    set({
+      accounts: backup.accounts,
+      transactions: backup.transactions,
+      settings: { ...DEFAULT_SETTINGS, ...backup.settings },
+    });
     schedulePersist(get);
   },
 
