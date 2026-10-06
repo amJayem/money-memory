@@ -125,16 +125,6 @@ export default function EntryForm() {
     return () => loop.stop();
   }, [activeInput, cursorOpacity]);
 
-  // The keypad slides up and fades in each time it reappears from hidden —
-  // popping in instantly read as jarring once hiding/reshowing it became a
-  // normal, frequent action (tapping away, scrolling, then tapping back).
-  const keypadAnim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    if (activeInput !== 'amount') return;
-    keypadAnim.setValue(0);
-    Animated.timing(keypadAnim, { toValue: 1, duration: 220, useNativeDriver: true }).start();
-  }, [activeInput, keypadAnim]);
-
   // Snapshot of what the form looked like on mount, so closing without
   // changing anything doesn't prompt for confirmation.
   const initial = useRef({ amount, category, account, toAccount, person, note, at: date.getTime() }).current;
@@ -422,16 +412,7 @@ export default function EntryForm() {
       {/* Also pinned, not scrolled — the keypad and Save button stay reachable
           without hunting for them below a long list of category/account chips. */}
       <View style={{ paddingHorizontal: 18, paddingTop: 10, paddingBottom: 16, gap: 12 }}>
-        {activeInput === 'amount' ? (
-          <Animated.View
-            style={{
-              opacity: keypadAnim,
-              transform: [{ translateY: keypadAnim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
-            }}
-          >
-            <Keypad value={amount} onChange={setAmount} />
-          </Animated.View>
-        ) : null}
+        {activeInput === 'amount' ? <Keypad value={amount} onChange={setAmount} /> : null}
 
         <Pressable
           onPress={save}
