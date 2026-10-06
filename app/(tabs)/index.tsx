@@ -70,6 +70,8 @@ export default function HomeScreen() {
   const expense = transactions.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const lentThisMonth = transactions.filter((t) => t.type === 'lent').reduce((s, t) => s + t.amount, 0);
   const recoveredThisMonth = transactions.filter((t) => t.type === 'repay_in').reduce((s, t) => s + t.amount, 0);
+  const borrowedThisMonth = transactions.filter((t) => t.type === 'borrowed').reduce((s, t) => s + t.amount, 0);
+  const paidBackThisMonth = transactions.filter((t) => t.type === 'repay_out').reduce((s, t) => s + t.amount, 0);
 
   const recent = sortedTransactions(transactions).slice(0, 6);
   const lentLedger = peopleAgg(transactions, 'lent');
@@ -278,44 +280,61 @@ export default function HomeScreen() {
             ) : null}
           </GlassCard>
         </Pressable>
-        <View style={{ flex: 1 }}>
-          <GlassCard padding={15} fill>
-            <AppText variant="label">This month</AppText>
-            <AppText variant="body2" style={{ marginTop: 8 }}>
-              Money in
-            </AppText>
-            <AppText variant="amount" color={theme.tone('pos')} style={{ fontSize: 17 }}>
-              {privacy.fmt(income)}
-            </AppText>
-            <AppText variant="body2" style={{ marginTop: 6 }}>
-              Money out
-            </AppText>
-            <AppText variant="amount" color={theme.tone('neg')} style={{ fontSize: 17 }}>
-              {privacy.fmt(expense)}
-            </AppText>
-            <AppText variant="mono" style={{ marginTop: 9, paddingTop: 9, borderTopWidth: 1, borderTopColor: theme.line }}>
-              This month: lent {privacy.fmt(lentThisMonth)} · back {privacy.fmt(recoveredThisMonth)}
-            </AppText>
-          </GlassCard>
-        </View>
+        {totalBorrowedAll > 0 ? (
+          <Pressable onPress={() => router.push('/loans?tab=borrowed')} style={{ flex: 1 }}>
+            <GlassCard padding={15} fill>
+              <AppText variant="label">You owe</AppText>
+              <AppText variant="amount" color={theme.tone('neg')} style={{ fontSize: 23, marginTop: 8 }}>
+                {privacy.fmt(iOwe)}
+              </AppText>
+              <AppText variant="body2" style={{ marginTop: 4 }}>
+                {peopleIOwe} {peopleIOwe === 1 ? 'person' : 'people'}
+              </AppText>
+              <AppText variant="mono" style={{ marginTop: 9, paddingTop: 9, borderTopWidth: 1, borderTopColor: theme.line }}>
+                All time: borrowed {privacy.fmt(totalBorrowedAll)} · back {privacy.fmt(totalPaidBackAll)}
+              </AppText>
+            </GlassCard>
+          </Pressable>
+        ) : null}
       </View>
 
-      {totalBorrowedAll > 0 ? (
-        <Pressable onPress={() => router.push('/loans?tab=borrowed')}>
-          <GlassCard padding={15}>
-            <AppText variant="label">You owe</AppText>
-            <AppText variant="amount" color={theme.tone('neg')} style={{ fontSize: 23, marginTop: 8 }}>
-              {privacy.fmt(iOwe)}
+      <GlassCard padding={15}>
+        <AppText variant="label">This month</AppText>
+        <View style={{ flexDirection: 'row', marginTop: 8 }}>
+          <View style={{ flex: 1 }}>
+            <AppText variant="body2">Money in</AppText>
+            <AppText variant="amount" color={theme.tone('pos')} style={{ fontSize: 17, marginTop: 2 }}>
+              {privacy.fmt(income)}
             </AppText>
-            <AppText variant="body2" style={{ marginTop: 4 }}>
-              {peopleIOwe} {peopleIOwe === 1 ? 'person' : 'people'}
+          </View>
+          <View style={{ flex: 1 }}>
+            <AppText variant="body2">Money out</AppText>
+            <AppText variant="amount" color={theme.tone('neg')} style={{ fontSize: 17, marginTop: 2 }}>
+              {privacy.fmt(expense)}
             </AppText>
-            <AppText variant="mono" style={{ marginTop: 9, paddingTop: 9, borderTopWidth: 1, borderTopColor: theme.line }}>
-              All time: borrowed {privacy.fmt(totalBorrowedAll)} · back {privacy.fmt(totalPaidBackAll)}
+          </View>
+        </View>
+        <View style={{ flexDirection: 'row', marginTop: 14, paddingTop: 13, borderTopWidth: 1, borderTopColor: theme.line }}>
+          <View style={{ flex: 1 }}>
+            <AppText variant="body2">Lent</AppText>
+            <AppText variant="amount" color={theme.tone('warn')} style={{ fontSize: 17, marginTop: 2 }}>
+              {privacy.fmt(lentThisMonth)}
             </AppText>
-          </GlassCard>
-        </Pressable>
-      ) : null}
+            <AppText variant="mono" style={{ marginTop: 2 }}>
+              back {privacy.fmt(recoveredThisMonth)}
+            </AppText>
+          </View>
+          <View style={{ flex: 1 }}>
+            <AppText variant="body2">Borrowed</AppText>
+            <AppText variant="amount" color={theme.tone('warn')} style={{ fontSize: 17, marginTop: 2 }}>
+              {privacy.fmt(borrowedThisMonth)}
+            </AppText>
+            <AppText variant="mono" style={{ marginTop: 2 }}>
+              back {privacy.fmt(paidBackThisMonth)}
+            </AppText>
+          </View>
+        </View>
+      </GlassCard>
 
       <GlassCard padding={5}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10 }}>
