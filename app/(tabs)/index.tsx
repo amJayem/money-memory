@@ -27,13 +27,14 @@ function greeting(): string {
   return 'Good night';
 }
 
-const QUICK_ACTIONS: { label: string; type: 'expense' | 'income' | 'transfer' | 'lent' | 'borrowed' | 'repay_in'; icon: string; tone: 'neg' | 'pos' | 'warn' | 'neutral' }[] = [
+const QUICK_ACTIONS: { label: string; type: 'expense' | 'income' | 'transfer' | 'lent' | 'borrowed' | 'repay_in' | 'repay_out'; icon: string; tone: 'neg' | 'pos' | 'warn' | 'neutral' }[] = [
   { label: 'Spent', type: 'expense', icon: '−', tone: 'neg' },
   { label: 'Got', type: 'income', icon: '+', tone: 'pos' },
   { label: 'Moved', type: 'transfer', icon: '⇄', tone: 'neutral' },
   { label: 'Lent', type: 'lent', icon: '→', tone: 'warn' },
   { label: 'Borrowed', type: 'borrowed', icon: '←', tone: 'warn' },
-  { label: 'Repaid', type: 'repay_in', icon: '↩', tone: 'pos' },
+  { label: 'Got paid', type: 'repay_in', icon: '↩', tone: 'pos' },
+  { label: 'Paid back', type: 'repay_out', icon: '↪', tone: 'neg' },
 ];
 
 const WALLET_CARD_STEP = 309; // card width 296 + 13 gap
