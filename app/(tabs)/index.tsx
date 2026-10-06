@@ -49,7 +49,7 @@ export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
   const toast = useToastStore((s) => s.show);
-  const { accounts, transactions, settings, spentAmount, liquid, owed, budget } = useLedger();
+  const { accounts, transactions, settings, spentAmount, liquid, owed, iOwe, budget } = useLedger();
   const privacy = usePrivacy('home');
   const [walletIndex, setWalletIndex] = useState(0);
 
@@ -72,10 +72,14 @@ export default function HomeScreen() {
   const recoveredThisMonth = transactions.filter((t) => t.type === 'repay_in').reduce((s, t) => s + t.amount, 0);
 
   const recent = sortedTransactions(transactions).slice(0, 6);
-  const peopleOwing = new Set(transactions.filter((t) => t.type === 'lent').map((t) => t.person)).size;
   const lentLedger = peopleAgg(transactions, 'lent');
+  const peopleOwing = lentLedger.length;
   const totalLentAll = lentLedger.reduce((s, p) => s + p.given, 0);
   const totalRecoveredAll = lentLedger.reduce((s, p) => s + p.back, 0);
+  const borrowedLedger = peopleAgg(transactions, 'borrowed');
+  const peopleIOwe = borrowedLedger.length;
+  const totalBorrowedAll = borrowedLedger.reduce((s, p) => s + p.given, 0);
+  const totalPaidBackAll = borrowedLedger.reduce((s, p) => s + p.back, 0);
   const onHomeScroll = useHideNavBarOnScroll();
 
   return (
@@ -295,6 +299,23 @@ export default function HomeScreen() {
           </GlassCard>
         </View>
       </View>
+
+      {totalBorrowedAll > 0 ? (
+        <Pressable onPress={() => router.push('/loans?tab=borrowed')}>
+          <GlassCard padding={15}>
+            <AppText variant="label">You owe</AppText>
+            <AppText variant="amount" color={theme.tone('neg')} style={{ fontSize: 23, marginTop: 8 }}>
+              {privacy.fmt(iOwe)}
+            </AppText>
+            <AppText variant="body2" style={{ marginTop: 4 }}>
+              {peopleIOwe} {peopleIOwe === 1 ? 'person' : 'people'}
+            </AppText>
+            <AppText variant="mono" style={{ marginTop: 9, paddingTop: 9, borderTopWidth: 1, borderTopColor: theme.line }}>
+              All time: borrowed {privacy.fmt(totalBorrowedAll)} · back {privacy.fmt(totalPaidBackAll)}
+            </AppText>
+          </GlassCard>
+        </Pressable>
+      ) : null}
 
       <GlassCard padding={5}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10 }}>

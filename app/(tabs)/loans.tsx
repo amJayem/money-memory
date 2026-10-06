@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/AppText';
 import { Chip } from '@/components/Chip';
@@ -19,7 +19,8 @@ export default function LoansScreen() {
   const router = useRouter();
   const { transactions } = useLedger();
   const privacy = usePrivacy('loans');
-  const [tab, setTab] = useState<'lent' | 'borrowed'>('lent');
+  const { tab: initialTab } = useLocalSearchParams<{ tab?: 'lent' | 'borrowed' }>();
+  const [tab, setTab] = useState<'lent' | 'borrowed'>(initialTab === 'borrowed' ? 'borrowed' : 'lent');
   const [filter, setFilter] = useState<LoanFilter>('All');
 
   const people = peopleAgg(transactions, tab);
