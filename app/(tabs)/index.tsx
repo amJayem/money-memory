@@ -268,7 +268,7 @@ export default function HomeScreen() {
             </AppText>
             {totalLentAll > 0 ? (
               <AppText variant="mono" style={{ marginTop: 9, paddingTop: 9, borderTopWidth: 1, borderTopColor: theme.line }}>
-                Lent {privacy.fmt(totalLentAll)} · back {privacy.fmt(totalRecoveredAll)}
+                All time: lent {privacy.fmt(totalLentAll)} · back {privacy.fmt(totalRecoveredAll)}
               </AppText>
             ) : null}
           </GlassCard>
@@ -289,7 +289,7 @@ export default function HomeScreen() {
               {privacy.fmt(expense)}
             </AppText>
             <AppText variant="mono" style={{ marginTop: 9, paddingTop: 9, borderTopWidth: 1, borderTopColor: theme.line }}>
-              Lent {privacy.fmt(lentThisMonth)} · back {privacy.fmt(recoveredThisMonth)}
+              This month: lent {privacy.fmt(lentThisMonth)} · back {privacy.fmt(recoveredThisMonth)}
             </AppText>
           </GlassCard>
         </View>
