@@ -1,5 +1,5 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Keyboard, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -94,6 +94,17 @@ export default function EntryForm() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  // The device's own keyboard appears whenever a free-text field (note, custom
+  // category, new person name) is focused — showing the app's numeric Keypad
+  // at the same time put two different "keyboards" on screen together, which
+  // read as broken. Hide ours for as long as the real keyboard is up. Driven
+  // by the actual show/hide events rather than TextInput focus/blur, since
+  // Android's back button dismisses the keyboard without always firing blur.
+  const [textFieldFocused, setTextFieldFocused] = useState(false);
+  useEffect(() => {
+    const hide = Keyboard.addListener('keyboardDidHide', () => setTextFieldFocused(false));
+    return () => hide.remove();
+  }, []);
 
   // Snapshot of what the form looked like on mount, so closing without
   // changing anything doesn't prompt for confirmation.
@@ -216,7 +227,16 @@ export default function EntryForm() {
   return (
     <ScreenBackground blobs={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 6 }}>
-        <AppText variant="heading">{editing ? 'Edit transaction' : TITLE[type]}</AppText>
+        <View>
+          <AppText variant="heading">{editing ? 'Edit transaction' : TITLE[type]}</AppText>
+          {editing ? (
+            <Pressable onPress={() => router.push(`/sheet?editId=${editing.id}`)} hitSlop={6}>
+              <AppText variant="body2" color={theme.accentColor} style={{ marginTop: 2 }}>
+                Wrong type? Change it
+              </AppText>
+            </Pressable>
+          ) : null}
+        </View>
         <IconButton glyph="✕" onPress={close} />
       </View>
 
@@ -249,6 +269,8 @@ export default function EntryForm() {
                 <TextInput
                   value={customCategory}
                   onChangeText={setCustomCategory}
+                  onFocus={() => setTextFieldFocused(true)}
+                  onBlur={() => setTextFieldFocused(false)}
                   placeholder="Name this category — optional, stays as Other if blank"
                   placeholderTextColor={theme.ink3}
                   style={{ marginTop: 10, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 12, color: theme.ink, fontSize: 13.5 }}
@@ -267,6 +289,8 @@ export default function EntryForm() {
               <TextInput
                 value={newPersonName}
                 onChangeText={setNewPersonName}
+                onFocus={() => setTextFieldFocused(true)}
+                onBlur={() => setTextFieldFocused(false)}
                 placeholder="or type a new name"
                 placeholderTextColor={theme.ink3}
                 style={{ marginTop: 10, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 12, color: theme.ink, fontSize: 13.5 }}
@@ -324,6 +348,8 @@ export default function EntryForm() {
             <TextInput
               value={note}
               onChangeText={setNote}
+              onFocus={() => setTextFieldFocused(true)}
+              onBlur={() => setTextFieldFocused(false)}
               placeholder="Add a note"
               placeholderTextColor={theme.ink3}
               style={{ borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 12, color: theme.ink, fontSize: 13.5 }}
@@ -340,7 +366,7 @@ export default function EntryForm() {
       {/* Also pinned, not scrolled — the keypad and Save button stay reachable
           without hunting for them below a long list of category/account chips. */}
       <View style={{ paddingHorizontal: 18, paddingTop: 10, paddingBottom: 16, gap: 12 }}>
-        <Keypad value={amount} onChange={setAmount} />
+        {textFieldFocused ? null : <Keypad value={amount} onChange={setAmount} />}
 
         <Pressable
           onPress={save}

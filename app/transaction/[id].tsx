@@ -146,7 +146,7 @@ export default function TransactionDetailScreen() {
 
         <View style={{ flexDirection: 'row', gap: 11, marginTop: 14 }}>
           <Pressable
-            onPress={() => router.push(`/sheet?editId=${t.id}`)}
+            onPress={() => router.push(`/entry/${t.type}?editId=${t.id}`)}
             style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 15, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}
           >
             <AppText variant="body">Edit</AppText>
