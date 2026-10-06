@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Keyboard, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Animated, Keyboard, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -94,17 +94,36 @@ export default function EntryForm() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
-  // The device's own keyboard appears whenever a free-text field (note, custom
-  // category, new person name) is focused — showing the app's numeric Keypad
-  // at the same time put two different "keyboards" on screen together, which
-  // read as broken. Hide ours for as long as the real keyboard is up. Driven
-  // by the actual show/hide events rather than TextInput focus/blur, since
-  // Android's back button dismisses the keyboard without always firing blur.
-  const [textFieldFocused, setTextFieldFocused] = useState(false);
+  // The amount display behaves like a real focusable field even though it's
+  // not a TextInput: 'amount' shows the custom Keypad (focused on landing, so
+  // entry starts immediately), 'text' means a free-text field (note, custom
+  // category, new person name) owns the device's own keyboard instead, and
+  // null means neither is open — reachable by tapping away from the amount
+  // or scrolling, since there was previously no way to dismiss the keypad.
+  const [activeInput, setActiveInput] = useState<'amount' | 'text' | null>('amount');
   useEffect(() => {
-    const hide = Keyboard.addListener('keyboardDidHide', () => setTextFieldFocused(false));
+    // Driven by the real show/hide event rather than TextInput blur alone,
+    // since Android's back button can dismiss the keyboard without firing it.
+    const hide = Keyboard.addListener('keyboardDidHide', () => setActiveInput((cur) => (cur === 'text' ? null : cur)));
     return () => hide.remove();
   }, []);
+  // A plain Text has no native cursor, so the amount field fakes one — a bar
+  // that blinks only while it's the active input, same as a real text cursor.
+  // Driven on the native thread (not setState+setInterval) so the blink never
+  // triggers a screen re-render, which was interfering with touch handling
+  // elsewhere on the form while the keypad was open.
+  const cursorOpacity = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (activeInput !== 'amount') return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(cursorOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
+        Animated.timing(cursorOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [activeInput, cursorOpacity]);
 
   // Snapshot of what the form looked like on mount, so closing without
   // changing anything doesn't prompt for confirmation.
@@ -241,15 +260,42 @@ export default function EntryForm() {
       </View>
 
       {/* Pinned above the scroll, not inside it — this is what you're typing, so it must
-          never scroll out of view while the keypad (also pinned, below) is in use. */}
-      <View style={{ alignItems: 'center', paddingVertical: 10 }}>
+          never scroll out of view while the keypad (also pinned, below) is in use. Tapping
+          it re-opens the keypad after it's been dismissed by scrolling or another field. */}
+      <Pressable
+        onPress={() => {
+          Keyboard.dismiss();
+          setActiveInput('amount');
+        }}
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10 }}
+      >
         <AppText style={{ fontSize: amount.length > 7 ? 30 : amount.length > 5 ? 36 : 42 }} variant="amount">
           {settings.currencySymbol}
           {amount || '0'}
         </AppText>
-      </View>
+        {activeInput === 'amount' ? (
+          <Animated.View
+            style={{
+              width: 2.5,
+              height: amount.length > 7 ? 28 : amount.length > 5 ? 32 : 36,
+              marginLeft: 3,
+              borderRadius: 1.5,
+              backgroundColor: theme.ink,
+              opacity: cursorOpacity,
+            }}
+          />
+        ) : null}
+      </Pressable>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 16 }} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 16 }}
+        keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={() => {
+          Keyboard.dismiss();
+          setActiveInput(null);
+        }}
+      >
         {needsCategory ? (
             <Section label="Category">
               <ChipRow>
@@ -269,8 +315,8 @@ export default function EntryForm() {
                 <TextInput
                   value={customCategory}
                   onChangeText={setCustomCategory}
-                  onFocus={() => setTextFieldFocused(true)}
-                  onBlur={() => setTextFieldFocused(false)}
+                  onFocus={() => setActiveInput('text')}
+                  onBlur={() => setActiveInput((cur) => (cur === 'text' ? null : cur))}
                   placeholder="Name this category — optional, stays as Other if blank"
                   placeholderTextColor={theme.ink3}
                   style={{ marginTop: 10, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 12, color: theme.ink, fontSize: 13.5 }}
@@ -289,8 +335,8 @@ export default function EntryForm() {
               <TextInput
                 value={newPersonName}
                 onChangeText={setNewPersonName}
-                onFocus={() => setTextFieldFocused(true)}
-                onBlur={() => setTextFieldFocused(false)}
+                onFocus={() => setActiveInput('text')}
+                onBlur={() => setActiveInput((cur) => (cur === 'text' ? null : cur))}
                 placeholder="or type a new name"
                 placeholderTextColor={theme.ink3}
                 style={{ marginTop: 10, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 12, color: theme.ink, fontSize: 13.5 }}
@@ -348,8 +394,8 @@ export default function EntryForm() {
             <TextInput
               value={note}
               onChangeText={setNote}
-              onFocus={() => setTextFieldFocused(true)}
-              onBlur={() => setTextFieldFocused(false)}
+              onFocus={() => setActiveInput('text')}
+              onBlur={() => setActiveInput((cur) => (cur === 'text' ? null : cur))}
               placeholder="Add a note"
               placeholderTextColor={theme.ink3}
               style={{ borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 12, color: theme.ink, fontSize: 13.5 }}
@@ -366,7 +412,7 @@ export default function EntryForm() {
       {/* Also pinned, not scrolled — the keypad and Save button stay reachable
           without hunting for them below a long list of category/account chips. */}
       <View style={{ paddingHorizontal: 18, paddingTop: 10, paddingBottom: 16, gap: 12 }}>
-        {textFieldFocused ? null : <Keypad value={amount} onChange={setAmount} />}
+        {activeInput === 'amount' ? <Keypad value={amount} onChange={setAmount} /> : null}
 
         <Pressable
           onPress={save}
