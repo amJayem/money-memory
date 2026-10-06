@@ -17,6 +17,7 @@ const OPTIONS: { label: string; sub: string; type: TransactionType; icon: string
   { label: 'I lent money to someone', sub: 'Still yours — just not with you', type: 'lent', icon: '→', tone: 'warn' },
   { label: 'Someone paid me back', sub: 'Reduces what they owe you', type: 'repay_in', icon: '↩', tone: 'pos' },
   { label: 'I borrowed money', sub: 'Track what you owe them', type: 'borrowed', icon: '←', tone: 'warn' },
+  { label: 'I paid someone back', sub: 'Reduces what you owe them', type: 'repay_out', icon: '↪', tone: 'neg' },
 ];
 
 export default function ActionSheet() {
