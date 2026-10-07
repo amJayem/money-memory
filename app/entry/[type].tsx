@@ -291,9 +291,15 @@ export default function EntryForm() {
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 16 }}
         keyboardShouldPersistTaps="handled"
-        onScrollBeginDrag={() => {
-          Keyboard.dismiss();
-          setActiveInput(null);
+        scrollEventThrottle={16}
+        onScroll={(e) => {
+          // onScrollBeginDrag fired on the smallest touch-move (even a 1mm
+          // nudge while reaching for a chip), hiding the keypad far too
+          // eagerly. Only dismiss once there's been real scroll distance.
+          if (e.nativeEvent.contentOffset.y > 24) {
+            Keyboard.dismiss();
+            setActiveInput(null);
+          }
         }}
       >
         {needsCategory ? (
