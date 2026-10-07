@@ -41,6 +41,10 @@ export interface Transaction {
   note?: string;
   /** Set when a transaction is edited, so history can show it was touched. */
   editedAt?: string;
+  /** expense only: still recorded and shown everywhere as normal, just left
+   * out of the budget's spent total — for a one-off cost outside the plan
+   * (a gift, an emergency) that shouldn't make the month look overspent. */
+  excludeFromBudget?: boolean;
 }
 
 export type PrivacyScope = 'dashboard' | 'all';

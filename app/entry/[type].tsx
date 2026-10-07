@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Keyboard, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Animated, Keyboard, LayoutAnimation, Platform, Pressable, ScrollView, TextInput, UIManager, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from '@/components/AppText';
+import { AppSwitch } from '@/components/AppSwitch';
 import { Chip } from '@/components/Chip';
 import { IconButton } from '@/components/IconButton';
 import { Keypad } from '@/components/Keypad';
@@ -15,6 +16,10 @@ import type { TransactionType } from '@/domain/types';
 import { budgetStatus, liquid, outstandingFor, spent } from '@/domain/money';
 import { echoLine, SAVE_TOAST_LABEL } from '@/domain/echo';
 import { formatAmount } from '@/domain/format';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const NEEDS_CATEGORY: TransactionType[] = ['expense', 'income'];
 const NEEDS_PERSON: TransactionType[] = ['lent', 'repay_in', 'borrowed', 'repay_out'];
@@ -86,6 +91,7 @@ export default function EntryForm() {
   const [person, setPerson] = useState(!typeChanged && editing?.person ? editing.person : decodedPersonParam ?? knownPeople[0] ?? '');
   const [newPersonName, setNewPersonName] = useState('');
   const [note, setNote] = useState(editing?.note ?? '');
+  const [outsideBudget, setOutsideBudget] = useState(!typeChanged && editing?.excludeFromBudget ? true : false);
   // "Other" opens an inline field instead of silently filing the transaction
   // under the literal word "Other" — a typed name is remembered as a real
   // category, but leaving it blank still saves fine as "Other".
@@ -100,7 +106,15 @@ export default function EntryForm() {
   // category, new person name) owns the device's own keyboard instead, and
   // null means neither is open — reachable by tapping away from the amount
   // or scrolling, since there was previously no way to dismiss the keypad.
-  const [activeInput, setActiveInput] = useState<'amount' | 'text' | null>('amount');
+  const [activeInput, setActiveInputRaw] = useState<'amount' | 'text' | null>('amount');
+  // Animates the keypad's show/hide transition at the native layout level —
+  // no Animated.View wrapper around the keypad itself, so its touch targets
+  // are never at risk of desyncing from its visual position (the bug hit
+  // earlier when wrapping it directly).
+  function setActiveInput(next: 'amount' | 'text' | null | ((cur: 'amount' | 'text' | null) => 'amount' | 'text' | null)) {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setActiveInputRaw(next);
+  }
   useEffect(() => {
     // Driven by the real show/hide event rather than TextInput blur alone,
     // since Android's back button can dismiss the keyboard without firing it.
@@ -156,7 +170,11 @@ export default function EntryForm() {
   const needsCategory = NEEDS_CATEGORY.includes(type);
   const needsPerson = NEEDS_PERSON.includes(type);
   const needsDest = type === 'transfer';
-  const categories = type === 'income' ? settings.incomeCategories : settings.categories;
+  // "Other" is meant as the catch-all fallback, so it always reads last —
+  // new categories get appended to the end of the stored list as they're
+  // added, which would otherwise push "Other" into the middle over time.
+  const rawCategories = type === 'income' ? settings.incomeCategories : settings.categories;
+  const categories = [...rawCategories.filter((c) => c !== 'Other'), ...rawCategories.filter((c) => c === 'Other')];
 
   const numericAmount = parseFloat(amount) || 0;
   // A typed name that only differs from an existing person by case or spacing
@@ -229,6 +247,7 @@ export default function EntryForm() {
       person: needsPerson ? effectivePerson : undefined,
       note: note.trim() || undefined,
       at: date.toISOString(),
+      excludeFromBudget: type === 'expense' && outsideBudget ? true : undefined,
     };
     if (editing) {
       updateTransaction(editing.id, patch);
@@ -407,6 +426,18 @@ export default function EntryForm() {
               style={{ borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 12, color: theme.ink, fontSize: 13.5 }}
             />
           </Section>
+
+          {type === 'expense' ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 18, padding: 13 }}>
+              <View style={{ flex: 1 }}>
+                <AppText variant="body">Outside budget</AppText>
+                <AppText variant="mono" style={{ marginTop: 2 }}>
+                  Still recorded as normal — just not counted against this month's plan
+                </AppText>
+              </View>
+              <AppSwitch value={outsideBudget} onValueChange={setOutsideBudget} />
+            </View>
+          ) : null}
 
           {echo ? (
             <View style={{ backgroundColor: theme.surface2, borderRadius: 16, padding: 13 }}>

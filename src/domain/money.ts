@@ -50,7 +50,7 @@ export function liquid(accounts: Account[], transactions: Transaction[]): number
 export function spent(transactions: Transaction[], countLentAsSpending: boolean): number {
   let total = 0;
   for (const t of transactions) {
-    if (t.type === 'expense') total += t.amount;
+    if (t.type === 'expense' && !t.excludeFromBudget) total += t.amount;
     else if (t.type === 'lent' && countLentAsSpending) total += t.amount;
   }
   return total;

@@ -55,7 +55,9 @@ export default function TransactionDetailScreen() {
     t.type === 'transfer'
       ? 'Transfers move money between your own accounts — they never count as income or spending.'
       : t.type === 'expense'
-        ? `Counted in ${monthLabel} spending and in your ${t.category} category.`
+        ? t.excludeFromBudget
+          ? `Kept out of ${monthLabel}'s budget — still shows in your balances and history as usual.`
+          : `Counted in ${monthLabel} spending and in your ${t.category} category.`
         : t.type === 'income'
           ? `Counted as ${monthLabel} income — doesn't touch your budget.`
           : t.type === 'lent'

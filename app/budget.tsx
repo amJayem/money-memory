@@ -131,7 +131,7 @@ export default function BudgetScreen() {
           <View style={{ gap: 14, marginTop: 14 }}>
             {budgetedCategories.map((name) => {
               const catBudget = settings.categoryBudgets[name];
-              const spent = transactions.filter((t) => t.type === 'expense' && t.category === name).reduce((s, t) => s + t.amount, 0);
+              const spent = transactions.filter((t) => t.type === 'expense' && !t.excludeFromBudget && t.category === name).reduce((s, t) => s + t.amount, 0);
               const status = budgetStatus(catBudget, spent);
               return (
                 <Pressable key={name} onPress={() => openCategoryEditor(name)}>
