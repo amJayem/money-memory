@@ -4,6 +4,7 @@ import { ACCENT_THEMES, DEFAULT_ACCENT } from '@/theme/tokens';
 const VALID_APPEARANCE = new Set(['light', 'dark', 'system']);
 const VALID_NAV_STYLE = new Set(['classic', 'floating']);
 const VALID_PRIVACY_SCOPE = new Set(['dashboard', 'all']);
+const VALID_LANGUAGE = new Set(['en', 'bn']);
 
 /** The exact shape appStore persists — a backup is just that, wrapped with a version and a timestamp so an older app can refuse a newer backup it doesn't understand. */
 export interface BackupFile {
@@ -60,5 +61,6 @@ function sanitizeSettings(settings: Partial<Settings>): Partial<Settings> {
     appearance: settings.appearance && VALID_APPEARANCE.has(settings.appearance) ? settings.appearance : 'system',
     navStyle: settings.navStyle && VALID_NAV_STYLE.has(settings.navStyle) ? settings.navStyle : 'classic',
     privacyScope: settings.privacyScope && VALID_PRIVACY_SCOPE.has(settings.privacyScope) ? settings.privacyScope : 'dashboard',
+    language: settings.language && VALID_LANGUAGE.has(settings.language) ? settings.language : 'en',
   };
 }

@@ -16,11 +16,12 @@ import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
 import { ACCENT_THEMES, ACCOUNT_TYPE_LABEL, type AccentTheme } from '@/theme/tokens';
 import { oklch } from '@/theme/oklch';
-import type { Appearance, NavStyle, PrivacyScope } from '@/domain/types';
+import type { Appearance, Language, NavStyle, PrivacyScope } from '@/domain/types';
 import { syncDailyReminder } from '@/notifications/dailyReminder';
 import { exportTransactionsCsv } from '@/export/exportTransactions';
 import { exportBackup } from '@/export/exportBackup';
 import { pickBackupFile } from '@/export/importBackup';
+import { useTranslation } from '@/i18n/useTranslation';
 
 const APPEARANCE_LABELS: Record<Appearance, string> = { light: 'Light', dark: 'Night', system: 'System' };
 const NAV_STYLE_LABELS: Record<NavStyle, string> = { classic: 'Classic', floating: 'Floating' };
@@ -34,6 +35,7 @@ function formatTime(hour: number, minute: number): string {
 export default function SettingsScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const t = useTranslation('settings');
   const toast = useToastStore((s) => s.show);
   const settings = useAppStore((s) => s.settings);
   const accounts = useAppStore((s) => s.accounts);
@@ -46,6 +48,7 @@ export default function SettingsScreen() {
   const [accentModal, setAccentModal] = useState(false);
   const [appearanceModal, setAppearanceModal] = useState(false);
   const [navStyleModal, setNavStyleModal] = useState(false);
+  const [languageModal, setLanguageModal] = useState(false);
   const [privacyScopeModal, setPrivacyScopeModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showReminderTime, setShowReminderTime] = useState(false);
@@ -56,7 +59,7 @@ export default function SettingsScreen() {
   const [pendingReminderTime, setPendingReminderTime] = useState(() => new Date(2000, 0, 1, settings.reminderHour, settings.reminderMinute));
 
   const monthLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  const accountTypesSub = [...new Set(accounts.map((a) => ACCOUNT_TYPE_LABEL[a.type]?.split(' ')[0]).filter(Boolean))].join(', ') || 'None yet';
+  const accountTypesSub = [...new Set(accounts.map((a) => ACCOUNT_TYPE_LABEL[a.type]?.split(' ')[0]).filter(Boolean))].join(', ') || t('noneYet');
 
   function commitCurrency(v: string) {
     setCurrency(v);
@@ -126,12 +129,12 @@ export default function SettingsScreen() {
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
         <IconButton glyph="←" onPress={() => router.back()} />
-        <AppText variant="title">Settings</AppText>
+        <AppText variant="title">{t('title')}</AppText>
       </View>
 
-      <GroupHeading title="Money" />
+      <GroupHeading title={t('groupMoney')} />
       <Card>
-        <Row label="Currency symbol" sub="Relabels the app · never converts">
+        <Row label={t('currencySymbol')} sub={t('currencySymbolSub')}>
           <TextInput
             value={currency}
             onChangeText={commitCurrency}
@@ -152,44 +155,55 @@ export default function SettingsScreen() {
             }}
           />
         </Row>
-        <Row label="Count lent money as spending" sub={settings.countLentAsSpending ? 'On — loans reduce your budget' : 'Off — loans stay out of your budget'} last>
+        <Row label={t('countLent')} sub={settings.countLentAsSpending ? t('countLentOn') : t('countLentOff')} last>
           <AppSwitch value={settings.countLentAsSpending} onValueChange={(v) => updateSettings({ countLentAsSpending: v })} compact />
         </Row>
       </Card>
 
-      <GroupHeading title="Appearance" />
+      <GroupHeading title={t('groupAppearance')} />
       <Card>
-        <Row label="Accent theme" sub={ACCENT_THEMES[settings.accentTheme].label}>
+        <Row label={t('accentTheme')} sub={ACCENT_THEMES[settings.accentTheme].label}>
           <AccentDots value={settings.accentTheme} onPress={() => setAccentModal(true)} />
         </Row>
-        <Row label="Theme" sub={settings.appearance === 'system' ? 'Follows your phone' : APPEARANCE_LABELS[settings.appearance]}>
+        <Row label={t('theme')} sub={settings.appearance === 'system' ? t('themeFollowsPhone') : APPEARANCE_LABELS[settings.appearance]}>
           <Dropdown value={APPEARANCE_LABELS[settings.appearance]} onPress={() => setAppearanceModal(true)} />
         </Row>
-        <Row label="Navigation style" sub={settings.navStyle === 'floating' ? 'Rounded floating pill' : 'Classic edge-to-edge bar'} last>
+        <Row label={t('navStyle')} sub={settings.navStyle === 'floating' ? t('navStyleFloating') : t('navStyleClassic')} last>
           <Dropdown value={NAV_STYLE_LABELS[settings.navStyle]} onPress={() => setNavStyleModal(true)} />
         </Row>
       </Card>
 
-      <GroupHeading title="Privacy" />
+      <GroupHeading title={t('groupLanguage')} />
       <Card>
-        <Row label="Privacy mode" sub={settings.privacy ? 'On — tap the eye to reveal' : 'Off — amounts visible everywhere'}>
-          <AppSwitch value={settings.privacy} onValueChange={(v) => updateSettings({ privacy: v })} compact />
-        </Row>
-        <Row label="What it hides" sub="Tap the eye to reveal for 10s" last>
-          <Dropdown value={settings.privacyScope === 'all' ? 'Everything' : 'Dashboard'} onPress={() => setPrivacyScopeModal(true)} />
+        <Row label={t('language')} sub={settings.language === 'bn' ? t('languageBengali') : t('languageEnglish')} last>
+          <Dropdown value={settings.language === 'bn' ? t('languageBengali') : t('languageEnglish')} onPress={() => setLanguageModal(true)} />
         </Row>
       </Card>
 
-      <GroupHeading title="Notifications" />
+      <GroupHeading title={t('groupPrivacy')} />
       <Card>
-        <Row label="Budget alerts" sub={settings.budgetAlerts ? 'At 80% and when you pass it' : 'No notifications'} last={!settings.reminderEnabled}>
+        <Row label={t('privacyMode')} sub={settings.privacy ? t('privacyModeOn') : t('privacyModeOff')}>
+          <AppSwitch value={settings.privacy} onValueChange={(v) => updateSettings({ privacy: v })} compact />
+        </Row>
+        <Row label={t('whatItHides')} sub={t('whatItHidesSub')} last>
+          <Dropdown value={settings.privacyScope === 'all' ? t('whatItHidesAll') : t('whatItHidesDashboard')} onPress={() => setPrivacyScopeModal(true)} />
+        </Row>
+      </Card>
+
+      <GroupHeading title={t('groupNotifications')} />
+      <Card>
+        <Row label={t('budgetAlerts')} sub={settings.budgetAlerts ? t('budgetAlertsOn') : t('budgetAlertsOff')} last={!settings.reminderEnabled}>
           <AppSwitch value={settings.budgetAlerts} onValueChange={(v) => updateSettings({ budgetAlerts: v })} compact />
         </Row>
-        <Row label="Daily reminder" sub={settings.reminderEnabled ? `Every day at ${formatTime(settings.reminderHour, settings.reminderMinute)}` : 'Off — nudges you to log spending'} last={!settings.reminderEnabled}>
+        <Row
+          label={t('dailyReminder')}
+          sub={settings.reminderEnabled ? t('dailyReminderOn', { time: formatTime(settings.reminderHour, settings.reminderMinute) }) : t('dailyReminderOff')}
+          last={!settings.reminderEnabled}
+        >
           <AppSwitch value={settings.reminderEnabled} onValueChange={setReminderEnabled} compact />
         </Row>
         {settings.reminderEnabled ? (
-          <Row label="Reminder time" sub="Tap to change when it fires" last>
+          <Row label={t('reminderTime')} sub={t('reminderTimeSub')} last>
             <Dropdown
               value={formatTime(settings.reminderHour, settings.reminderMinute)}
               onPress={() => {
@@ -201,26 +215,26 @@ export default function SettingsScreen() {
         ) : null}
       </Card>
 
-      <GroupHeading title="Your data" />
+      <GroupHeading title={t('groupYourData')} />
       <Card>
-        <NavRow label="Categories" sub="Rename or add" trailing={String(settings.categories.length)} onPress={() => router.push('/categories')} />
-        <NavRow label="Accounts" sub={accountTypesSub} trailing={String(accounts.length)} onPress={() => router.push('/accounts')} />
-        <NavRow label="Export CSV" sub={exportingCsv ? 'Preparing file…' : `${transactions.length} transactions`} onPress={exportCsv} />
-        <NavRow label="Export backup" sub={exportingBackup ? 'Preparing file…' : 'Full restore file for another phone'} onPress={exportBackupFile} />
-        <NavRow label="Import backup" sub={importingBackup ? 'Reading file…' : 'Replaces everything on this device'} onPress={importBackupFile} />
-        <NavRow label="Monthly summary" sub={monthLabel} onPress={() => router.push('/report')} last />
+        <NavRow label={t('categories')} sub={t('categoriesSub')} trailing={String(settings.categories.length)} onPress={() => router.push('/categories')} />
+        <NavRow label={t('accounts')} sub={accountTypesSub} trailing={String(accounts.length)} onPress={() => router.push('/accounts')} />
+        <NavRow label={t('exportCsv')} sub={exportingCsv ? t('exportCsvPreparing') : t('transactionsCount', { count: String(transactions.length) })} onPress={exportCsv} />
+        <NavRow label={t('exportBackup')} sub={exportingBackup ? t('exportBackupPreparing') : t('exportBackupSub')} onPress={exportBackupFile} />
+        <NavRow label={t('importBackup')} sub={importingBackup ? t('importBackupReading') : t('importBackupSub')} onPress={importBackupFile} />
+        <NavRow label={t('monthlySummary')} sub={monthLabel} onPress={() => router.push('/report')} last />
       </Card>
 
       <View style={{ borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 22, padding: 18 }}>
         <AppText variant="body" weight="manrope700">
-          Your money data stays yours
+          {t('dataStaysYoursTitle')}
         </AppText>
         <AppText variant="body2" style={{ marginTop: 5 }}>
-          Everything is stored on this device. No bank passwords, card PINs or OTPs are ever requested. Export a backup any time you like.
+          {t('dataStaysYoursBody')}
         </AppText>
       </View>
 
-      <GhostButton label="Delete all data" tone="neg" fullWidth onPress={() => setConfirmDelete(true)} />
+      <GhostButton label={t('deleteAllData')} tone="neg" fullWidth onPress={() => setConfirmDelete(true)} />
 
       <Modal visible={showReminderTime} transparent animationType="fade" onRequestClose={() => setShowReminderTime(false)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(10,10,12,0.45)', justifyContent: 'flex-end' }} onPress={() => setShowReminderTime(false)}>
@@ -265,7 +279,7 @@ export default function SettingsScreen() {
 
       <SelectModal
         visible={accentModal}
-        title="Accent theme"
+        title={t('accentTheme')}
         value={settings.accentTheme}
         options={(Object.keys(ACCENT_THEMES) as AccentTheme[]).map((k) => ({ value: k, label: ACCENT_THEMES[k].label }))}
         onSelect={(v) => updateSettings({ accentTheme: v as AccentTheme })}
@@ -273,7 +287,7 @@ export default function SettingsScreen() {
       />
       <SelectModal
         visible={appearanceModal}
-        title="Theme"
+        title={t('theme')}
         value={settings.appearance}
         options={[
           { value: 'light', label: 'Light' },
@@ -285,7 +299,7 @@ export default function SettingsScreen() {
       />
       <SelectModal
         visible={navStyleModal}
-        title="Navigation style"
+        title={t('navStyle')}
         value={settings.navStyle}
         options={[
           { value: 'classic', label: 'Classic' },
@@ -295,8 +309,19 @@ export default function SettingsScreen() {
         onClose={() => setNavStyleModal(false)}
       />
       <SelectModal
+        visible={languageModal}
+        title={t('language')}
+        value={settings.language}
+        options={[
+          { value: 'en', label: t('languageEnglish') },
+          { value: 'bn', label: t('languageBengali') },
+        ]}
+        onSelect={(v) => updateSettings({ language: v as Language })}
+        onClose={() => setLanguageModal(false)}
+      />
+      <SelectModal
         visible={privacyScopeModal}
-        title="What it hides"
+        title={t('whatItHides')}
         value={settings.privacyScope}
         options={[
           { value: 'dashboard', label: 'Dashboard only' },

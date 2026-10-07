@@ -50,9 +50,13 @@ export interface Transaction {
 export type PrivacyScope = 'dashboard' | 'all';
 export type Appearance = 'light' | 'dark' | 'system';
 export type NavStyle = 'classic' | 'floating';
+export type Language = 'en' | 'bn';
 
 export interface Settings {
   hasOnboarded: boolean;
+  /** Text labels/placeholders only — amounts and dates always stay in
+   * English/Arabic numerals regardless of language. */
+  language: Language;
   enabledAccountTypes: AccountType[];
   currencySymbol: string;
   accentTheme: import('../theme/tokens').AccentTheme;

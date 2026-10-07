@@ -5,26 +5,13 @@ import { AppText } from '@/components/AppText';
 import { ScreenBackground } from '@/components/Screen';
 import { GhostButton } from '@/components/GhostButton';
 import { useAppStore } from '@/store/appStore';
-import type { AccountType } from '@/domain/types';
+import type { AccountType, Language } from '@/domain/types';
 import { ACCOUNT_TYPE_LABEL } from '@/theme/tokens';
+import { useTranslation } from '@/i18n/useTranslation';
 
-const SLIDES = [
-  {
-    title: 'Know where your money actually went',
-    body: 'Every rupee, taka or dollar you spend, earn or move — searchable months later, not just this week.',
-  },
-  {
-    title: "Never forget who owes you — or who you owe",
-    body: 'Lend, borrow and get paid back without losing track. Money out to a friend stays your money, not a loss.',
-  },
-  {
-    title: 'Plan a month you can keep',
-    body: 'A simple budget that tells you plainly when you’re close, and never lies by counting loans as spending.',
-  },
-  {
-    title: "Let's set up your money",
-    body: 'Pick the kinds of accounts you actually use, your currency symbol, and a monthly budget if you want one.',
-  },
+const LANGUAGES: { code: Language; label: string }[] = [
+  { code: 'en', label: 'English' },
+  { code: 'bn', label: 'বাংলা' },
 ];
 
 const ACCOUNT_CHOICES: AccountType[] = ['cash', 'bank', 'wallet', 'credit'];
@@ -40,8 +27,21 @@ export function OnboardingFlow() {
   const updateSettings = useAppStore((s) => s.updateSettings);
   const addAccount = useAppStore((s) => s.addAccount);
   const loadSampleData = useAppStore((s) => s.loadSampleData);
+  const language = useAppStore((s) => s.settings.language);
+  const t = useTranslation('onboarding');
+  // Asked once, up front, before the splash even shows — not a slide of its
+  // own, since every other slide's text depends on the answer. Choosing a
+  // language here just updates settings directly; there's nothing else to
+  // "finish" about it, and it stays changeable from Settings afterward.
+  const [languagePicked, setLanguagePicked] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [slide, setSlide] = useState(0);
+  const SLIDES = [
+    { title: t('slide1Title'), body: t('slide1Body') },
+    { title: t('slide2Title'), body: t('slide2Body') },
+    { title: t('slide3Title'), body: t('slide3Body') },
+    { title: t('slide4Title'), body: t('slide4Body') },
+  ];
   const [enabled, setEnabled] = useState<AccountType[]>(DEFAULT_ON);
   const [symbol, setSymbol] = useState('৳');
   // Empty (not a prefilled figure) — a monthly budget is only ever set here
@@ -54,8 +54,8 @@ export function OnboardingFlow() {
   const [details, setDetails] = useState<Record<string, AccountDetail>>({});
 
   useEffect(() => {
-    const t = setTimeout(() => setShowSplash(false), 1200);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setShowSplash(false), 1200);
+    return () => clearTimeout(timer);
   }, []);
 
   function toggle(type: AccountType) {
@@ -93,6 +93,47 @@ export function OnboardingFlow() {
     loadSampleData();
   }
 
+  if (!languagePicked) {
+    return (
+      <ScreenBackground edges={['top', 'bottom', 'left', 'right']} style={{ paddingHorizontal: 24 }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 28 }}>
+          <View style={{ alignItems: 'center', gap: 6 }}>
+            <AppText variant="title" style={{ fontSize: 22, textAlign: 'center' }}>
+              {t('languageTitle')}
+            </AppText>
+            <AppText variant="body2" style={{ textAlign: 'center' }}>
+              {t('languageSubtitle')}
+            </AppText>
+          </View>
+          <View style={{ width: '100%', gap: 10 }}>
+            {LANGUAGES.map((l) => (
+              <Pressable
+                key={l.code}
+                onPress={() => {
+                  updateSettings({ language: l.code });
+                  setLanguagePicked(true);
+                }}
+                style={{
+                  borderWidth: 1,
+                  borderColor: language === l.code ? theme.accentColor : theme.line,
+                  backgroundColor: theme.surface2,
+                  borderRadius: 18,
+                  minHeight: 56,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <AppText variant="body" weight="manrope700" style={{ fontSize: 16 }}>
+                  {l.label}
+                </AppText>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </ScreenBackground>
+    );
+  }
+
   if (showSplash) {
     return (
       <ScreenBackground edges={['top', 'bottom', 'left', 'right']}>
@@ -103,7 +144,7 @@ export function OnboardingFlow() {
               Money Memory
             </AppText>
             <AppText variant="mono" style={{ marginTop: 6 }}>
-              a searchable memory for your money
+              {t('splashTagline')}
             </AppText>
           </View>
         </View>
@@ -118,7 +159,7 @@ export function OnboardingFlow() {
   return (
     <ScreenBackground edges={['top', 'bottom', 'left', 'right']} style={{ paddingHorizontal: 24 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingTop: 8 }}>
-        <GhostButton label="Skip" onPress={finish} />
+        <GhostButton label={t('skip')} onPress={finish} />
       </View>
 
       {/* justifyContent: 'center' here was actively fighting Android's adjustResize:
@@ -142,9 +183,7 @@ export function OnboardingFlow() {
 
         {isSetup ? (
           <View style={{ gap: 8 }}>
-            <AppText variant="mono">
-              Add a starting balance now, or leave it and add it later from Accounts.
-            </AppText>
+            <AppText variant="mono">{t('addBalanceHint')}</AppText>
             {ACCOUNT_CHOICES.map((type) => {
               const on = enabled.includes(type);
               const detail = details[type];
@@ -193,18 +232,18 @@ export function OnboardingFlow() {
             })}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 18, padding: 13, marginTop: 4 }}>
               <View style={{ flex: 1 }}>
-                <AppText variant="body">Currency symbol</AppText>
+                <AppText variant="body">{t('currencySymbolLabel')}</AppText>
                 <AppText variant="mono" style={{ marginTop: 2 }}>
-                  amounts will read {symbol || '৳'}1,250
+                  {t('currencyPreview', { symbol: symbol || '৳' })}
                 </AppText>
               </View>
               <PlainInput value={symbol} onChangeText={(v) => setSymbol(v.slice(0, 4))} />
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 18, padding: 13 }}>
               <View style={{ flex: 1 }}>
-                <AppText variant="body">Monthly budget — optional</AppText>
+                <AppText variant="body">{t('monthlyBudgetLabel')}</AppText>
                 <AppText variant="mono" style={{ marginTop: 2 }}>
-                  Leave blank and set one later if you'd rather not yet
+                  {t('monthlyBudgetHint')}
                 </AppText>
               </View>
               <TextInput
@@ -223,7 +262,7 @@ export function OnboardingFlow() {
       {isSetup ? (
         <Pressable onPress={exploreWithSampleData} style={{ alignSelf: 'center', paddingVertical: 6, marginBottom: 4 }}>
           <AppText variant="body2" color={theme.ink3} style={{ textDecorationLine: 'underline' }}>
-            Or explore with sample data first
+            {t('exploreSampleData')}
           </AppText>
         </Pressable>
       ) : null}
@@ -247,7 +286,7 @@ export function OnboardingFlow() {
           style={{ backgroundColor: theme.ink, borderRadius: 16, paddingVertical: 13, paddingHorizontal: 20, minHeight: 44, justifyContent: 'center' }}
         >
           <AppText color={theme.solid} weight="manrope700">
-            {isLast ? 'Start using Money Memory' : 'Next'}
+            {isLast ? t('start') : t('next')}
           </AppText>
         </Pressable>
       </View>

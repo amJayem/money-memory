@@ -10,6 +10,7 @@ const STORAGE_KEY = 'moneymemory.v1';
 
 const DEFAULT_SETTINGS: Settings = {
   hasOnboarded: false,
+  language: 'en',
   enabledAccountTypes: ['cash', 'bank', 'wallet'],
   currencySymbol: '৳',
   accentTheme: DEFAULT_ACCENT,
