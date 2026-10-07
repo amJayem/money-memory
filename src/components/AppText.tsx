@@ -27,8 +27,16 @@ export function AppText({ variant = 'body', color, weight, style, ...rest }: Pro
       case 'mono':
         return { fontFamily: FONT.mono500, fontSize: 11.5, color: theme.ink3 };
       case 'amount':
-        return { fontFamily: FONT.manrope800, fontSize: 22, letterSpacing: -0.8, color: theme.ink, fontVariant: ['tabular-nums'] as ['tabular-nums'] };
+        return { fontFamily: FONT.manrope800, fontSize: 22, letterSpacing: -0.8, color: theme.ink };
     }
   })();
-  return <Text {...rest} style={[base, weight ? { fontFamily: FONT[weight] } : null, color ? { color } : null, style]} />;
+  // Western digits always render as Western digits, in every variant — not
+  // just 'amount' (its original, narrower home). Android substitutes a
+  // Bengali fallback font wherever these Latin-script fonts lack Bengali
+  // glyphs, and that fallback font reshapes plain ASCII digits into Bengali
+  // numeral glyphs too unless tabular-nums is forced, which silently broke
+  // the "numbers always stay English" rule for every count mixed into
+  // Bengali text (e.g. "3 cash" rendering as "৩টি ক্যাশ").
+  const digits = { fontVariant: ['tabular-nums'] as ['tabular-nums'] };
+  return <Text {...rest} style={[base, digits, weight ? { fontFamily: FONT[weight] } : null, color ? { color } : null, style]} />;
 }

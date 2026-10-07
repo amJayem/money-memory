@@ -17,24 +17,17 @@ import { balance, budgetStatusLine, creditLeft, creditUsed, peopleAgg } from '@/
 import { formatAmount } from '@/domain/format';
 import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
 import { ACCOUNT_TYPE_LABEL } from '@/theme/tokens';
+import { useTranslation } from '@/i18n/useTranslation';
 
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 5) return 'Good night';
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  if (h < 21) return 'Good evening';
-  return 'Good night';
-}
-
-const QUICK_ACTIONS: { label: string; type: 'expense' | 'income' | 'transfer' | 'lent' | 'borrowed' | 'repay_in' | 'repay_out'; icon: string; tone: 'neg' | 'pos' | 'warn' | 'neutral' }[] = [
-  { label: 'Spent', type: 'expense', icon: '−', tone: 'neg' },
-  { label: 'Got', type: 'income', icon: '+', tone: 'pos' },
-  { label: 'Moved', type: 'transfer', icon: '⇄', tone: 'neutral' },
-  { label: 'Lent', type: 'lent', icon: '→', tone: 'warn' },
-  { label: 'Borrowed', type: 'borrowed', icon: '←', tone: 'warn' },
-  { label: 'Got paid', type: 'repay_in', icon: '↩', tone: 'pos' },
-  { label: 'Paid back', type: 'repay_out', icon: '↪', tone: 'neg' },
+type QuickActionType = 'expense' | 'income' | 'transfer' | 'lent' | 'borrowed' | 'repay_in' | 'repay_out';
+const QUICK_ACTIONS: { labelKey: 'actionSpent' | 'actionGot' | 'actionMoved' | 'actionLent' | 'actionBorrowed' | 'actionGotPaid' | 'actionPaidBack'; type: QuickActionType; icon: string; tone: 'neg' | 'pos' | 'warn' | 'neutral' }[] = [
+  { labelKey: 'actionSpent', type: 'expense', icon: '−', tone: 'neg' },
+  { labelKey: 'actionGot', type: 'income', icon: '+', tone: 'pos' },
+  { labelKey: 'actionMoved', type: 'transfer', icon: '⇄', tone: 'neutral' },
+  { labelKey: 'actionLent', type: 'lent', icon: '→', tone: 'warn' },
+  { labelKey: 'actionBorrowed', type: 'borrowed', icon: '←', tone: 'warn' },
+  { labelKey: 'actionGotPaid', type: 'repay_in', icon: '↩', tone: 'pos' },
+  { labelKey: 'actionPaidBack', type: 'repay_out', icon: '↪', tone: 'neg' },
 ];
 
 const WALLET_CARD_STEP = 309; // card width 296 + 13 gap
@@ -45,9 +38,12 @@ function digitsFor(id: string): string {
   return `•••• ${n}`;
 }
 
+const MONTH_KEYS = ['month0', 'month1', 'month2', 'month3', 'month4', 'month5', 'month6', 'month7', 'month8', 'month9', 'month10', 'month11'] as const;
+
 export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const t = useTranslation('home');
   const toast = useToastStore((s) => s.show);
   const { accounts, transactions, settings, spentAmount, liquid, owed, iOwe, budget } = useLedger();
   const privacy = usePrivacy('home');
@@ -58,8 +54,20 @@ export default function HomeScreen() {
     if (i !== walletIndex) setWalletIndex(i);
   }
 
+  function greeting(): string {
+    const h = new Date().getHours();
+    if (h < 5) return t('greetingNight');
+    if (h < 12) return t('greetingMorning');
+    if (h < 17) return t('greetingAfternoon');
+    if (h < 21) return t('greetingEvening');
+    return t('greetingNight');
+  }
+
   const today = new Date();
-  const monthLabel = today.toLocaleDateString('en-US', { month: 'long' });
+  const monthLabel = t(MONTH_KEYS[today.getMonth()]);
+  // The full weekday+day headline ("Wednesday, Oct 7") stays in English for
+  // now — translating weekday names and short-month forms is its own small
+  // scope, left for a follow-up pass rather than half-translating this line.
   const dateLabel = today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   const daysRemaining = Math.max(0, daysInMonth - today.getDate());
@@ -111,21 +119,21 @@ export default function HomeScreen() {
         >
           <Pressable onPress={() => router.push('/accounts')}>
             <WalletCard
-              kicker="Overview"
+              kicker={t('overview')}
               simple
-              name="Total available"
+              name={t('totalAvailable')}
               digits="•••• ALL"
-              holderLabel="All accounts"
+              holderLabel={t('allAccountsHolder')}
               amount={privacy.fmtTotal(liquid)}
               sub={
                 [
-                  orderedAccounts.filter((a) => a.type === 'cash').length ? `${orderedAccounts.filter((a) => a.type === 'cash').length} cash` : '',
+                  orderedAccounts.filter((a) => a.type === 'cash').length ? t('cashCount', { count: String(orderedAccounts.filter((a) => a.type === 'cash').length) }) : '',
                   orderedAccounts.filter((a) => a.type === 'bank' || a.type === 'savings').length
-                    ? `${orderedAccounts.filter((a) => a.type === 'bank' || a.type === 'savings').length} accounts`
+                    ? t('accountsCount', { count: String(orderedAccounts.filter((a) => a.type === 'bank' || a.type === 'savings').length) })
                     : '',
-                  orderedAccounts.filter((a) => a.type === 'wallet').length ? `${orderedAccounts.filter((a) => a.type === 'wallet').length} wallet` : '',
+                  orderedAccounts.filter((a) => a.type === 'wallet').length ? t('walletCount', { count: String(orderedAccounts.filter((a) => a.type === 'wallet').length) }) : '',
                   orderedAccounts.filter((a) => a.type === 'debit' || a.type === 'credit').length
-                    ? `${orderedAccounts.filter((a) => a.type === 'debit' || a.type === 'credit').length} card`
+                    ? t('cardCount', { count: String(orderedAccounts.filter((a) => a.type === 'debit' || a.type === 'credit').length) })
                     : '',
                 ]
                   .filter(Boolean)
@@ -144,13 +152,19 @@ export default function HomeScreen() {
             return (
               <Pressable key={a.id} onPress={() => router.push(`/accounts/add?editId=${a.id}`)}>
                 <WalletCard
-                  kicker={credit ? 'Credit card · borrowed' : ACCOUNT_TYPE_LABEL[a.type]}
+                  kicker={credit ? t('creditCardBorrowed') : ACCOUNT_TYPE_LABEL[a.type]}
                   simple={a.type === 'cash'}
                   name={a.name}
                   digits={digitsFor(a.id)}
-                  holderLabel="Account holder"
+                  holderLabel={t('accountHolder')}
                   amount={credit ? privacy.fmtTotal(creditLeft(a, transactions)) : privacy.fmtTotal(balance(a, transactions))}
-                  sub={credit ? (privacy.hiddenHere ? 'Credit left · not your money' : `${formatAmount(used, settings.currencySymbol)} used of ${formatAmount(a.limit ?? 0, settings.currencySymbol)}`) : 'Available to spend'}
+                  sub={
+                    credit
+                      ? privacy.hiddenHere
+                        ? t('creditLeftNotYours')
+                        : t('usedOfLimit', { used: formatAmount(used, settings.currencySymbol), limit: formatAmount(a.limit ?? 0, settings.currencySymbol) })
+                      : t('availableToSpend')
+                  }
                   palette={paletteFor(a.type)}
                   hasMeter={credit}
                   pctUsed={pctUsed}
@@ -176,7 +190,7 @@ export default function HomeScreen() {
           </View>
           <Pressable onPress={() => router.push('/accounts')}>
             <AppText variant="body2" weight="manrope600" color={theme.accentColor} style={{ fontSize: 12.5 }}>
-              All accounts →
+              {t('allAccountsLink')}
             </AppText>
           </Pressable>
         </View>
@@ -198,7 +212,7 @@ export default function HomeScreen() {
             </View>
           ) : null}
           <AppText variant="mono">
-            {['Money you can spend right now', owed > 0 ? `${privacy.fmt(owed)} lent out isn't counted` : '', accounts.some((a) => a.type === 'credit') ? 'card credit excluded' : '']
+            {[t('spendableHint'), owed > 0 ? t('lentOutNotCounted', { amount: privacy.fmt(owed) }) : '', accounts.some((a) => a.type === 'credit') ? t('cardCreditExcluded') : '']
               .filter(Boolean)
               .join(' · ')}
           </AppText>
@@ -216,7 +230,7 @@ export default function HomeScreen() {
                   </AppText>
                 </View>
                 <AppText variant="body" style={{ fontSize: 11.5 }}>
-                  {q.label}
+                  {t(q.labelKey)}
                 </AppText>
               </View>
             </GlassCard>
@@ -228,30 +242,30 @@ export default function HomeScreen() {
         <GlassCard>
           <View style={{ gap: 12 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <AppText variant="heading">{monthLabel} budget</AppText>
+              <AppText variant="heading">{t('monthBudget', { month: monthLabel })}</AppText>
               <View style={{ backgroundColor: theme.toneBg(budget.tone), borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
                 <AppText variant="mono" color={theme.tone(budget.tone)}>
-                  {budget.noBudget ? 'not set' : `${budget.pct}%`}
+                  {budget.noBudget ? t('notSet') : `${budget.pct}%`}
                 </AppText>
               </View>
             </View>
             {budget.noBudget ? (
-              <AppText variant="body2">Set a monthly budget to see what's left to spend, right here.</AppText>
+              <AppText variant="body2">{t('setBudgetHint')}</AppText>
             ) : (
               <>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                   <View>
-                    <AppText variant="label">left to spend</AppText>
+                    <AppText variant="label">{t('leftToSpend')}</AppText>
                     <AppText variant="amount" color={theme.tone(budget.tone)}>
                       {privacy.fmt(Math.max(0, budget.left))}
                     </AppText>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <AppText variant="mono">
-                      Spent <AppText variant="body">{privacy.fmt(budget.spent)}</AppText>
+                      {t('spentLabel')} <AppText variant="body">{privacy.fmt(budget.spent)}</AppText>
                     </AppText>
                     <AppText variant="mono">
-                      Budget <AppText variant="body">{privacy.fmt(budget.budget)}</AppText>
+                      {t('budgetLabel')} <AppText variant="body">{privacy.fmt(budget.budget)}</AppText>
                     </AppText>
                   </View>
                 </View>
@@ -266,16 +280,16 @@ export default function HomeScreen() {
       <View style={{ flexDirection: 'row', gap: 11, alignItems: 'stretch' }}>
         <Pressable onPress={() => router.push('/loans')} style={{ flex: 1 }}>
           <GlassCard padding={15} fill>
-            <AppText variant="label">You are owed</AppText>
+            <AppText variant="label">{t('youAreOwed')}</AppText>
             <AppText variant="amount" color={theme.tone('warn')} style={{ fontSize: 23, marginTop: 8 }}>
               {privacy.fmt(owed)}
             </AppText>
             <AppText variant="body2" style={{ marginTop: 4 }}>
-              {peopleOwing} {peopleOwing === 1 ? 'person' : 'people'}
+              {t(peopleOwing === 1 ? 'personOne' : 'personOther', { count: String(peopleOwing) })}
             </AppText>
             {totalLentAll > 0 ? (
               <AppText variant="mono" style={{ marginTop: 9, paddingTop: 9, borderTopWidth: 1, borderTopColor: theme.line }}>
-                All time: lent {privacy.fmt(totalLentAll)} · back {privacy.fmt(totalRecoveredAll)}
+                {t('allTimeLent', { amount: privacy.fmt(totalLentAll), back: privacy.fmt(totalRecoveredAll) })}
               </AppText>
             ) : null}
           </GlassCard>
@@ -283,15 +297,15 @@ export default function HomeScreen() {
         {totalBorrowedAll > 0 ? (
           <Pressable onPress={() => router.push('/loans?tab=borrowed')} style={{ flex: 1 }}>
             <GlassCard padding={15} fill>
-              <AppText variant="label">You owe</AppText>
+              <AppText variant="label">{t('youOwe')}</AppText>
               <AppText variant="amount" color={theme.tone('neg')} style={{ fontSize: 23, marginTop: 8 }}>
                 {privacy.fmt(iOwe)}
               </AppText>
               <AppText variant="body2" style={{ marginTop: 4 }}>
-                {peopleIOwe} {peopleIOwe === 1 ? 'person' : 'people'}
+                {t(peopleIOwe === 1 ? 'personOne' : 'personOther', { count: String(peopleIOwe) })}
               </AppText>
               <AppText variant="mono" style={{ marginTop: 9, paddingTop: 9, borderTopWidth: 1, borderTopColor: theme.line }}>
-                All time: borrowed {privacy.fmt(totalBorrowedAll)} · back {privacy.fmt(totalPaidBackAll)}
+                {t('allTimeBorrowed', { amount: privacy.fmt(totalBorrowedAll), back: privacy.fmt(totalPaidBackAll) })}
               </AppText>
             </GlassCard>
           </Pressable>
@@ -299,16 +313,16 @@ export default function HomeScreen() {
       </View>
 
       <GlassCard padding={15}>
-        <AppText variant="label">This month</AppText>
+        <AppText variant="label">{t('thisMonth')}</AppText>
         <View style={{ flexDirection: 'row', marginTop: 8 }}>
           <View style={{ flex: 1 }}>
-            <AppText variant="body2">Money in</AppText>
+            <AppText variant="body2">{t('moneyIn')}</AppText>
             <AppText variant="amount" color={theme.tone('pos')} style={{ fontSize: 17, marginTop: 2 }}>
               {privacy.fmt(income)}
             </AppText>
           </View>
           <View style={{ flex: 1 }}>
-            <AppText variant="body2">Money out</AppText>
+            <AppText variant="body2">{t('moneyOut')}</AppText>
             <AppText variant="amount" color={theme.tone('neg')} style={{ fontSize: 17, marginTop: 2 }}>
               {privacy.fmt(expense)}
             </AppText>
@@ -316,21 +330,21 @@ export default function HomeScreen() {
         </View>
         <View style={{ flexDirection: 'row', marginTop: 14, paddingTop: 13, borderTopWidth: 1, borderTopColor: theme.line }}>
           <View style={{ flex: 1 }}>
-            <AppText variant="body2">Lent</AppText>
+            <AppText variant="body2">{t('lentLabel')}</AppText>
             <AppText variant="amount" color={theme.tone('warn')} style={{ fontSize: 17, marginTop: 2 }}>
               {privacy.fmt(lentThisMonth)}
             </AppText>
             <AppText variant="mono" style={{ marginTop: 2 }}>
-              back {privacy.fmt(recoveredThisMonth)}
+              {t('backAmount', { amount: privacy.fmt(recoveredThisMonth) })}
             </AppText>
           </View>
           <View style={{ flex: 1 }}>
-            <AppText variant="body2">Borrowed</AppText>
+            <AppText variant="body2">{t('borrowedLabel')}</AppText>
             <AppText variant="amount" color={theme.tone('warn')} style={{ fontSize: 17, marginTop: 2 }}>
               {privacy.fmt(borrowedThisMonth)}
             </AppText>
             <AppText variant="mono" style={{ marginTop: 2 }}>
-              back {privacy.fmt(paidBackThisMonth)}
+              {t('backAmount', { amount: privacy.fmt(paidBackThisMonth) })}
             </AppText>
           </View>
         </View>
@@ -338,27 +352,27 @@ export default function HomeScreen() {
 
       <GlassCard padding={5}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10 }}>
-          <AppText variant="heading">Recent activity</AppText>
+          <AppText variant="heading">{t('recentActivity')}</AppText>
           <Pressable onPress={() => router.push('/history')}>
             <AppText variant="body2" weight="manrope600" color={theme.accentColor} style={{ fontSize: 12.5 }}>
-              See all
+              {t('seeAll')}
             </AppText>
           </Pressable>
         </View>
         {recent.length === 0 ? (
           <AppText variant="body2" style={{ padding: 16, textAlign: 'center' }}>
-            No transactions yet.
+            {t('noTransactionsYet')}
           </AppText>
         ) : (
-          recent.map((t) => (
+          recent.map((tx) => (
             <TransactionRow
-              key={t.id}
-              title={transactionTitle(t, accounts)}
-              sub={transactionSub(t, accounts)}
-              icon={transactionIcon(t)}
-              amountText={privacy.fmt(t.type === 'expense' || t.type === 'lent' || t.type === 'repay_out' ? -t.amount : t.amount, true)}
-              type={t.type}
-              onPress={() => router.push(`/transaction/${t.id}`)}
+              key={tx.id}
+              title={transactionTitle(tx, accounts)}
+              sub={transactionSub(tx, accounts)}
+              icon={transactionIcon(tx)}
+              amountText={privacy.fmt(tx.type === 'expense' || tx.type === 'lent' || tx.type === 'repay_out' ? -tx.amount : tx.amount, true)}
+              type={tx.type}
+              onPress={() => router.push(`/transaction/${tx.id}`)}
             />
           ))
         )}
@@ -368,9 +382,9 @@ export default function HomeScreen() {
         <GlassCard>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={{ flex: 1 }}>
-              <AppText variant="heading">{monthLabel} summary</AppText>
+              <AppText variant="heading">{t('monthSummary', { month: monthLabel })}</AppText>
               <AppText variant="body2" style={{ marginTop: 2 }}>
-                Everything that moved this month, on one page.
+                {t('monthSummarySub')}
               </AppText>
             </View>
             <AppText style={{ fontSize: 16, color: theme.ink3 }}>→</AppText>
