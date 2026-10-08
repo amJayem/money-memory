@@ -288,8 +288,11 @@ export default function EntryForm() {
       {/* KeyboardAvoidingView wraps only the ScrollView, not its pinned sibling below —
           the same single-scrollable-child shape already proven to work in onboarding.
           windowSoftInputMode="adjustResize" alone wasn't enough on-device, same reasoning as
-          onboarding's own note on this. */}
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          onboarding's own note on this. keyboardVerticalOffset reserves a bit of extra space
+          above the keyboard — without it, RN's auto-scroll-to-focused-input brings a field up
+          flush against the keyboard's top edge with no breathing room, making the text you're
+          typing hard to actually see above your thumb/the keyboard. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={28}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 16 }}
