@@ -145,6 +145,10 @@ export default function EntryForm() {
   // onScroll (see below) can tell a real drag apart from a programmatic
   // auto-scroll (e.g. RN scrolling a newly-focused TextInput into view).
   const isDragging = useRef(false);
+  // Set while a user drag has scrolled far enough to warrant dismissing the
+  // keypad, but the dismiss itself is applied only once the drag ends (see
+  // onScrollEndDrag) rather than immediately — see the comment there.
+  const pendingKeypadDismiss = useRef(false);
   useEffect(() => {
     if (activeInput !== 'amount') return;
     const loop = Animated.loop(
@@ -314,21 +318,33 @@ export default function EntryForm() {
         }}
         onScrollEndDrag={() => {
           isDragging.current = false;
+          // The actual keypad-dismiss (and its LayoutAnimation resize of the
+          // pinned panel below, which changes this ScrollView's own flex
+          // height) is applied here — once the finger has actually lifted —
+          // rather than inside onScroll while still mid-drag. Resizing a
+          // sibling that the ScrollView's height depends on WHILE a touch-
+          // scroll gesture is actively tracking content offset caused a
+          // visible jump/shake, animated or not: the gesture's own motion
+          // and the layout resize were fighting over the same frame.
+          if (pendingKeypadDismiss.current) {
+            pendingKeypadDismiss.current = false;
+            setActiveInput(null);
+          }
         }}
         onScroll={(e) => {
-          // Only dismiss for a real user drag, gated by isDragging — not for
-          // every scroll event. React Native auto-scrolls the ScrollView to
-          // bring a newly-focused TextInput into view (e.g. the Note field,
-          // sitting well below the fold), and that programmatic scroll also
-          // fires onScroll. Without the isDragging guard, that auto-scroll
-          // instantly dismissed the keyboard it was trying to reveal for —
-          // the Note field could never actually gain focus on a real tap.
-          // The 24px distance check is separate: it ignores the smallest
-          // touch-move (even a 1mm nudge while reaching for a chip), which
-          // onScrollBeginDrag alone fired on far too eagerly.
+          // Only mark-for-dismiss on a real user drag, gated by isDragging —
+          // not on every scroll event. React Native auto-scrolls the
+          // ScrollView to bring a newly-focused TextInput into view (e.g.
+          // the Note field, sitting well below the fold), and that
+          // programmatic scroll also fires onScroll. Without the isDragging
+          // guard, that auto-scroll would dismiss the keyboard it was
+          // trying to reveal for. The 24px distance check is separate: it
+          // ignores the smallest touch-move (even a 1mm nudge while
+          // reaching for a chip), which onScrollBeginDrag alone fired on
+          // far too eagerly.
           if (isDragging.current && e.nativeEvent.contentOffset.y > 24) {
             Keyboard.dismiss();
-            setActiveInput(null);
+            pendingKeypadDismiss.current = true;
           }
         }}
       >
