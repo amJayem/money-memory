@@ -115,8 +115,19 @@ export default function EntryForm() {
   // are never at risk of desyncing from its visual position (the bug hit
   // earlier when wrapping it directly).
   function setActiveInput(next: 'amount' | 'text' | null | ((cur: 'amount' | 'text' | null) => 'amount' | 'text' | null)) {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setActiveInputRaw(next);
+    const resolved = typeof next === 'function' ? next(activeInput) : next;
+    // Skip the LayoutAnimation specifically for 'amount' -> 'text' (tapping a
+    // text field while the keypad is still open): that transition already
+    // comes with the real system keyboard sliding up, which resizes this
+    // same area on its own. Running our own LayoutAnimation on the keypad's
+    // removal at the same moment raced against that native animation and
+    // read as the whole screen shaking. Every other transition (dismissing
+    // the keypad by scrolling, reopening it by tapping the amount display)
+    // has no competing native animation, so it keeps the smooth animation.
+    if (!(activeInput === 'amount' && resolved === 'text')) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
+    setActiveInputRaw(resolved);
   }
   useEffect(() => {
     // Driven by the real show/hide event rather than TextInput blur alone,
