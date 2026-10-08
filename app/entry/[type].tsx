@@ -101,15 +101,15 @@ export default function EntryForm() {
   const [saving, setSaving] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   // The amount display behaves like a real focusable field even though it's
-  // not a TextInput: 'amount' shows the custom Keypad, 'text' means a
-  // free-text field (note, custom category, new person name) owns the
-  // device's own keyboard instead, and null means neither is open. Starts
-  // null rather than 'amount' — auto-opening the keypad on landing used to
-  // push every field below it (the Note field especially) out of view
-  // before the user had done anything, with no way to see them without
-  // first discovering you could scroll the keypad away. Tapping the amount
-  // display still opens it in one tap when that's what's wanted.
-  const [activeInput, setActiveInputRaw] = useState<'amount' | 'text' | null>(null);
+  // not a TextInput: 'amount' shows the custom Keypad (focused on landing,
+  // so entry starts immediately), 'text' means a free-text field (note,
+  // custom category, new person name) owns the device's own keyboard
+  // instead, and null means neither is open. This used to push every field
+  // below it (the Note field especially) out of view before the user had
+  // done anything — now fixed at the root (the amount field itself scrolls
+  // with the page, Note is reachable, and dismissing the keypad no longer
+  // shakes the screen), so auto-opening it here is safe again.
+  const [activeInput, setActiveInputRaw] = useState<'amount' | 'text' | null>('amount');
   // Animates the keypad's show/hide transition at the native layout level —
   // no Animated.View wrapper around the keypad itself, so its touch targets
   // are never at risk of desyncing from its visual position (the bug hit
