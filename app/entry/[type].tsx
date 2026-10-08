@@ -130,6 +130,10 @@ export default function EntryForm() {
   // triggers a screen re-render, which was interfering with touch handling
   // elsewhere on the form while the keypad was open.
   const cursorOpacity = useRef(new Animated.Value(1)).current;
+  // Tracks whether the ScrollView is currently being dragged by the user, so
+  // onScroll (see below) can tell a real drag apart from a programmatic
+  // auto-scroll (e.g. RN scrolling a newly-focused TextInput into view).
+  const isDragging = useRef(false);
   useEffect(() => {
     if (activeInput !== 'amount') return;
     const loop = Animated.loop(
@@ -291,11 +295,24 @@ export default function EntryForm() {
         contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 16 }}
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
+        onScrollBeginDrag={() => {
+          isDragging.current = true;
+        }}
+        onScrollEndDrag={() => {
+          isDragging.current = false;
+        }}
         onScroll={(e) => {
-          // onScrollBeginDrag fired on the smallest touch-move (even a 1mm
-          // nudge while reaching for a chip), hiding the keypad far too
-          // eagerly. Only dismiss once there's been real scroll distance.
-          if (e.nativeEvent.contentOffset.y > 24) {
+          // Only dismiss for a real user drag, gated by isDragging — not for
+          // every scroll event. React Native auto-scrolls the ScrollView to
+          // bring a newly-focused TextInput into view (e.g. the Note field,
+          // sitting well below the fold), and that programmatic scroll also
+          // fires onScroll. Without the isDragging guard, that auto-scroll
+          // instantly dismissed the keyboard it was trying to reveal for —
+          // the Note field could never actually gain focus on a real tap.
+          // The 24px distance check is separate: it ignores the smallest
+          // touch-move (even a 1mm nudge while reaching for a chip), which
+          // onScrollBeginDrag alone fired on far too eagerly.
+          if (isDragging.current && e.nativeEvent.contentOffset.y > 24) {
             Keyboard.dismiss();
             setActiveInput(null);
           }
