@@ -145,6 +145,7 @@ export default function EntryForm() {
   // onScroll (see below) can tell a real drag apart from a programmatic
   // auto-scroll (e.g. RN scrolling a newly-focused TextInput into view).
   const isDragging = useRef(false);
+  const scrollRef = useRef<ScrollView>(null);
   // Set while a user drag has scrolled far enough to warrant dismissing the
   // keypad, but the dismiss itself is applied only once the drag ends (see
   // onScrollEndDrag) rather than immediately — see the comment there.
@@ -309,6 +310,7 @@ export default function EntryForm() {
           typing hard to actually see above your thumb/the keyboard. */}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={28}>
       <ScrollView
+        ref={scrollRef}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 16 }}
         keyboardShouldPersistTaps="handled"
@@ -328,6 +330,17 @@ export default function EntryForm() {
           // and the layout resize were fighting over the same frame.
           if (pendingKeypadDismiss.current) {
             pendingKeypadDismiss.current = false;
+            // Once the keypad's gone, the ScrollView's viewport grows back
+            // to its full height — often tall enough that the remaining
+            // content no longer overflows it at all. When that happens the
+            // OS has nowhere left to keep the current scroll offset and
+            // snaps it back to 0 *instantly*, uncontrolled by us — that
+            // involuntary snap (not the keypad's own collapse animation)
+            // was the actual shake: whatever had scrolled out of view
+            // (often the amount field, up under the status bar) reappeared
+            // with a jolt. Scrolling to 0 ourselves, animated, beats the OS
+            // to it so the same motion happens smoothly instead.
+            scrollRef.current?.scrollTo({ y: 0, animated: true });
             setActiveInput(null);
           }
         }}
