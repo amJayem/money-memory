@@ -146,6 +146,10 @@ export default function EntryForm() {
   // auto-scroll (e.g. RN scrolling a newly-focused TextInput into view).
   const isDragging = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
+  // Latest known scroll offset, updated on every onScroll — read at dismiss
+  // time to tell "nudged up near the top" apart from "scrolled well down
+  // to read something below the fold" (see onScrollEndDrag).
+  const lastScrollY = useRef(0);
   // Set while a user drag has scrolled far enough to warrant dismissing the
   // keypad, but the dismiss itself is applied only once the drag ends (see
   // onScrollEndDrag) rather than immediately — see the comment there.
@@ -337,19 +341,36 @@ export default function EntryForm() {
           // and the layout resize were fighting over the same frame.
           if (pendingKeypadDismiss.current) {
             pendingKeypadDismiss.current = false;
-            // Two motions need to happen — scrolling back to the top, and
-            // the keypad panel collapsing (which grows the ScrollView's
-            // viewport) — and doing them at the same instant was still
-            // rough even with each one individually smooth: the panel
-            // growing mid-scroll kept changing how much further there was
-            // left to scroll. Running them one after another instead: first
-            // scroll to 0 while the keypad (and its reserved space) is
-            // still there, so the scroll has a fixed, unchanging viewport
-            // to animate within; only once that settles does the keypad
-            // collapse, by which point content is already sitting at 0 and
-            // has nothing left to snap.
-            scrollRef.current?.scrollTo({ y: 0, animated: true });
-            keypadCollapseTimeout.current = setTimeout(() => setActiveInput(null), 300);
+            // Forcing the scroll back to 0 only makes sense near the top —
+            // that's the one case where the keypad collapsing can leave the
+            // remaining content shorter than the (now taller) viewport,
+            // which is what the OS snaps to 0 for. Doing it unconditionally
+            // broke ordinary scrolling: scrolling down to read content near
+            // the bottom (e.g. the Outside budget switch, the echo preview)
+            // also crosses the same 24px dismiss threshold, and forcing a
+            // scroll back to 0 every time yanked the page back up before
+            // anything past the fold could ever be reached.
+            if (lastScrollY.current < 300) {
+              // Two motions need to happen — scrolling back to the top, and
+              // the keypad panel collapsing (which grows the ScrollView's
+              // viewport) — and doing them at the same instant was still
+              // rough even with each one individually smooth: the panel
+              // growing mid-scroll kept changing how much further there was
+              // left to scroll. Running them one after another instead:
+              // first scroll to 0 while the keypad (and its reserved space)
+              // is still there, so the scroll has a fixed, unchanging
+              // viewport to animate within; only once that settles does the
+              // keypad collapse, by which point content is already sitting
+              // at 0 and has nothing left to snap.
+              scrollRef.current?.scrollTo({ y: 0, animated: true });
+              keypadCollapseTimeout.current = setTimeout(() => setActiveInput(null), 300);
+            } else {
+              // Scrolled well past the top-snap danger zone — the keypad
+              // can just collapse in place. Content down here is tall
+              // enough that losing the keypad's reserved space won't make
+              // it fit the viewport, so there's nothing for the OS to snap.
+              setActiveInput(null);
+            }
           }
         }}
         onScroll={(e) => {
@@ -363,6 +384,7 @@ export default function EntryForm() {
           // ignores the smallest touch-move (even a 1mm nudge while
           // reaching for a chip), which onScrollBeginDrag alone fired on
           // far too eagerly.
+          lastScrollY.current = e.nativeEvent.contentOffset.y;
           if (isDragging.current && e.nativeEvent.contentOffset.y > 24) {
             Keyboard.dismiss();
             pendingKeypadDismiss.current = true;
