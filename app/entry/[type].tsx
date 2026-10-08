@@ -281,35 +281,7 @@ export default function EntryForm() {
         <IconButton glyph="✕" onPress={close} />
       </View>
 
-      {/* Pinned above the scroll, not inside it — this is what you're typing, so it must
-          never scroll out of view while the keypad (also pinned, below) is in use. Tapping
-          it re-opens the keypad after it's been dismissed by scrolling or another field. */}
-      <Pressable
-        onPress={() => {
-          Keyboard.dismiss();
-          setActiveInput('amount');
-        }}
-        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10 }}
-      >
-        <AppText style={{ fontSize: amount.length > 7 ? 30 : amount.length > 5 ? 36 : 42 }} variant="amount">
-          {settings.currencySymbol}
-          {amount || '0'}
-        </AppText>
-        {activeInput === 'amount' ? (
-          <Animated.View
-            style={{
-              width: 2.5,
-              height: amount.length > 7 ? 28 : amount.length > 5 ? 32 : 36,
-              marginLeft: 3,
-              borderRadius: 1.5,
-              backgroundColor: theme.ink,
-              opacity: cursorOpacity,
-            }}
-          />
-        ) : null}
-      </Pressable>
-
-      {/* KeyboardAvoidingView wraps only the ScrollView, not its pinned siblings above/below —
+      {/* KeyboardAvoidingView wraps only the ScrollView, not its pinned sibling below —
           the same single-scrollable-child shape already proven to work in onboarding.
           windowSoftInputMode="adjustResize" alone wasn't enough on-device, same reasoning as
           onboarding's own note on this. */}
@@ -329,6 +301,31 @@ export default function EntryForm() {
           }
         }}
       >
+        <Pressable
+          onPress={() => {
+            Keyboard.dismiss();
+            setActiveInput('amount');
+          }}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10 }}
+        >
+          <AppText style={{ fontSize: amount.length > 7 ? 30 : amount.length > 5 ? 36 : 42 }} variant="amount">
+            {settings.currencySymbol}
+            {amount || '0'}
+          </AppText>
+          {activeInput === 'amount' ? (
+            <Animated.View
+              style={{
+                width: 2.5,
+                height: amount.length > 7 ? 28 : amount.length > 5 ? 32 : 36,
+                marginLeft: 3,
+                borderRadius: 1.5,
+                backgroundColor: theme.ink,
+                opacity: cursorOpacity,
+              }}
+            />
+          ) : null}
+        </Pressable>
+
         {needsCategory ? (
             <Section label="Category">
               <ChipRow>
