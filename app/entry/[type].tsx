@@ -146,10 +146,22 @@ export default function EntryForm() {
   // auto-scroll (e.g. RN scrolling a newly-focused TextInput into view).
   const isDragging = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
-  // Latest known scroll offset, updated on every onScroll — read at dismiss
-  // time to tell "nudged up near the top" apart from "scrolled well down
-  // to read something below the fold" (see onScrollEndDrag).
+  // Latest known scroll offset, updated on every onScroll.
   const lastScrollY = useRef(0);
+  // Measurements used to work out, precisely, whether collapsing the keypad
+  // is about to leave less content than the (now taller) viewport — the one
+  // case where the OS would clamp the scroll position on its own — and by
+  // exactly how much to correct for it. See onScrollEndDrag: a fixed
+  // "scroll near the top" guess got this wrong for perfectly ordinary
+  // downward scrolling, so this now computes the real number instead of
+  // guessing one.
+  const scrollViewportHeight = useRef(0);
+  const scrollContentHeight = useRef(0);
+  const expandedPanelHeight = useRef(0);
+  // The Save button's own fixed footprint (paddingTop 10 + minHeight 52 +
+  // paddingBottom 16) — what the pinned panel's height collapses to once
+  // the keypad is gone and it holds just the button.
+  const COLLAPSED_PANEL_HEIGHT = 78;
   // Set while a user drag has scrolled far enough to warrant dismissing the
   // keypad, but the dismiss itself is applied only once the drag ends (see
   // onScrollEndDrag) rather than immediately — see the comment there.
@@ -326,6 +338,12 @@ export default function EntryForm() {
         contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 16 }}
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
+        onLayout={(e) => {
+          scrollViewportHeight.current = e.nativeEvent.layout.height;
+        }}
+        onContentSizeChange={(_, height) => {
+          scrollContentHeight.current = height;
+        }}
         onScrollBeginDrag={() => {
           isDragging.current = true;
         }}
@@ -341,34 +359,39 @@ export default function EntryForm() {
           // and the layout resize were fighting over the same frame.
           if (pendingKeypadDismiss.current) {
             pendingKeypadDismiss.current = false;
-            // Forcing the scroll back to 0 only makes sense near the top —
-            // that's the one case where the keypad collapsing can leave the
-            // remaining content shorter than the (now taller) viewport,
-            // which is what the OS snaps to 0 for. Doing it unconditionally
-            // broke ordinary scrolling: scrolling down to read content near
-            // the bottom (e.g. the Outside budget switch, the echo preview)
-            // also crosses the same 24px dismiss threshold, and forcing a
-            // scroll back to 0 every time yanked the page back up before
-            // anything past the fold could ever be reached.
-            if (lastScrollY.current < 300) {
-              // Two motions need to happen — scrolling back to the top, and
-              // the keypad panel collapsing (which grows the ScrollView's
-              // viewport) — and doing them at the same instant was still
-              // rough even with each one individually smooth: the panel
-              // growing mid-scroll kept changing how much further there was
-              // left to scroll. Running them one after another instead:
-              // first scroll to 0 while the keypad (and its reserved space)
-              // is still there, so the scroll has a fixed, unchanging
-              // viewport to animate within; only once that settles does the
-              // keypad collapse, by which point content is already sitting
-              // at 0 and has nothing left to snap.
-              scrollRef.current?.scrollTo({ y: 0, animated: true });
+            // Work out exactly how much taller the ScrollView's viewport is
+            // about to get once the keypad collapses, and from that, the
+            // exact new maxScrollY — rather than guessing whether we're
+            // "near the top". Scrolling down to read content near the
+            // bottom (Outside budget, the echo preview) crosses the same
+            // 24px drag threshold as a small nudge near the top, but the
+            // two need opposite treatment: scrolled down, the content is
+            // already taller than any viewport the keypad collapsing could
+            // produce, so maxScrollY barely moves and nothing needs
+            // correcting. Only near the top can collapsing the keypad leave
+            // less content than the new viewport — that's the one case the
+            // OS would clamp on its own, and now we correct for exactly
+            // that amount, never more.
+            const freedSpace = Math.max(0, expandedPanelHeight.current - COLLAPSED_PANEL_HEIGHT);
+            const newViewportHeight = scrollViewportHeight.current + freedSpace;
+            const newMaxScrollY = Math.max(0, scrollContentHeight.current - newViewportHeight);
+            if (lastScrollY.current > newMaxScrollY) {
+              // Two motions need to happen — scrolling back to a position
+              // that fits, and the keypad panel collapsing — and doing them
+              // at the same instant was still rough even with each one
+              // individually smooth: the panel growing mid-scroll kept
+              // changing how much further there was left to scroll.
+              // Running them one after another instead: first scroll while
+              // the keypad (and its reserved space) is still there, so the
+              // scroll has a fixed, unchanging viewport to animate within;
+              // only once that settles does the keypad collapse, by which
+              // point content is already sitting within the new bounds and
+              // has nothing left to snap.
+              scrollRef.current?.scrollTo({ y: newMaxScrollY, animated: true });
               keypadCollapseTimeout.current = setTimeout(() => setActiveInput(null), 300);
             } else {
-              // Scrolled well past the top-snap danger zone — the keypad
-              // can just collapse in place. Content down here is tall
-              // enough that losing the keypad's reserved space won't make
-              // it fit the viewport, so there's nothing for the OS to snap.
+              // Current position already fits within the taller viewport —
+              // the keypad can just collapse in place with nothing to snap.
               setActiveInput(null);
             }
           }
@@ -544,7 +567,16 @@ export default function EntryForm() {
 
       {/* Also pinned, not scrolled — the keypad and Save button stay reachable
           without hunting for them below a long list of category/account chips. */}
-      <View style={{ paddingHorizontal: 18, paddingTop: 10, paddingBottom: 16, gap: 12 }}>
+      <View
+        style={{ paddingHorizontal: 18, paddingTop: 10, paddingBottom: 16, gap: 12 }}
+        onLayout={(e) => {
+          // Captured while the keypad is still showing (or still animating
+          // out) — the most recent measurement from then is exactly the
+          // "expanded" height onScrollEndDrag needs, since it's read at the
+          // moment the keypad is about to disappear.
+          if (activeInput === 'amount') expandedPanelHeight.current = e.nativeEvent.layout.height;
+        }}
+      >
         {activeInput === 'amount' ? <Keypad value={amount} onChange={setAmount} /> : null}
 
         <Pressable
