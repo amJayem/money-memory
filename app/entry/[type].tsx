@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Keyboard, LayoutAnimation, Platform, Pressable, ScrollView, TextInput, UIManager, View } from 'react-native';
+import { Animated, Keyboard, KeyboardAvoidingView, LayoutAnimation, Platform, Pressable, ScrollView, TextInput, UIManager, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -101,12 +101,15 @@ export default function EntryForm() {
   const [saving, setSaving] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   // The amount display behaves like a real focusable field even though it's
-  // not a TextInput: 'amount' shows the custom Keypad (focused on landing, so
-  // entry starts immediately), 'text' means a free-text field (note, custom
-  // category, new person name) owns the device's own keyboard instead, and
-  // null means neither is open — reachable by tapping away from the amount
-  // or scrolling, since there was previously no way to dismiss the keypad.
-  const [activeInput, setActiveInputRaw] = useState<'amount' | 'text' | null>('amount');
+  // not a TextInput: 'amount' shows the custom Keypad, 'text' means a
+  // free-text field (note, custom category, new person name) owns the
+  // device's own keyboard instead, and null means neither is open. Starts
+  // null rather than 'amount' — auto-opening the keypad on landing used to
+  // push every field below it (the Note field especially) out of view
+  // before the user had done anything, with no way to see them without
+  // first discovering you could scroll the keypad away. Tapping the amount
+  // display still opens it in one tap when that's what's wanted.
+  const [activeInput, setActiveInputRaw] = useState<'amount' | 'text' | null>(null);
   // Animates the keypad's show/hide transition at the native layout level —
   // no Animated.View wrapper around the keypad itself, so its touch targets
   // are never at risk of desyncing from its visual position (the bug hit
@@ -306,6 +309,11 @@ export default function EntryForm() {
         ) : null}
       </Pressable>
 
+      {/* KeyboardAvoidingView wraps only the ScrollView, not its pinned siblings above/below —
+          the same single-scrollable-child shape already proven to work in onboarding.
+          windowSoftInputMode="adjustResize" alone wasn't enough on-device, same reasoning as
+          onboarding's own note on this. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16, gap: 16 }}
@@ -445,6 +453,7 @@ export default function EntryForm() {
             </View>
           ) : null}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Also pinned, not scrolled — the keypad and Save button stay reachable
           without hunting for them below a long list of category/account chips. */}

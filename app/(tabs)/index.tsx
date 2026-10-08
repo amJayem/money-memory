@@ -150,7 +150,7 @@ export default function HomeScreen() {
             const used = credit ? creditUsed(a, transactions) : 0;
             const pctUsed = credit ? Math.min(100, (used / Math.max(1, a.limit ?? 1)) * 100) : 0;
             return (
-              <Pressable key={a.id} onPress={() => router.push(`/accounts/add?editId=${a.id}`)}>
+              <Pressable key={a.id} onPress={() => router.push(`/accounts/${a.id}`)}>
                 <WalletCard
                   kicker={credit ? t('creditCardBorrowed') : ACCOUNT_TYPE_LABEL[a.type]}
                   simple={a.type === 'cash'}
