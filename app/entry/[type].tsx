@@ -150,6 +150,13 @@ export default function EntryForm() {
   // keypad, but the dismiss itself is applied only once the drag ends (see
   // onScrollEndDrag) rather than immediately — see the comment there.
   const pendingKeypadDismiss = useRef(false);
+  // Holds the id of the setTimeout that collapses the keypad after the
+  // scroll-to-top settles (see onScrollEndDrag), so it can be cancelled if
+  // the form closes before it fires.
+  const keypadCollapseTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (keypadCollapseTimeout.current) clearTimeout(keypadCollapseTimeout.current);
+  }, []);
   useEffect(() => {
     if (activeInput !== 'amount') return;
     const loop = Animated.loop(
@@ -330,18 +337,19 @@ export default function EntryForm() {
           // and the layout resize were fighting over the same frame.
           if (pendingKeypadDismiss.current) {
             pendingKeypadDismiss.current = false;
-            // Once the keypad's gone, the ScrollView's viewport grows back
-            // to its full height — often tall enough that the remaining
-            // content no longer overflows it at all. When that happens the
-            // OS has nowhere left to keep the current scroll offset and
-            // snaps it back to 0 *instantly*, uncontrolled by us — that
-            // involuntary snap (not the keypad's own collapse animation)
-            // was the actual shake: whatever had scrolled out of view
-            // (often the amount field, up under the status bar) reappeared
-            // with a jolt. Scrolling to 0 ourselves, animated, beats the OS
-            // to it so the same motion happens smoothly instead.
+            // Two motions need to happen — scrolling back to the top, and
+            // the keypad panel collapsing (which grows the ScrollView's
+            // viewport) — and doing them at the same instant was still
+            // rough even with each one individually smooth: the panel
+            // growing mid-scroll kept changing how much further there was
+            // left to scroll. Running them one after another instead: first
+            // scroll to 0 while the keypad (and its reserved space) is
+            // still there, so the scroll has a fixed, unchanging viewport
+            // to animate within; only once that settles does the keypad
+            // collapse, by which point content is already sitting at 0 and
+            // has nothing left to snap.
             scrollRef.current?.scrollTo({ y: 0, animated: true });
-            setActiveInput(null);
+            keypadCollapseTimeout.current = setTimeout(() => setActiveInput(null), 300);
           }
         }}
         onScroll={(e) => {
