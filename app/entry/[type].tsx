@@ -408,7 +408,14 @@ export default function EntryForm() {
           // reaching for a chip), which onScrollBeginDrag alone fired on
           // far too eagerly.
           lastScrollY.current = e.nativeEvent.contentOffset.y;
-          if (isDragging.current && e.nativeEvent.contentOffset.y > 24) {
+          // Gated on activeInput === 'amount' — there's nothing to dismiss
+          // (and the measurements in onScrollEndDrag are stale leftovers
+          // from the last time it WAS open) once the keypad's already
+          // closed. Without this, a second scroll after the keypad had
+          // already been dismissed once still ran the whole compensation
+          // dance off those stale numbers, producing a bogus correction
+          // that yanked the page back up for no real collapse at all.
+          if (activeInput === 'amount' && isDragging.current && e.nativeEvent.contentOffset.y > 24) {
             Keyboard.dismiss();
             pendingKeypadDismiss.current = true;
           }
