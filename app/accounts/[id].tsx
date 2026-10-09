@@ -10,9 +10,9 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { balance, creditLeft, creditUsed } from '@/domain/money';
-import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
-import { ACCOUNT_TYPE_LABEL } from '@/theme/tokens';
+import { sortedTransactions, transactionIcon, transactionSub, transactionTitle, type Translate } from '@/domain/search';
 import { formatAmount } from '@/domain/format';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function AccountDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -20,6 +20,16 @@ export default function AccountDetailScreen() {
   const router = useRouter();
   const { accounts, transactions, settings } = useLedger();
   const privacy = usePrivacy('account');
+  const t = useTranslation('accounts');
+  const tc = useTranslation('common') as unknown as Translate;
+  const ACCOUNT_TYPE_LABEL: Record<string, string> = {
+    cash: tc('accountTypeCash'),
+    bank: tc('accountTypeBank'),
+    debit: tc('accountTypeDebit'),
+    credit: tc('accountTypeCredit'),
+    wallet: tc('accountTypeWallet'),
+    savings: tc('accountTypeSavings'),
+  };
 
   const account = accounts.find((a) => a.id === id);
   if (!account) {
@@ -53,36 +63,36 @@ export default function AccountDetailScreen() {
       </View>
 
       <GlassCard>
-        <AppText variant="label">{credit ? 'Credit left' : 'Balance'}</AppText>
+        <AppText variant="label">{credit ? t('creditLeft') : t('balance')}</AppText>
         <AppText variant="amount" style={{ fontSize: 26, marginTop: 8 }}>
           {privacy.fmtTotal(bal)}
         </AppText>
         <AppText variant="body2" style={{ marginTop: 6 }}>
-          {credit ? `${formatAmount(used, settings.currencySymbol)} used of ${formatAmount(account.limit ?? 0, settings.currencySymbol)} · not your money` : ACCOUNT_TYPE_LABEL[account.type]}
+          {credit ? t('usedOfLimitNotYours', { used: formatAmount(used, settings.currencySymbol), limit: formatAmount(account.limit ?? 0, settings.currencySymbol) }) : ACCOUNT_TYPE_LABEL[account.type]}
         </AppText>
         <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: theme.line, paddingTop: 13, marginTop: 13 }}>
-          <Stat label="In" value={privacy.fmt(inTotal)} color={theme.tone('pos')} />
+          <Stat label={t('statIn')} value={privacy.fmt(inTotal)} color={theme.tone('pos')} />
           <Divider />
-          <Stat label="Out" value={privacy.fmt(outTotal)} color={theme.tone('neg')} />
+          <Stat label={t('statOut')} value={privacy.fmt(outTotal)} color={theme.tone('neg')} />
           <Divider />
-          <Stat label="Transfers" value={String(transferCount)} />
+          <Stat label={t('statTransfers')} value={String(transferCount)} />
         </View>
       </GlassCard>
 
       <AppText variant="label" style={{ paddingHorizontal: 5 }}>
-        This account's history
+        {t('historyTitle')}
       </AppText>
       <GlassCard padding={4}>
         {related.length === 0 ? (
           <AppText variant="body2" style={{ padding: 20, textAlign: 'center' }}>
-            No transactions yet.
+            {t('noTransactionsYet')}
           </AppText>
         ) : (
           related.map((t) => (
             <TransactionRow
               key={t.id}
-              title={transactionTitle(t, accounts)}
-              sub={transactionSub(t, accounts)}
+              title={transactionTitle(t, accounts, tc)}
+              sub={transactionSub(t, accounts, tc)}
               icon={transactionIcon(t)}
               amountText={privacy.fmt(t.type === 'expense' || t.type === 'lent' || t.type === 'repay_out' ? -t.amount : t.amount, true)}
               type={t.type}

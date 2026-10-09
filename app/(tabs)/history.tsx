@@ -11,7 +11,8 @@ import { TransactionRow } from '@/components/TransactionRow';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
-import { groupByDay, matchesFilter, matchesQuery, transactionIcon, transactionSub, transactionTitle, type TxFilter } from '@/domain/search';
+import { filterLabel, groupByDay, matchesFilter, matchesQuery, transactionIcon, transactionSub, transactionTitle, type Translate, type TxFilter } from '@/domain/search';
+import { useTranslation } from '@/i18n/useTranslation';
 
 const FILTERS: TxFilter[] = ['All', 'Money out', 'Money in', 'Transfers', 'Loans', 'Cash', 'Cards'];
 
@@ -20,22 +21,24 @@ export default function HistoryScreen() {
   const router = useRouter();
   const { accounts, transactions, settings } = useLedger();
   const privacy = usePrivacy('transactions');
+  const t = useTranslation('history');
+  const tc = useTranslation('common') as unknown as Translate;
   const params = useLocalSearchParams<{ category?: string }>();
   const [query, setQuery] = useState(params.category ?? '');
   const [filter, setFilter] = useState<TxFilter>(params.category ? 'Money out' : 'All');
 
-  const filtered = transactions.filter((t) => matchesFilter(t, filter, accounts) && matchesQuery(t, query, accounts));
-  const groups = groupByDay(filtered, settings.currencySymbol);
-  const sum = filtered.reduce((s, t) => s + t.amount, 0);
+  const filtered = transactions.filter((tx) => matchesFilter(tx, filter, accounts) && matchesQuery(tx, query, accounts, tc));
+  const groups = groupByDay(filtered, settings.currencySymbol, tc);
+  const sum = filtered.reduce((s, tx) => s + tx.amount, 0);
 
   return (
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <IconButton glyph="←" onPress={() => (router.canGoBack() ? router.back() : router.push('/'))} />
-          <AppText variant="title">Transactions</AppText>
+          <AppText variant="title">{t('title')}</AppText>
         </View>
-        <GhostButton label="Calendar" onPress={() => router.push('/calendar')} />
+        <GhostButton label={t('calendar')} onPress={() => router.push('/calendar')} />
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.solid, borderRadius: 16, paddingHorizontal: 13, minHeight: 46, overflow: 'hidden' }}>
@@ -43,7 +46,7 @@ export default function HistoryScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Rahim · 450 · Food · Cash"
+          placeholder={t('searchPlaceholder')}
           placeholderTextColor={theme.ink3}
           style={{ flex: 1, color: theme.ink, fontSize: 13.5 }}
         />
@@ -56,24 +59,22 @@ export default function HistoryScreen() {
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {FILTERS.map((f) => (
-          <Chip key={f} label={f} active={filter === f} onPress={() => setFilter(f)} />
+          <Chip key={f} label={filterLabel(f, tc)} active={filter === f} onPress={() => setFilter(f)} />
         ))}
       </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <AppText variant="mono">
-          {filtered.length} transaction{filtered.length === 1 ? '' : 's'}
+          {filtered.length === 1 ? t('txCountOne', { count: String(filtered.length) }) : t('txCountOther', { count: String(filtered.length) })}
         </AppText>
         <AppText variant="mono">{privacy.fmt(sum)}</AppText>
       </View>
 
       {groups.length === 0 ? (
         <View style={{ padding: 32, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 22 }}>
-          <AppText variant="heading">{transactions.length === 0 ? 'No transactions yet' : 'Nothing matched that'}</AppText>
+          <AppText variant="heading">{transactions.length === 0 ? t('noneYet') : t('nothingMatched')}</AppText>
           <AppText variant="body2" style={{ textAlign: 'center' }}>
-            {transactions.length === 0
-              ? 'Record your first expense and this becomes the history you can search months from now.'
-              : "Try a person's name, an amount, a category, or the account you paid from."}
+            {transactions.length === 0 ? t('noneYetHint') : t('nothingMatchedHint')}
           </AppText>
         </View>
       ) : (
@@ -84,15 +85,15 @@ export default function HistoryScreen() {
               <AppText variant="mono">{g.total}</AppText>
             </View>
             <GlassCard padding={4}>
-              {g.items.map((t) => (
+              {g.items.map((tx) => (
                 <TransactionRow
-                  key={t.id}
-                  title={transactionTitle(t, accounts)}
-                  sub={transactionSub(t, accounts)}
-                  icon={transactionIcon(t)}
-                  amountText={privacy.fmt(t.type === 'expense' || t.type === 'lent' || t.type === 'repay_out' ? -t.amount : t.amount, true)}
-                  type={t.type}
-                  onPress={() => router.push(`/transaction/${t.id}`)}
+                  key={tx.id}
+                  title={transactionTitle(tx, accounts, tc)}
+                  sub={transactionSub(tx, accounts, tc)}
+                  icon={transactionIcon(tx)}
+                  amountText={privacy.fmt(tx.type === 'expense' || tx.type === 'lent' || tx.type === 'repay_out' ? -tx.amount : tx.amount, true)}
+                  type={tx.type}
+                  onPress={() => router.push(`/transaction/${tx.id}`)}
                 />
               ))}
             </GlassCard>

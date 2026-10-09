@@ -9,8 +9,9 @@ import { IconButton } from '@/components/IconButton';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
-import { peopleAgg, statusLabel, statusTone } from '@/domain/money';
+import { peopleAgg, statusLabel, statusTone, type Translate } from '@/domain/money';
 import { MIN_TAP_TARGET } from '@/theme/tokens';
+import { useTranslation } from '@/i18n/useTranslation';
 
 type LoanFilter = 'All' | 'Outstanding' | 'Cleared';
 
@@ -19,6 +20,8 @@ export default function LoansScreen() {
   const router = useRouter();
   const { transactions } = useLedger();
   const privacy = usePrivacy('loans');
+  const t = useTranslation('loans');
+  const tc = useTranslation('common');
   const { tab: initialTab } = useLocalSearchParams<{ tab?: 'lent' | 'borrowed' }>();
   const [tab, setTab] = useState<'lent' | 'borrowed'>(initialTab === 'borrowed' ? 'borrowed' : 'lent');
   const [filter, setFilter] = useState<LoanFilter>('All');
@@ -29,13 +32,14 @@ export default function LoansScreen() {
   const totalBack = people.reduce((s, p) => s + p.back, 0);
   const outstandingTotal = people.reduce((s, p) => s + Math.max(0, p.out), 0);
 
-  const headLabel = tab === 'lent' ? 'You are owed' : 'You owe';
+  const headLabel = tab === 'lent' ? t('headOwed') : t('headOwe');
+  const FILTER_LABEL: Record<LoanFilter, string> = { All: t('filterAll'), Outstanding: t('filterOutstanding'), Cleared: t('filterCleared') };
 
   return (
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
         <IconButton glyph="←" onPress={() => (router.canGoBack() ? router.back() : router.push('/'))} />
-        <AppText variant="title">Loans</AppText>
+        <AppText variant="title">{t('title')}</AppText>
       </View>
 
       <View style={{ flexDirection: 'row', gap: 4, backgroundColor: theme.surface2, borderRadius: 14, padding: 4 }}>
@@ -57,7 +61,7 @@ export default function LoansScreen() {
             }}
           >
             <AppText variant="body" color={tab === k ? theme.ink : theme.ink3}>
-              {k === 'lent' ? 'Money I lent' : 'Money I borrowed'}
+              {k === 'lent' ? t('tabLent') : t('tabBorrowed')}
             </AppText>
           </Pressable>
         ))}
@@ -67,7 +71,7 @@ export default function LoansScreen() {
         {(['All', 'Outstanding', 'Cleared'] as LoanFilter[]).map((f) => (
           <Chip
             key={f}
-            label={`${f}${f !== 'All' ? ` (${people.filter((p) => (f === 'Outstanding' ? p.out > 0 : p.out <= 0)).length})` : ''}`}
+            label={`${FILTER_LABEL[f]}${f !== 'All' ? ` (${people.filter((p) => (f === 'Outstanding' ? p.out > 0 : p.out <= 0)).length})` : ''}`}
             active={filter === f}
             onPress={() => setFilter(f)}
           />
@@ -81,19 +85,19 @@ export default function LoansScreen() {
         </AppText>
         <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: theme.line, paddingTop: 13, marginTop: 13 }}>
           <View style={{ flex: 1 }}>
-            <AppText variant="body2">{tab === 'lent' ? 'Total lent' : 'Total borrowed'}</AppText>
+            <AppText variant="body2">{tab === 'lent' ? t('totalLent') : t('totalBorrowed')}</AppText>
             <AppText variant="body" style={{ marginTop: 4 }}>
               {privacy.fmt(totalGiven)}
             </AppText>
           </View>
           <View style={{ flex: 1 }}>
-            <AppText variant="body2">{tab === 'lent' ? 'Recovered' : 'Paid back'}</AppText>
+            <AppText variant="body2">{tab === 'lent' ? t('recovered') : t('paidBack')}</AppText>
             <AppText variant="body" color={theme.tone('pos')} style={{ marginTop: 4 }}>
               {privacy.fmt(totalBack)}
             </AppText>
           </View>
           <View style={{ flex: 1 }}>
-            <AppText variant="body2">People</AppText>
+            <AppText variant="body2">{t('people')}</AppText>
             <AppText variant="body" style={{ marginTop: 4 }}>
               {people.length}
             </AppText>
@@ -103,9 +107,9 @@ export default function LoansScreen() {
 
       {filtered.length === 0 ? (
         <View style={{ padding: 32, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 22 }}>
-          <AppText variant="heading">{tab === 'lent' ? 'Nobody owes you yet' : "You haven't borrowed from anyone"}</AppText>
+          <AppText variant="heading">{tab === 'lent' ? t('nobodyOwesYou') : t('notBorrowed')}</AppText>
           <AppText variant="body2" style={{ textAlign: 'center' }}>
-            {tab === 'lent' ? 'When you lend money to someone, they show up here.' : 'When you borrow money, it shows up here.'}
+            {tab === 'lent' ? t('lendHint') : t('borrowHint')}
           </AppText>
         </View>
       ) : (
@@ -133,12 +137,12 @@ export default function LoansScreen() {
                         </AppText>
                         <View style={{ backgroundColor: theme.toneBg(tone), borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 }}>
                           <AppText variant="mono" color={theme.tone(tone)} style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                            {statusLabel(p)}
+                            {statusLabel(p, tc as Translate)}
                           </AppText>
                         </View>
                       </View>
                       <AppText variant="mono" style={{ marginTop: 3 }}>
-                        {cleared ? 'Paid in full ✓' : `${privacy.fmt(p.given)} given · ${privacy.fmt(p.back)} back`}
+                        {cleared ? t('paidInFull') : t('givenBack', { given: privacy.fmt(p.given), back: privacy.fmt(p.back) })}
                       </AppText>
                     </View>
                     <AppText variant="amount" style={{ fontSize: 15 }}>

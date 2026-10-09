@@ -13,10 +13,9 @@ import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { useHideNavBarOnScroll } from '@/hooks/useHideNavBarOnScroll';
 import { useToastStore } from '@/store/toastStore';
-import { balance, budgetStatusLine, creditLeft, creditUsed, peopleAgg } from '@/domain/money';
+import { balance, budgetStatusLine, creditLeft, creditUsed, peopleAgg, type Translate } from '@/domain/money';
 import { formatAmount } from '@/domain/format';
 import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
-import { ACCOUNT_TYPE_LABEL } from '@/theme/tokens';
 import { useTranslation } from '@/i18n/useTranslation';
 
 type QuickActionType = 'expense' | 'income' | 'transfer' | 'lent' | 'borrowed' | 'repay_in' | 'repay_out';
@@ -44,6 +43,16 @@ export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
   const t = useTranslation('home');
+  const tc = useTranslation('common');
+  const tcWide = tc as unknown as Translate;
+  const ACCOUNT_TYPE_LABEL: Record<string, string> = {
+    cash: tc('accountTypeCash'),
+    bank: tc('accountTypeBank'),
+    debit: tc('accountTypeDebit'),
+    credit: tc('accountTypeCredit'),
+    wallet: tc('accountTypeWallet'),
+    savings: tc('accountTypeSavings'),
+  };
   const toast = useToastStore((s) => s.show);
   const { accounts, transactions, settings, spentAmount, liquid, owed, iOwe, budget } = useLedger();
   const privacy = usePrivacy('home');
@@ -270,7 +279,7 @@ export default function HomeScreen() {
                   </View>
                 </View>
                 <ProgressBar barPct={budget.barPct} overPct={budget.overPct} tone={budget.tone} />
-                <AppText variant="body2">{budgetStatusLine(budget, monthLabel, daysRemaining, (n) => formatAmount(n, settings.currencySymbol))}</AppText>
+                <AppText variant="body2">{budgetStatusLine(budget, monthLabel, daysRemaining, (n) => formatAmount(n, settings.currencySymbol), t as unknown as Translate)}</AppText>
               </>
             )}
           </View>
@@ -367,8 +376,8 @@ export default function HomeScreen() {
           recent.map((tx) => (
             <TransactionRow
               key={tx.id}
-              title={transactionTitle(tx, accounts)}
-              sub={transactionSub(tx, accounts)}
+              title={transactionTitle(tx, accounts, tcWide)}
+              sub={transactionSub(tx, accounts, tcWide)}
               icon={transactionIcon(tx)}
               amountText={privacy.fmt(tx.type === 'expense' || tx.type === 'lent' || tx.type === 'repay_out' ? -tx.amount : tx.amount, true)}
               type={tx.type}

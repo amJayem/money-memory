@@ -10,8 +10,9 @@ import { TransactionRow } from '@/components/TransactionRow';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
-import { outstandingFor, statusLabel, statusTone } from '@/domain/money';
+import { outstandingFor, statusLabel, statusTone, type Translate } from '@/domain/money';
 import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function PersonScreen() {
   const { name, kind } = useLocalSearchParams<{ name: string; kind?: string }>();
@@ -21,6 +22,8 @@ export default function PersonScreen() {
   const router = useRouter();
   const { accounts, transactions } = useLedger();
   const privacy = usePrivacy('person');
+  const t = useTranslation('person');
+  const tc = useTranslation('common') as unknown as Translate;
 
   const ledger = outstandingFor(transactions, direction, person);
   const cleared = ledger.out <= 0 && ledger.given > 0;
@@ -29,7 +32,7 @@ export default function PersonScreen() {
 
   const related = sortedTransactions(transactions.filter((t) => t.person === person));
 
-  const ctaLabel = direction === 'lent' ? (cleared ? 'Lend again' : 'Record a repayment') : cleared ? 'Borrow again' : 'Record a payment';
+  const ctaLabel = direction === 'lent' ? (cleared ? t('lendAgain') : t('recordRepayment')) : cleared ? t('borrowAgain') : t('recordPayment');
   const ctaType = direction === 'lent' ? 'repay_in' : 'repay_out';
 
   return (
@@ -49,26 +52,26 @@ export default function PersonScreen() {
             </AppText>
           </View>
           <View>
-            <AppText variant="label">{direction === 'lent' ? 'Outstanding to you' : 'You still owe'}</AppText>
+            <AppText variant="label">{direction === 'lent' ? t('outstandingToYou') : t('youStillOwe')}</AppText>
             <AppText variant="amount" style={{ fontSize: 24, marginTop: 4 }}>
               {privacy.fmt(Math.max(0, ledger.out))}
             </AppText>
             <View style={{ alignSelf: 'flex-start', backgroundColor: theme.toneBg(tone), borderRadius: 7, paddingHorizontal: 7, paddingVertical: 4, marginTop: 6 }}>
               <AppText variant="mono" color={theme.tone(tone)} style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                {statusLabel(ledger)}
+                {statusLabel(ledger, tc)}
               </AppText>
             </View>
           </View>
         </View>
         <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: theme.line, paddingTop: 13, marginTop: 14 }}>
           <View style={{ flex: 1 }}>
-            <AppText variant="body2">{direction === 'lent' ? 'Lent' : 'Borrowed'}</AppText>
+            <AppText variant="body2">{direction === 'lent' ? t('lent') : t('borrowed')}</AppText>
             <AppText variant="body" style={{ marginTop: 4 }}>
               {privacy.fmt(ledger.given)}
             </AppText>
           </View>
           <View style={{ flex: 1 }}>
-            <AppText variant="body2">{direction === 'lent' ? 'Received' : 'Paid back'}</AppText>
+            <AppText variant="body2">{direction === 'lent' ? t('received') : t('paidBack')}</AppText>
             <AppText variant="body" color={theme.tone('pos')} style={{ marginTop: 4 }}>
               {privacy.fmt(ledger.back)}
             </AppText>
@@ -79,7 +82,7 @@ export default function PersonScreen() {
         </View>
         {cleared ? (
           <AppText variant="body2" style={{ marginTop: 10 }}>
-            Settled in full — kept here so it stays searchable.
+            {t('settledHint')}
           </AppText>
         ) : null}
         <Pressable onPress={() => router.push(`/entry/${ctaType}?person=${encodeURIComponent(person)}`)} style={{ backgroundColor: theme.ink, borderRadius: 16, minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 16 }}>
@@ -90,18 +93,18 @@ export default function PersonScreen() {
       </GlassCard>
 
       <AppText variant="label" style={{ paddingHorizontal: 5 }}>
-        Timeline
+        {t('timeline')}
       </AppText>
       <GlassCard padding={4}>
-        {related.map((t) => (
+        {related.map((tx) => (
           <TransactionRow
-            key={t.id}
-            title={transactionTitle(t, accounts)}
-            sub={transactionSub(t, accounts)}
-            icon={transactionIcon(t)}
-            amountText={privacy.fmt(t.type === 'expense' || t.type === 'lent' || t.type === 'repay_out' ? -t.amount : t.amount, true)}
-            type={t.type}
-            onPress={() => router.push(`/transaction/${t.id}`)}
+            key={tx.id}
+            title={transactionTitle(tx, accounts, tc)}
+            sub={transactionSub(tx, accounts, tc)}
+            icon={transactionIcon(tx)}
+            amountText={privacy.fmt(tx.type === 'expense' || tx.type === 'lent' || tx.type === 'repay_out' ? -tx.amount : tx.amount, true)}
+            type={tx.type}
+            onPress={() => router.push(`/transaction/${tx.id}`)}
           />
         ))}
       </GlassCard>

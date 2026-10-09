@@ -7,12 +7,13 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { useNavBarStore } from '@/store/navBarStore';
 import { useAppStore } from '@/store/appStore';
 import { AppText } from './AppText';
+import { useTranslation } from '@/i18n/useTranslation';
 
 const TABS = [
-  { path: '/', name: 'index', glyph: '⌂', label: 'Home' },
-  { path: '/history', name: 'history', glyph: '≡', label: 'History' },
-  { path: '/loans', name: 'loans', glyph: '⚖', label: 'Loans' },
-  { path: '/stats', name: 'stats', glyph: '▦', label: 'Stats' },
+  { path: '/', name: 'index', glyph: '⌂', labelKey: 'home' },
+  { path: '/history', name: 'history', glyph: '≡', labelKey: 'history' },
+  { path: '/loans', name: 'loans', glyph: '⚖', labelKey: 'loans' },
+  { path: '/stats', name: 'stats', glyph: '▦', labelKey: 'stats' },
 ] as const;
 
 // Shared with Screen.tsx so the scroll container's bottom padding is measured
@@ -76,6 +77,7 @@ interface BarProps {
 
 function ClassicBar({ translateY, pathname, router, insets }: BarProps) {
   const theme = useTheme();
+  const t = useTranslation('tabBar');
   const left = TABS.slice(0, 2);
   const right = TABS.slice(2);
 
@@ -86,7 +88,7 @@ function ClassicBar({ translateY, pathname, router, insets }: BarProps) {
       <Pressable key={tab.name} onPress={() => router.navigate(tab.path)} style={styles.tab}>
         <AppText style={{ fontSize: 19, color }}>{tab.glyph}</AppText>
         <AppText variant="body2" weight="manrope600" color={color} style={{ marginTop: 3, fontSize: 10 }}>
-          {tab.label}
+          {t(tab.labelKey)}
         </AppText>
       </Pressable>
     );

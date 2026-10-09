@@ -5,6 +5,8 @@ import { formatAmount, formatSigned } from './format';
 
 export type TxFilter = 'All' | 'Money out' | 'Money in' | 'Transfers' | 'Loans' | 'Cash' | 'Cards';
 
+export type Translate = (key: string, vars?: Record<string, string>) => string;
+
 const LOAN_TYPES: TransactionType[] = ['lent', 'repay_in', 'borrowed', 'repay_out'];
 
 export function matchesFilter(t: Transaction, filter: TxFilter, accounts: Account[]): boolean {
@@ -28,6 +30,21 @@ export function matchesFilter(t: Transaction, filter: TxFilter, accounts: Accoun
   }
 }
 
+const FILTER_KEY: Record<TxFilter, string> = {
+  All: 'filterAll',
+  'Money out': 'filterMoneyOut',
+  'Money in': 'filterMoneyIn',
+  Transfers: 'filterTransfers',
+  Loans: 'filterLoans',
+  Cash: 'filterCash',
+  Cards: 'filterCards',
+};
+
+/** `t` is the caller's `useTranslation('common')`. */
+export function filterLabel(f: TxFilter, t: Translate): string {
+  return t(FILTER_KEY[f]);
+}
+
 /** Row icon: the design uses a single letter (category or person initial), not a symbolic glyph — transfer is the one fixed exception. */
 export function transactionIcon(t: Transaction): string {
   if (t.type === 'transfer') return '⇄';
@@ -35,38 +52,40 @@ export function transactionIcon(t: Transaction): string {
   return (text || '?')[0]?.toUpperCase() ?? '?';
 }
 
-export function transactionTitle(t: Transaction, accounts: Account[]): string {
+/** `t` is the caller's `useTranslation('common')`. */
+export function transactionTitle(t: Transaction, accounts: Account[], translate: Translate): string {
   const accName = (id: string) => accounts.find((a) => a.id === id)?.name ?? id;
   switch (t.type) {
     case 'expense':
-      return t.category ?? 'Expense';
+      return t.category ?? translate('titleExpenseFallback');
     case 'income':
-      return t.category ?? 'Income';
+      return t.category ?? translate('titleIncomeFallback');
     case 'transfer':
       return `${accName(t.account)} → ${accName(t.toAccount ?? '')}`;
     case 'lent':
-      return `Lent to ${t.person}`;
+      return translate('titleLentTo', { person: t.person ?? '' });
     case 'borrowed':
-      return `Borrowed from ${t.person}`;
+      return translate('titleBorrowedFrom', { person: t.person ?? '' });
     case 'repay_in':
-      return `${t.person} paid you back`;
+      return translate('titlePaidYouBack', { person: t.person ?? '' });
     case 'repay_out':
-      return `Paid ${t.person} back`;
+      return translate('titlePaidPersonBack', { person: t.person ?? '' });
   }
 }
 
-export function transactionSub(t: Transaction, accounts: Account[]): string {
+/** `t` is the caller's `useTranslation('common')`. */
+export function transactionSub(t: Transaction, accounts: Account[], translate: Translate): string {
   const accName = (id: string) => accounts.find((a) => a.id === id)?.name ?? id;
-  if (t.type === 'transfer') return 'Transfer · not spending';
+  if (t.type === 'transfer') return translate('subTransferNotSpending');
   return `${accName(t.account)}${t.note ? ' · ' + t.note : ''}`;
 }
 
-export function matchesQuery(t: Transaction, query: string, accounts: Account[]): boolean {
+export function matchesQuery(t: Transaction, query: string, accounts: Account[], translate: Translate): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   const haystack = [
-    transactionTitle(t, accounts),
-    transactionSub(t, accounts),
+    transactionTitle(t, accounts, translate),
+    transactionSub(t, accounts, translate),
     t.category ?? '',
     t.person ?? '',
     t.note ?? '',
@@ -91,12 +110,12 @@ export interface TxGroup {
   items: Transaction[];
 }
 
-function dayLabel(date: Date, today: Date): string {
+function dayLabel(date: Date, today: Date, t: Translate): string {
   const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const diffDays = Math.round((startOf(today) - startOf(date)) / (24 * 60 * 60 * 1000));
   const md = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  if (diffDays === 0) return `Today · ${md}`;
-  if (diffDays === 1) return `Yesterday · ${md}`;
+  if (diffDays === 0) return `${t('today')} · ${md}`;
+  if (diffDays === 1) return `${t('yesterday')} · ${md}`;
   return md;
 }
 
@@ -104,19 +123,20 @@ export function sortedTransactions(transactions: Transaction[]): Transaction[] {
   return [...transactions].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 }
 
-export function groupByDay(transactions: Transaction[], symbol: string, now: Date = new Date()): TxGroup[] {
+/** `t` is the caller's `useTranslation('common')` (for the Today/Yesterday day labels). */
+export function groupByDay(transactions: Transaction[], symbol: string, t: Translate, now: Date = new Date()): TxGroup[] {
   const sorted = sortedTransactions(transactions);
   const groups = new Map<string, Transaction[]>();
-  for (const t of sorted) {
-    const key = new Date(t.at).toDateString();
+  for (const tx of sorted) {
+    const key = new Date(tx.at).toDateString();
     const arr = groups.get(key) ?? [];
-    arr.push(t);
+    arr.push(tx);
     groups.set(key, arr);
   }
   return Array.from(groups.entries()).map(([key, items]) => {
-    const net = items.reduce((s, t) => s + netContribution(t), 0);
+    const net = items.reduce((s, tx) => s + netContribution(tx), 0);
     return {
-      label: dayLabel(new Date(key), now),
+      label: dayLabel(new Date(key), now, t),
       total: formatSigned(net, symbol),
       items,
     };

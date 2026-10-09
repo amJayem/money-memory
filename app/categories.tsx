@@ -9,6 +9,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function CategoriesScreen() {
   const theme = useTheme();
@@ -19,6 +20,8 @@ export default function CategoriesScreen() {
   const renameCategory = useAppStore((s) => s.renameCategory);
   const deleteCategory = useAppStore((s) => s.deleteCategory);
   const toast = useToastStore((s) => s.show);
+  const t = useTranslation('categories');
+  const tc = useTranslation('common');
 
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
@@ -41,17 +44,17 @@ export default function CategoriesScreen() {
   function remove(name: string) {
     const used = usageCount(name);
     if (used > 0) {
-      toast(`${used} transaction${used === 1 ? '' : 's'} still use${used === 1 ? 's' : ''} "${name}" — rename it instead`);
+      toast(used === 1 ? t('toastStillUsedOne', { count: String(used), name }) : t('toastStillUsedOther', { count: String(used), name }));
       return;
     }
     deleteCategory(name);
-    toast('Category removed');
+    toast(t('toastRemoved'));
   }
 
   function addNew() {
     if (!newName.trim()) return;
     if (settings.categories.some((c) => c.toLowerCase() === newName.trim().toLowerCase())) {
-      toast('That category already exists');
+      toast(t('toastExists'));
       return;
     }
     addCategory(newName);
@@ -62,7 +65,7 @@ export default function CategoriesScreen() {
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
         <IconButton glyph="←" onPress={() => router.back()} />
-        <AppText variant="title">Categories</AppText>
+        <AppText variant="title">{t('title')}</AppText>
       </View>
 
       <GlassCard padding={4}>
@@ -88,11 +91,11 @@ export default function CategoriesScreen() {
                 />
                 <Pressable onPress={() => saveEdit(name)} hitSlop={8}>
                   <AppText variant="body" color={theme.accentColor}>
-                    Save
+                    {tc('save')}
                   </AppText>
                 </Pressable>
                 <Pressable onPress={() => setEditing(null)} hitSlop={8}>
-                  <AppText variant="body2">Cancel</AppText>
+                  <AppText variant="body2">{tc('cancel')}</AppText>
                 </Pressable>
               </>
             ) : (
@@ -101,11 +104,11 @@ export default function CategoriesScreen() {
                   {name}
                 </AppText>
                 <Pressable onPress={() => startEdit(name)} hitSlop={8}>
-                  <AppText variant="body2">Rename</AppText>
+                  <AppText variant="body2">{tc('rename')}</AppText>
                 </Pressable>
                 <Pressable onPress={() => remove(name)} hitSlop={8}>
                   <AppText variant="body2" color={theme.tone('neg')}>
-                    Delete
+                    {tc('delete')}
                   </AppText>
                 </Pressable>
               </>
@@ -116,17 +119,17 @@ export default function CategoriesScreen() {
 
       <GlassCard>
         <AppText variant="label" style={{ marginBottom: 8 }}>
-          Add a category
+          {t('addCategory')}
         </AppText>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TextInput
             value={newName}
             onChangeText={setNewName}
-            placeholder="e.g. Subscriptions"
+            placeholder={t('addPlaceholder')}
             placeholderTextColor={theme.ink3}
             style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 12, color: theme.ink, fontSize: 13.5 }}
           />
-          <GhostButton label="Add" onPress={addNew} />
+          <GhostButton label={t('add')} onPress={addNew} />
         </View>
       </GlassCard>
     </Screen>

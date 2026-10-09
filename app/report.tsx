@@ -10,16 +10,21 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { balance, monthlyReport } from '@/domain/money';
-import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
+import { sortedTransactions, transactionIcon, transactionSub, transactionTitle, type Translate } from '@/domain/search';
 import type { Tone } from '@/theme/tokens';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function ReportScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { accounts, transactions } = useLedger();
   const privacy = usePrivacy('report');
+  const t = useTranslation('report');
+  const tc = useTranslation('common') as unknown as Translate;
 
-  const monthLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const now = new Date();
+  const monthLabel = `${tc(`monthShort${now.getMonth()}`)} ${now.getFullYear()}`;
+  const monthShort = tc(`monthShort${now.getMonth()}`);
   const report = monthlyReport(accounts, transactions);
 
   const largest = sortedTransactions(transactions)
@@ -28,13 +33,13 @@ export default function ReportScreen() {
     .slice(0, 4);
 
   const rows: { label: string; value: number | null; tone?: Tone; bold?: boolean }[] = [
-    { label: `Total available on ${monthLabel.split(' ')[0]} 1`, value: report.opening },
-    { label: 'Money in', value: report.income, tone: 'pos' },
-    { label: 'Money out', value: -report.expense, tone: 'neg' },
-    { label: 'Lent to people', value: -report.lent, tone: 'warn' },
-    { label: 'Repayments received', value: report.repaidIn, tone: 'pos' },
-    { label: 'Transfers', value: null },
-    { label: 'Total available now', value: report.closing, bold: true },
+    { label: t('totalAvailableOn', { month: monthShort }), value: report.opening },
+    { label: t('moneyIn'), value: report.income, tone: 'pos' },
+    { label: t('moneyOut'), value: -report.expense, tone: 'neg' },
+    { label: t('lentToPeople'), value: -report.lent, tone: 'warn' },
+    { label: t('repaymentsReceived'), value: report.repaidIn, tone: 'pos' },
+    { label: t('transfers'), value: null },
+    { label: t('totalAvailableNow'), value: report.closing, bold: true },
   ];
 
   return (
@@ -63,7 +68,7 @@ export default function ReportScreen() {
                 color={r.tone ? theme.tone(r.tone) : undefined}
                 style={r.bold ? { fontSize: 17 } : undefined}
               >
-                {r.value === null ? 'no net effect' : r.bold ? privacy.fmtTotal(r.value) : privacy.fmt(r.value, true)}
+                {r.value === null ? t('noNetEffect') : r.bold ? privacy.fmtTotal(r.value) : privacy.fmt(r.value, true)}
               </AppText>
             </View>
           ))}
@@ -71,24 +76,24 @@ export default function ReportScreen() {
       </GlassCard>
 
       <AppText variant="label" style={{ paddingHorizontal: 5 }}>
-        Largest transactions
+        {t('largestTransactions')}
       </AppText>
       <GlassCard padding={4}>
-        {largest.map((t) => (
+        {largest.map((tx) => (
           <TransactionRow
-            key={t.id}
-            title={transactionTitle(t, accounts)}
-            sub={transactionSub(t, accounts)}
-            icon={transactionIcon(t)}
-            amountText={privacy.fmt(t.type === 'expense' || t.type === 'lent' || t.type === 'repay_out' ? -t.amount : t.amount, true)}
-            type={t.type}
-            onPress={() => router.push(`/transaction/${t.id}`)}
+            key={tx.id}
+            title={transactionTitle(tx, accounts, tc)}
+            sub={transactionSub(tx, accounts, tc)}
+            icon={transactionIcon(tx)}
+            amountText={privacy.fmt(tx.type === 'expense' || tx.type === 'lent' || tx.type === 'repay_out' ? -tx.amount : tx.amount, true)}
+            type={tx.type}
+            onPress={() => router.push(`/transaction/${tx.id}`)}
           />
         ))}
       </GlassCard>
 
       <AppText variant="label" style={{ paddingHorizontal: 5 }}>
-        Where balances landed
+        {t('whereBalancesLanded')}
       </AppText>
       <GlassCard padding={4}>
         {accounts

@@ -11,18 +11,9 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
 import { usePrivacy } from '@/hooks/usePrivacy';
-import { transactionIcon, transactionTitle } from '@/domain/search';
+import { transactionIcon, transactionTitle, type Translate } from '@/domain/search';
 import { formatAmount } from '@/domain/format';
-
-const TYPE_LABEL: Record<string, string> = {
-  expense: 'Money out',
-  income: 'Money in',
-  transfer: 'Transfer between your accounts',
-  lent: 'Money you lent',
-  borrowed: 'Money you borrowed',
-  repay_in: 'Repayment received',
-  repay_out: 'Repayment you made',
-};
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function TransactionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -30,53 +21,65 @@ export default function TransactionDetailScreen() {
   const router = useRouter();
   const toast = useToastStore((s) => s.show);
   const privacy = usePrivacy('txdetail');
+  const t = useTranslation('transaction');
+  const tc = useTranslation('common') as unknown as Translate;
   const accounts = useAppStore((s) => s.accounts);
   const transactions = useAppStore((s) => s.transactions);
   const deleteTransaction = useAppStore((s) => s.deleteTransaction);
   const addTransaction = useAppStore((s) => s.addTransaction);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const t = transactions.find((x) => x.id === id);
-  if (!t) {
+  const tx = transactions.find((x) => x.id === id);
+  if (!tx) {
     return (
       <Screen>
-        <AppText variant="body">Transaction not found.</AppText>
+        <AppText variant="body">{t('notFound')}</AppText>
       </Screen>
     );
   }
 
   const accName = (accId?: string) => accounts.find((a) => a.id === accId)?.name ?? accId ?? '';
-  const tone = TRANSACTION_TONE[t.type];
+  const tone = TRANSACTION_TONE[tx.type];
   const amountColor = tone === 'pos' || tone === 'neg' ? theme.tone(tone) : theme.ink;
-  const when = new Date(t.at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
-  const monthLabel = new Date(t.at).toLocaleDateString('en-US', { month: 'long' });
+  const when = new Date(tx.at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  const monthLabel = tc(`monthShort${new Date(tx.at).getMonth()}`);
 
   const echo =
-    t.type === 'transfer'
-      ? 'Transfers move money between your own accounts — they never count as income or spending.'
-      : t.type === 'expense'
-        ? t.excludeFromBudget
-          ? `Kept out of ${monthLabel}'s budget — still shows in your balances and history as usual.`
-          : `Counted in ${monthLabel} spending and in your ${t.category} category.`
-        : t.type === 'income'
-          ? `Counted as ${monthLabel} income — doesn't touch your budget.`
-          : t.type === 'lent'
-            ? `${t.person}'s outstanding balance includes this amount.`
-            : t.type === 'repay_in'
-              ? 'Recorded as money returning to you, not as new income.'
-              : t.type === 'borrowed'
-                ? `This is now money you owe ${t.person}.`
-                : `Reduces what you owe ${t.person}.`;
+    tx.type === 'transfer'
+      ? t('echoTransfer')
+      : tx.type === 'expense'
+        ? tx.excludeFromBudget
+          ? t('echoExcluded', { month: monthLabel })
+          : t('echoCountedExpense', { month: monthLabel, category: tx.category ?? '' })
+        : tx.type === 'income'
+          ? t('echoCountedIncome', { month: monthLabel })
+          : tx.type === 'lent'
+            ? t('echoLent', { person: tx.person ?? '' })
+            : tx.type === 'repay_in'
+              ? t('echoRepayIn')
+              : tx.type === 'borrowed'
+                ? t('echoBorrowed', { person: tx.person ?? '' })
+                : t('echoRepayOut', { person: tx.person ?? '' });
+
+  const TYPE_LABEL: Record<string, string> = {
+    expense: t('typeMoneyOut'),
+    income: t('typeMoneyIn'),
+    transfer: t('typeTransfer'),
+    lent: t('typeLent'),
+    borrowed: t('typeBorrowed'),
+    repay_in: t('typeRepayIn'),
+    repay_out: t('typeRepayOut'),
+  };
 
   const rows: { label: string; value: string }[] = [
-    { label: 'Type', value: TYPE_LABEL[t.type] },
-    ...(t.category ? [{ label: 'Category', value: t.category }] : []),
-    ...(t.person ? [{ label: 'Person', value: t.person }] : []),
-    { label: t.type === 'transfer' ? 'Out of' : 'Paid using', value: accName(t.account) },
-    ...(t.toAccount ? [{ label: 'Into', value: accName(t.toAccount) }] : []),
-    { label: 'When', value: when },
-    ...(t.note ? [{ label: 'Note', value: t.note }] : []),
-    ...(t.editedAt ? [{ label: 'Edited', value: new Date(t.editedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) }] : []),
+    { label: t('rowType'), value: TYPE_LABEL[tx.type] },
+    ...(tx.category ? [{ label: t('rowCategory'), value: tx.category }] : []),
+    ...(tx.person ? [{ label: t('rowPerson'), value: tx.person }] : []),
+    { label: tx.type === 'transfer' ? t('rowOutOf') : t('rowPaidUsing'), value: accName(tx.account) },
+    ...(tx.toAccount ? [{ label: t('rowInto'), value: accName(tx.toAccount) }] : []),
+    { label: t('rowWhen'), value: when },
+    ...(tx.note ? [{ label: t('rowNote'), value: tx.note }] : []),
+    ...(tx.editedAt ? [{ label: t('rowEdited'), value: new Date(tx.editedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) }] : []),
   ];
 
   function askDelete() {
@@ -84,10 +87,10 @@ export default function TransactionDetailScreen() {
   }
 
   function confirmDelete() {
-    const removed = t!;
+    const removed = tx!;
     deleteTransaction(removed.id);
-    toast('Transaction deleted · everything recalculated', {
-      label: 'Undo',
+    toast(t('toastDeleted'), {
+      label: t('toastUndo'),
       onPress: () => addTransaction(removed),
     });
     setConfirmOpen(false);
@@ -99,7 +102,7 @@ export default function TransactionDetailScreen() {
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
         <IconButton glyph="←" onPress={() => router.back()} />
-        <AppText variant="title">Transaction</AppText>
+        <AppText variant="title">{t('title')}</AppText>
       </View>
 
       <GlassCard>
@@ -115,12 +118,12 @@ export default function TransactionDetailScreen() {
             }}
           >
             <AppText color={theme.tone(tone)} weight="manrope700" style={{ fontSize: 20 }}>
-              {transactionIcon(t)}
+              {transactionIcon(tx)}
             </AppText>
           </View>
-          <AppText variant="body">{transactionTitle(t, accounts)}</AppText>
+          <AppText variant="body">{transactionTitle(tx, accounts, tc)}</AppText>
           <AppText variant="amount" color={amountColor} style={{ fontSize: 30 }}>
-            {privacy.fmt(t.amount)}
+            {privacy.fmt(tx.amount)}
           </AppText>
           <AppText variant="mono">{when}</AppText>
         </View>
@@ -148,14 +151,14 @@ export default function TransactionDetailScreen() {
 
         <View style={{ flexDirection: 'row', gap: 11, marginTop: 14 }}>
           <Pressable
-            onPress={() => router.push(`/entry/${t.type}?editId=${t.id}`)}
+            onPress={() => router.push(`/entry/${tx.type}?editId=${tx.id}`)}
             style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 15, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}
           >
-            <AppText variant="body">Edit</AppText>
+            <AppText variant="body">{tc('edit')}</AppText>
           </Pressable>
           <Pressable onPress={askDelete} style={{ flex: 1, backgroundColor: theme.toneBg('neg'), borderRadius: 15, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}>
             <AppText variant="body" color={theme.tone('neg')}>
-              Delete
+              {tc('delete')}
             </AppText>
           </Pressable>
         </View>
@@ -167,9 +170,13 @@ export default function TransactionDetailScreen() {
 
       <ConfirmDialog
         visible={confirmOpen}
-        title="Delete this transaction?"
-        body={`${transactionTitle(t, accounts)} · ${formatAmount(t.amount, '')}${t.category ? ' · ' + t.category : ''}. Deleting this updates your ${t.person ? `account balance and ${t.person}'s outstanding amount` : 'account balance, budget and statistics'}.`}
-        confirmLabel="Delete"
+        title={t('deleteTitle')}
+        body={
+          tx.person
+            ? t('deleteBodyWithPerson', { summary: `${transactionTitle(tx, accounts, tc)} · ${formatAmount(tx.amount, '')}${tx.category ? ' · ' + tx.category : ''}`, person: tx.person })
+            : t('deleteBodyNoPerson', { summary: `${transactionTitle(tx, accounts, tc)} · ${formatAmount(tx.amount, '')}${tx.category ? ' · ' + tx.category : ''}` })
+        }
+        confirmLabel={tc('delete')}
         onCancel={() => setConfirmOpen(false)}
         onConfirm={confirmDelete}
       />

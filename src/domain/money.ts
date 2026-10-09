@@ -5,6 +5,8 @@
 
 import type { Account, Transaction } from './types';
 
+export type Translate = (key: string, vars?: Record<string, string>) => string;
+
 /** A non-credit account's current balance: opening balance plus every effect on it. */
 export function balance(account: Account, transactions: Transaction[]): number {
   let b = account.openingBalance;
@@ -108,10 +110,11 @@ export function statusTone(p: PersonLedger): 'pos' | 'warn' | 'neg' {
   return 'neg';
 }
 
-export function statusLabel(p: PersonLedger): 'Cleared' | 'Partly paid' | 'Outstanding' {
-  if (p.out <= 0) return 'Cleared';
-  if (p.back > 0) return 'Partly paid';
-  return 'Outstanding';
+/** `t` is the caller's `useTranslation('common')`. */
+export function statusLabel(p: PersonLedger, t: Translate): string {
+  if (p.out <= 0) return t('statusCleared');
+  if (p.back > 0) return t('statusPartlyPaid');
+  return t('statusOutstanding');
 }
 
 /** "You are owed" — brief §2 rule: never shown negative, people can't net below zero. */
@@ -165,13 +168,14 @@ export function budgetStatus(budget: number, spentAmount: number): BudgetStatus 
 /**
  * Plain-language budget status line (§3), given the days remaining in the
  * current month (the prototype hardcodes this; the real app computes it).
+ * `t` is the caller's `useTranslation('home')`.
  */
-export function budgetStatusLine(status: BudgetStatus, monthLabel: string, daysRemaining: number, fmt: (n: number) => string): string {
-  if (status.noBudget) return 'No monthly budget set — spending is still recorded, just not measured against a plan.';
-  if (status.overBudget) return `Your spending is ${fmt(-status.left)} above this month's plan.`;
-  if (status.exactBudget) return `You've used your ${monthLabel} plan exactly — anything more goes over.`;
-  if (status.nearBudget) return `You're getting close to your ${monthLabel} budget — ${fmt(status.left)} left.`;
-  return `${fmt(status.left)} of your plan is still unspent, with ${daysRemaining} days to go.`;
+export function budgetStatusLine(status: BudgetStatus, monthLabel: string, daysRemaining: number, fmt: (n: number) => string, t: Translate): string {
+  if (status.noBudget) return t('budgetLineNone');
+  if (status.overBudget) return t('budgetLineOver', { amount: fmt(-status.left) });
+  if (status.exactBudget) return t('budgetLineExact', { month: monthLabel });
+  if (status.nearBudget) return t('budgetLineNear', { month: monthLabel, amount: fmt(status.left) });
+  return t('budgetLineNormal', { amount: fmt(status.left), days: String(daysRemaining) });
 }
 
 /**

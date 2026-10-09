@@ -10,15 +10,18 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { calendarIntensity } from '@/domain/stats';
-import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
-
-const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+import { sortedTransactions, transactionIcon, transactionSub, transactionTitle, type Translate } from '@/domain/search';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function CalendarScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { accounts, transactions, settings } = useLedger();
   const privacy = usePrivacy('calendar');
+  const t = useTranslation('calendar');
+  const tc = useTranslation('common') as unknown as Translate;
+  const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6].map((i) => tc(`weekdayNarrow${i}`));
+  const MONTHS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => tc(`monthShort${i}`));
   const today = new Date();
   const [selected, setSelected] = useState(today.getDate());
 
@@ -40,7 +43,7 @@ export default function CalendarScreen() {
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
         <IconButton glyph="←" onPress={() => router.back()} />
-        <AppText variant="title">{today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</AppText>
+        <AppText variant="title">{MONTHS[month]} {year}</AppText>
       </View>
 
       <GlassCard>
@@ -73,21 +76,21 @@ export default function CalendarScreen() {
       </GlassCard>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 5 }}>
-        <AppText variant="label">{selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</AppText>
+        <AppText variant="label">{tc(`weekdayLong${selectedDate.getDay()}`)}, {MONTHS[selectedDate.getMonth()]} {selectedDate.getDate()}</AppText>
         <AppText variant="mono">{dayTx.length ? privacy.fmt(dayTotal, true) : '—'}</AppText>
       </View>
 
       <GlassCard padding={4}>
         {dayTx.length === 0 ? (
           <AppText variant="body2" style={{ padding: 28, textAlign: 'center' }}>
-            No money moved that day.
+            {t('noMoneyMoved')}
           </AppText>
         ) : (
           dayTx.map((t) => (
             <TransactionRow
               key={t.id}
-              title={transactionTitle(t, accounts)}
-              sub={transactionSub(t, accounts)}
+              title={transactionTitle(t, accounts, tc)}
+              sub={transactionSub(t, accounts, tc)}
               icon={transactionIcon(t)}
               amountText={privacy.fmt(t.type === 'expense' || t.type === 'lent' || t.type === 'repay_out' ? -t.amount : t.amount, true)}
               type={t.type}

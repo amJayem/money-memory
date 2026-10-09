@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, Pressable, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from './AppText';
+import { useTranslation } from '@/i18n/useTranslation';
 
 interface Props {
   visible: boolean;
@@ -15,6 +16,7 @@ interface Props {
 /** Rendered via RN's Modal (a portal) so it reliably overlays the viewport regardless of the caller's scroll position. */
 export function ConfirmDialog({ visible, title, body, confirmLabel, onConfirm, onCancel }: Props) {
   const theme = useTheme();
+  const t = useTranslation('common');
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <Pressable style={{ flex: 1, backgroundColor: 'rgba(10,10,12,0.5)', alignItems: 'center', justifyContent: 'center', padding: 30 }} onPress={onCancel}>
@@ -23,7 +25,7 @@ export function ConfirmDialog({ visible, title, body, confirmLabel, onConfirm, o
           <AppText variant="body2">{body}</AppText>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Pressable onPress={onCancel} style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, minHeight: 46, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' }}>
-              <AppText variant="body">Keep it</AppText>
+              <AppText variant="body">{t('keepIt')}</AppText>
             </Pressable>
             <Pressable onPress={onConfirm} style={{ flex: 1, backgroundColor: theme.tone('neg'), borderRadius: 14, minHeight: 46, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' }}>
               <AppText color="#fff" weight="manrope700">

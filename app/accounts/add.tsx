@@ -11,7 +11,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
-import { ACCOUNT_TYPE_LABEL } from '@/theme/tokens';
+import { useTranslation } from '@/i18n/useTranslation';
 import type { AccountType } from '@/domain/types';
 
 const TYPES: AccountType[] = ['cash', 'bank', 'debit', 'credit', 'wallet', 'savings'];
@@ -26,6 +26,16 @@ export default function AddAccountScreen() {
   const updateAccount = useAppStore((s) => s.updateAccount);
   const deleteAccount = useAppStore((s) => s.deleteAccount);
   const toast = useToastStore((s) => s.show);
+  const t = useTranslation('accounts');
+  const tc = useTranslation('common');
+  const ACCOUNT_TYPE_LABEL: Record<string, string> = {
+    cash: tc('accountTypeCash'),
+    bank: tc('accountTypeBank'),
+    debit: tc('accountTypeDebit'),
+    credit: tc('accountTypeCredit'),
+    wallet: tc('accountTypeWallet'),
+    savings: tc('accountTypeSavings'),
+  };
 
   const editing = editId ? accounts.find((a) => a.id === editId) : undefined;
   const relatedCount = editing ? transactions.filter((t) => t.account === editing.id || t.toAccount === editing.id).length : 0;
@@ -44,7 +54,7 @@ export default function AddAccountScreen() {
 
   function save() {
     if (!name.trim()) {
-      toast('Give the account a name first');
+      toast(t('toastNameFirst'));
       return;
     }
     const value = parseFloat(amount) || 0;
@@ -55,7 +65,7 @@ export default function AddAccountScreen() {
         openingBalance: type === 'credit' ? editing.openingBalance : value,
         limit: type === 'credit' ? value : undefined,
       });
-      toast('Account updated');
+      toast(t('toastUpdated'));
     } else {
       addAccount({
         id: `acc${Date.now()}`,
@@ -65,14 +75,14 @@ export default function AddAccountScreen() {
         limit: type === 'credit' ? value : undefined,
         openingUsed: type === 'credit' ? 0 : undefined,
       });
-      toast('Account added');
+      toast(t('toastAdded'));
     }
     goBack();
   }
 
   function askDelete() {
     if (relatedCount > 0) {
-      toast(`Remove or reassign ${relatedCount} transaction${relatedCount === 1 ? '' : 's'} on this account first`);
+      toast(relatedCount === 1 ? t('toastRemoveFirstOne', { count: String(relatedCount) }) : t('toastRemoveFirstOther', { count: String(relatedCount) }));
       return;
     }
     setConfirmDelete(true);
@@ -81,7 +91,7 @@ export default function AddAccountScreen() {
   function confirmDeleteAccount() {
     if (!editing) return;
     deleteAccount(editing.id);
-    toast('Account deleted');
+    toast(t('toastDeleted'));
     setConfirmDelete(false);
     goBack();
   }
@@ -90,19 +100,19 @@ export default function AddAccountScreen() {
     <Screen scroll={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
         <IconButton glyph="←" onPress={goBack} />
-        <AppText variant="title">{editing ? 'Edit account' : 'Add account'}</AppText>
+        <AppText variant="title">{editing ? t('editAccount') : t('addAccount')}</AppText>
       </View>
 
       <GlassCard>
         <View style={{ gap: 16 }}>
           <View>
             <AppText variant="label" style={{ marginBottom: 8 }}>
-              Name
+              {t('name')}
             </AppText>
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="e.g. City Bank"
+              placeholder={t('namePlaceholder')}
               placeholderTextColor={theme.ink3}
               style={{ borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 13, color: theme.ink, fontSize: 14 }}
             />
@@ -110,7 +120,7 @@ export default function AddAccountScreen() {
 
           <View>
             <AppText variant="label" style={{ marginBottom: 8 }}>
-              Type
+              {t('type')}
             </AppText>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, opacity: typeLocked ? 0.5 : 1 }}>
               {TYPES.map((t) => (
@@ -119,14 +129,14 @@ export default function AddAccountScreen() {
             </View>
             {typeLocked ? (
               <AppText variant="mono" style={{ marginTop: 6 }}>
-                Type is locked once an account has transactions.
+                {t('typeLockedHint')}
               </AppText>
             ) : null}
           </View>
 
           <View>
             <AppText variant="label" style={{ marginBottom: 8 }}>
-              {type === 'credit' ? 'Credit limit' : editing ? 'Starting balance' : 'Money in it now'}
+              {type === 'credit' ? t('creditLimit') : editing ? t('startingBalance') : t('moneyInItNow')}
             </AppText>
             <TextInput
               value={amount}
@@ -139,24 +149,24 @@ export default function AddAccountScreen() {
           </View>
 
           <AppText variant="body2">
-            We never ask for bank logins, card numbers or OTPs. You type what you know; the numbers stay on this phone.
+            {t('neverAskHint')}
           </AppText>
 
           <Pressable onPress={save} style={{ backgroundColor: theme.ink, borderRadius: 18, minHeight: 52, alignItems: 'center', justifyContent: 'center' }}>
             <AppText color={theme.solid} weight="manrope700">
-              {editing ? 'Save changes' : 'Save account'}
+              {editing ? t('saveChanges') : t('saveAccount')}
             </AppText>
           </Pressable>
 
-          {editing ? <GhostButton label="Delete account" tone="neg" fullWidth onPress={askDelete} /> : null}
+          {editing ? <GhostButton label={t('deleteAccount')} tone="neg" fullWidth onPress={askDelete} /> : null}
         </View>
       </GlassCard>
 
       <ConfirmDialog
         visible={confirmDelete}
-        title="Delete this account?"
-        body="This account has no transactions, so it can be removed cleanly. This can't be undone."
-        confirmLabel="Delete"
+        title={t('deleteTitle')}
+        body={t('deleteBody')}
+        confirmLabel={tc('delete')}
         onCancel={() => setConfirmDelete(false)}
         onConfirm={confirmDeleteAccount}
       />

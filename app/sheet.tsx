@@ -6,18 +6,20 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from '@/components/AppText';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
+import { useTranslation } from '@/i18n/useTranslation';
+import type { StringKey } from '@/i18n/strings';
 import { MIN_TAP_TARGET } from '@/theme/tokens';
 import type { TransactionType } from '@/domain/types';
 import type { Tone } from '@/theme/tokens';
 
-const OPTIONS: { label: string; sub: string; type: TransactionType; icon: string; tone: Tone }[] = [
-  { label: 'I spent money', sub: 'Food, bills, shopping — anything out', type: 'expense', icon: '−', tone: 'neg' },
-  { label: 'I received money', sub: 'Salary, freelance, gifts', type: 'income', icon: '+', tone: 'pos' },
-  { label: 'I moved my own money', sub: 'Bank → cash, wallet → bank', type: 'transfer', icon: '⇄', tone: 'neutral' },
-  { label: 'I lent money to someone', sub: 'Still yours — just not with you', type: 'lent', icon: '→', tone: 'warn' },
-  { label: 'Someone paid me back', sub: 'Reduces what they owe you', type: 'repay_in', icon: '↩', tone: 'pos' },
-  { label: 'I borrowed money', sub: 'Track what you owe them', type: 'borrowed', icon: '←', tone: 'warn' },
-  { label: 'I paid someone back', sub: 'Reduces what you owe them', type: 'repay_out', icon: '↪', tone: 'neg' },
+const OPTIONS: { titleKey: StringKey<'entry'>; subKey: StringKey<'sheet'>; type: TransactionType; icon: string; tone: Tone }[] = [
+  { titleKey: 'titleExpense', subKey: 'subExpense', type: 'expense', icon: '−', tone: 'neg' },
+  { titleKey: 'titleIncome', subKey: 'subIncome', type: 'income', icon: '+', tone: 'pos' },
+  { titleKey: 'titleTransfer', subKey: 'subTransfer', type: 'transfer', icon: '⇄', tone: 'neutral' },
+  { titleKey: 'titleLent', subKey: 'subLent', type: 'lent', icon: '→', tone: 'warn' },
+  { titleKey: 'titleRepayIn', subKey: 'subRepayIn', type: 'repay_in', icon: '↩', tone: 'pos' },
+  { titleKey: 'titleBorrowed', subKey: 'subBorrowed', type: 'borrowed', icon: '←', tone: 'warn' },
+  { titleKey: 'titleRepayOut', subKey: 'subRepayOut', type: 'repay_out', icon: '↪', tone: 'neg' },
 ];
 
 export default function ActionSheet() {
@@ -26,11 +28,13 @@ export default function ActionSheet() {
   const router = useRouter();
   const accounts = useAppStore((s) => s.accounts);
   const toast = useToastStore((s) => s.show);
+  const te = useTranslation('entry');
+  const t = useTranslation('sheet');
   const canTransfer = accounts.filter((a) => a.type !== 'credit').length >= 2;
 
   function open(type: TransactionType) {
     if (type === 'transfer' && !canTransfer) {
-      toast('Add a second account first to move money between accounts');
+      toast(t('toastNeedSecondAccount'));
       return;
     }
     router.replace(editId ? `/entry/${type}?editId=${editId}` : `/entry/${type}`);
@@ -59,10 +63,10 @@ export default function ActionSheet() {
               <View style={{ alignItems: 'center' }}>
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.lineStrong, marginBottom: 14 }} />
                 <AppText variant="title" style={{ fontSize: 18 }}>
-                  {editId ? 'Change this to…' : 'What happened with your money?'}
+                  {editId ? t('editTitle') : t('newTitle')}
                 </AppText>
                 <AppText variant="body2" style={{ marginTop: 4, textAlign: 'center' }}>
-                  {editId ? "Pick what this record should actually be — the amount and note carry over." : 'Record it once — balances, budget and loans all update.'}
+                  {editId ? t('editSub') : t('newSub')}
                 </AppText>
               </View>
               <View style={{ gap: 8 }}>
@@ -80,9 +84,9 @@ export default function ActionSheet() {
                         </AppText>
                       </View>
                       <View style={{ flex: 1, minWidth: 0 }}>
-                        <AppText variant="body">{o.label}</AppText>
+                        <AppText variant="body">{te(o.titleKey)}</AppText>
                         <AppText variant="mono" style={{ marginTop: 2 }}>
-                          {disabled ? 'Needs a second account first' : o.sub}
+                          {disabled ? t('needsSecondAccount') : t(o.subKey)}
                         </AppText>
                       </View>
                       <AppText color={theme.ink3} weight="manrope600">

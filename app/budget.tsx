@@ -14,9 +14,10 @@ import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { useAppStore } from '@/store/appStore';
 import { budgetStatus } from '@/domain/money';
-import { recentMonthSpending } from '@/domain/stats';
+import { recentMonthSpending, type Translate } from '@/domain/stats';
 import { formatAmount } from '@/domain/format';
 import { Chip } from '@/components/Chip';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function BudgetScreen() {
   const theme = useTheme();
@@ -33,10 +34,12 @@ export default function BudgetScreen() {
   const [catEditorTarget, setCatEditorTarget] = useState<string | null>(null);
   const [catEditorOpen, setCatEditorOpen] = useState(false);
   const [catBudgetInput, setCatBudgetInput] = useState('');
+  const t = useTranslation('budget');
+  const tc = useTranslation('common') as unknown as Translate;
 
-  const monthLabel = new Date().toLocaleDateString('en-US', { month: 'long' });
-  const lentThisMonth = transactions.filter((t) => t.type === 'lent').reduce((s, t) => s + t.amount, 0);
-  const history = recentMonthSpending(transactions, settings.countLentAsSpending);
+  const monthLabel = tc(`monthShort${new Date().getMonth()}`);
+  const lentThisMonth = transactions.filter((tx) => tx.type === 'lent').reduce((s, tx) => s + tx.amount, 0);
+  const history = recentMonthSpending(transactions, settings.countLentAsSpending, tc);
   const budgetedCategories = Object.keys(settings.categoryBudgets);
   const unbudgetedCategories = settings.categories.filter((c) => !(c in settings.categoryBudgets));
 
@@ -67,7 +70,7 @@ export default function BudgetScreen() {
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
         <IconButton glyph="←" onPress={() => router.back()} />
-        <AppText variant="title">{monthLabel} budget</AppText>
+        <AppText variant="title">{t('title', { month: monthLabel })}</AppText>
       </View>
 
       <GlassCard>
@@ -89,43 +92,43 @@ export default function BudgetScreen() {
               }
             />
             <Pressable onPress={openBudgetEditor} style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
-              <AppText variant="label">left to spend</AppText>
+              <AppText variant="label">{t('leftToSpend')}</AppText>
               <AppText variant="amount" color={theme.tone(budget.tone)} style={{ fontSize: 22, marginTop: 4 }}>
                 {privacy.fmt(Math.max(0, budget.left))}
               </AppText>
               <AppText variant="body2" style={{ marginTop: 3 }}>
-                {budget.noBudget ? 'not set' : `${budget.pct}%`}
+                {budget.noBudget ? t('notSet') : `${budget.pct}%`}
               </AppText>
             </Pressable>
           </View>
           <View style={{ flexDirection: 'row', width: '100%', borderTopWidth: 1, borderTopColor: theme.line, paddingTop: 14 }}>
-            <Stat label="Budget" value={privacy.fmt(budget.budget)} />
+            <Stat label={t('budgetLabel')} value={privacy.fmt(budget.budget)} />
             <Divider />
-            <Stat label="Spent" value={privacy.fmt(budget.spent)} />
+            <Stat label={t('spentLabel')} value={privacy.fmt(budget.spent)} />
             <Divider />
-            <Stat label="Lent out" value={privacy.fmt(lentThisMonth)} />
+            <Stat label={t('lentOut')} value={privacy.fmt(lentThisMonth)} />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, width: '100%', backgroundColor: theme.surface2, borderRadius: 16, padding: 12 }}>
             <AppText variant="body2" style={{ flex: 1 }}>
-              Adjust this month
+              {t('adjustThisMonth')}
             </AppText>
             <StepButton glyph="−" onPress={() => updateSettings({ monthlyBudget: Math.max(0, settings.monthlyBudget - 2500) })} />
             <StepButton glyph="+" onPress={() => updateSettings({ monthlyBudget: settings.monthlyBudget + 2500 })} />
           </View>
           <AppText variant="body2" style={{ textAlign: 'center' }}>
-            Past months keep the budget they were planned with — editing now only changes {monthLabel}.
+            {t('pastMonthsHint', { month: monthLabel })}
           </AppText>
         </View>
       </GlassCard>
 
       <GlassCard>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <AppText variant="heading">Category budgets</AppText>
-          <AppText variant="mono">optional</AppText>
+          <AppText variant="heading">{t('categoryBudgets')}</AppText>
+          <AppText variant="mono">{t('optional')}</AppText>
         </View>
         {budgetedCategories.length === 0 ? (
           <AppText variant="body2" style={{ marginTop: 10 }}>
-            None set — add one to track spending against a limit per category.
+            {t('noneSetHint')}
           </AppText>
         ) : (
           <View style={{ gap: 14, marginTop: 14 }}>
@@ -138,7 +141,7 @@ export default function BudgetScreen() {
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <AppText variant="body">{name}</AppText>
                     <AppText variant="mono" color={theme.tone(status.tone)}>
-                      {status.overBudget ? `${privacy.fmt(-status.left)} over` : `${privacy.fmt(status.left)} left`}
+                      {status.overBudget ? t('overAmount', { amount: privacy.fmt(-status.left) }) : t('leftAmount', { amount: privacy.fmt(status.left) })}
                     </AppText>
                   </View>
                   <View style={{ marginTop: 7 }}>
@@ -158,7 +161,7 @@ export default function BudgetScreen() {
             style={{ marginTop: 14, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
           >
             <AppText variant="body" color={theme.accentColor} weight="manrope600">
-              + Add category budget
+              {t('addCategoryBudget')}
             </AppText>
           </Pressable>
         ) : null}
@@ -166,7 +169,7 @@ export default function BudgetScreen() {
 
       {history.some((h) => h.spent > 0) ? (
         <GlassCard>
-          <AppText variant="heading">Budget history</AppText>
+          <AppText variant="heading">{t('budgetHistory')}</AppText>
           <View style={{ gap: 12, marginTop: 13 }}>
             {history.map((h) => {
               const status = budgetStatus(settings.monthlyBudget, h.spent);
@@ -179,7 +182,7 @@ export default function BudgetScreen() {
                     <ProgressBar barPct={status.barPct} overPct={status.overPct} tone={status.tone} height={8} />
                   </View>
                   <AppText variant="mono" color={theme.tone(status.overBudget ? 'neg' : 'pos')} style={{ width: 76, textAlign: 'right' }}>
-                    {status.overBudget ? `${privacy.fmt(-status.left)} over` : `${privacy.fmt(status.left)} left`}
+                    {status.overBudget ? t('overAmount', { amount: privacy.fmt(-status.left) }) : t('leftAmount', { amount: privacy.fmt(status.left) })}
                   </AppText>
                 </View>
               );
@@ -191,9 +194,9 @@ export default function BudgetScreen() {
       <GlassCard>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
           <View style={{ flex: 1 }}>
-            <AppText variant="body">Count money lent as spending</AppText>
+            <AppText variant="body">{t('countLentAsSpending')}</AppText>
             <AppText variant="body2" style={{ marginTop: 3 }}>
-              {settings.countLentAsSpending ? 'Lent money now counts against your budget.' : 'Lent money leaves your account but stays your money — off by default.'}
+              {settings.countLentAsSpending ? t('countLentOnHint') : t('countLentOffHint')}
             </AppText>
           </View>
           <AppSwitch value={settings.countLentAsSpending} onValueChange={(v) => updateSettings({ countLentAsSpending: v })} />
@@ -203,8 +206,8 @@ export default function BudgetScreen() {
       <Modal visible={budgetEditorOpen} transparent animationType="fade" onRequestClose={() => setBudgetEditorOpen(false)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(10,10,12,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 }} onPress={() => setBudgetEditorOpen(false)}>
           <Pressable onPress={(e) => e.stopPropagation()} style={{ backgroundColor: theme.solid, borderRadius: 22, padding: 20, width: '100%', maxWidth: 420, gap: 14 }}>
-            <AppText variant="heading">Set {monthLabel}'s budget</AppText>
-            <AppText variant="body2">Currently {privacy.fmt(settings.monthlyBudget)} · type a new amount below.</AppText>
+            <AppText variant="heading">{t('setMonthBudget', { month: monthLabel })}</AppText>
+            <AppText variant="body2">{t('currentlyHint', { amount: privacy.fmt(settings.monthlyBudget) })}</AppText>
             <View style={{ alignItems: 'center', paddingVertical: 6 }}>
               <AppText style={{ fontSize: budgetInput.length > 7 ? 30 : 42 }} variant="amount">
                 {settings.currencySymbol}
@@ -214,7 +217,7 @@ export default function BudgetScreen() {
             <Keypad value={budgetInput} onChange={setBudgetInput} />
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <Pressable onPress={() => setBudgetEditorOpen(false)} style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}>
-                <AppText variant="body">Cancel</AppText>
+                <AppText variant="body">{tc('cancel')}</AppText>
               </Pressable>
               <Pressable
                 onPress={saveBudget}
@@ -222,7 +225,7 @@ export default function BudgetScreen() {
                 style={{ flex: 1, backgroundColor: budgetInput ? theme.ink : theme.lineStrong, borderRadius: 14, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}
               >
                 <AppText color={budgetInput ? theme.solid : theme.ink3} weight="manrope700">
-                  {budgetInput ? `Set ${formatAmount(parseFloat(budgetInput) || 0, settings.currencySymbol)}` : 'Set budget'}
+                  {budgetInput ? t('setAmount', { amount: formatAmount(parseFloat(budgetInput) || 0, settings.currencySymbol) }) : t('setBudget')}
                 </AppText>
               </Pressable>
             </View>
@@ -235,8 +238,8 @@ export default function BudgetScreen() {
           <Pressable onPress={(e) => e.stopPropagation()} style={{ backgroundColor: theme.solid, borderRadius: 22, padding: 20, width: '100%', maxWidth: 420, gap: 14 }}>
             {catEditorTarget ? (
               <>
-                <AppText variant="heading">{catEditorTarget} budget</AppText>
-                <AppText variant="body2">Currently {privacy.fmt(settings.categoryBudgets[catEditorTarget] ?? 0)} · type a new amount below.</AppText>
+                <AppText variant="heading">{t('categoryBudgetTitle', { category: catEditorTarget })}</AppText>
+                <AppText variant="body2">{t('currentlyHint', { amount: privacy.fmt(settings.categoryBudgets[catEditorTarget] ?? 0) })}</AppText>
                 <View style={{ alignItems: 'center', paddingVertical: 6 }}>
                   <AppText style={{ fontSize: catBudgetInput.length > 7 ? 30 : 42 }} variant="amount">
                     {settings.currencySymbol}
@@ -254,12 +257,12 @@ export default function BudgetScreen() {
                       style={{ flex: 1, borderWidth: 1, borderColor: theme.tone('neg'), borderRadius: 14, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}
                     >
                       <AppText color={theme.tone('neg')} weight="manrope600">
-                        Remove
+                        {t('remove')}
                       </AppText>
                     </Pressable>
                   ) : (
                     <Pressable onPress={() => setCatEditorOpen(false)} style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}>
-                      <AppText variant="body">Cancel</AppText>
+                      <AppText variant="body">{tc('cancel')}</AppText>
                     </Pressable>
                   )}
                   <Pressable
@@ -268,21 +271,21 @@ export default function BudgetScreen() {
                     style={{ flex: 1, backgroundColor: catBudgetInput ? theme.ink : theme.lineStrong, borderRadius: 14, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}
                   >
                     <AppText color={catBudgetInput ? theme.solid : theme.ink3} weight="manrope700">
-                      {catBudgetInput ? `Set ${formatAmount(parseFloat(catBudgetInput) || 0, settings.currencySymbol)}` : 'Set budget'}
+                      {catBudgetInput ? t('setAmount', { amount: formatAmount(parseFloat(catBudgetInput) || 0, settings.currencySymbol) }) : t('setBudget')}
                     </AppText>
                   </Pressable>
                 </View>
               </>
             ) : (
               <>
-                <AppText variant="heading">Which category?</AppText>
+                <AppText variant="heading">{t('whichCategory')}</AppText>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {unbudgetedCategories.map((c) => (
                     <Chip key={c} label={c} onPress={() => openCategoryEditor(c)} />
                   ))}
                 </View>
                 <Pressable onPress={() => setCatEditorOpen(false)} style={{ borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}>
-                  <AppText variant="body">Cancel</AppText>
+                  <AppText variant="body">{tc('cancel')}</AppText>
                 </Pressable>
               </>
             )}

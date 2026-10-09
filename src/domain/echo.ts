@@ -19,33 +19,27 @@ export interface EchoContext {
   owedToThem: number; // borrowed/repay_out: peopleAgg('borrowed', person).out
 }
 
-export function echoLine(ctx: EchoContext): string {
+export type Translate = (key: string, vars?: Record<string, string>) => string;
+
+/** `t` is the caller's `useTranslation('entry')` — kept out of this module so
+ * it stays a plain function of its inputs, not coupled to the i18n hook. */
+export function echoLine(ctx: EchoContext, t: Translate): string {
   const fmt = (n: number) => formatAmount(n, ctx.symbol);
   const amt = fmt(ctx.amount);
   switch (ctx.type) {
     case 'expense':
-      return `${amt} out of ${ctx.accountName} · ${ctx.category} · budget left after this: ${fmt(ctx.budgetTotal - ctx.spentSoFar - ctx.amount)}`;
+      return t('echoExpense', { amt, account: ctx.accountName, category: ctx.category ?? '', left: fmt(ctx.budgetTotal - ctx.spentSoFar - ctx.amount) });
     case 'income':
-      return `${amt} into ${ctx.accountName} · ${ctx.category} · doesn't touch your budget`;
+      return t('echoIncome', { amt, account: ctx.accountName, category: ctx.category ?? '' });
     case 'transfer':
-      return `${ctx.accountName} → ${ctx.toAccountName} · your total money stays ${fmt(ctx.liquidTotal)}`;
+      return t('echoTransfer', { account: ctx.accountName, toAccount: ctx.toAccountName ?? '', total: fmt(ctx.liquidTotal) });
     case 'lent':
-      return `${ctx.person} will owe you ${fmt(ctx.outstandingToThem + ctx.amount)} · not counted as spending`;
+      return t('echoLent', { person: ctx.person ?? '', amt: fmt(ctx.outstandingToThem + ctx.amount) });
     case 'repay_in':
-      return `${ctx.person} would still owe ${fmt(Math.max(0, ctx.outstandingToThem - ctx.amount))} after this`;
+      return t('echoRepayIn', { person: ctx.person ?? '', amt: fmt(Math.max(0, ctx.outstandingToThem - ctx.amount)) });
     case 'borrowed':
-      return `You'd owe ${ctx.person} ${fmt(ctx.owedToThem + ctx.amount)}`;
+      return t('echoBorrowed', { person: ctx.person ?? '', amt: fmt(ctx.owedToThem + ctx.amount) });
     case 'repay_out':
-      return `You'd still owe ${ctx.person} ${fmt(Math.max(0, ctx.owedToThem - ctx.amount))}`;
+      return t('echoRepayOut', { person: ctx.person ?? '', amt: fmt(Math.max(0, ctx.owedToThem - ctx.amount)) });
   }
 }
-
-export const SAVE_TOAST_LABEL: Record<TransactionType, string> = {
-  expense: 'Expense saved',
-  income: 'Income saved',
-  transfer: 'Transfer recorded',
-  lent: 'Loan recorded',
-  repay_in: 'Repayment recorded',
-  borrowed: 'Borrowing recorded',
-  repay_out: 'Payment recorded',
-};

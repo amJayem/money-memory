@@ -7,6 +7,21 @@ import { incomeTotal, spent, totalOwedToMe, transferTotal } from './money';
 
 export type StatRange = 'Today' | 'This week' | 'This month' | '3 months' | 'This year';
 
+export type Translate = (key: string, vars?: Record<string, string>) => string;
+
+const RANGE_KEY: Record<StatRange, string> = {
+  Today: 'rangeToday',
+  'This week': 'rangeWeek',
+  'This month': 'rangeMonth',
+  '3 months': 'range3Months',
+  'This year': 'rangeYear',
+};
+
+/** `t` is the caller's `useTranslation('stats')`. */
+export function rangeLabel(r: StatRange, t: Translate): string {
+  return t(RANGE_KEY[r]);
+}
+
 export function startOfRange(range: StatRange, now: Date): Date {
   const d = new Date(now);
   d.setHours(0, 0, 0, 0);
@@ -38,26 +53,30 @@ export interface CategorySlice {
   pct: number;
 }
 
-/** Expense breakdown by category, sorted descending, over the given range. */
-export function categoryBreakdown(transactions: Transaction[], range: StatRange, now: Date = new Date()): CategorySlice[] {
+/** Expense breakdown by category, sorted descending, over the given range.
+ * `t` is the caller's `useTranslation('common')` — only used for the
+ * "Other" fallback bucket when a transaction has no category of its own;
+ * real category names are user data and are never translated. */
+export function categoryBreakdown(transactions: Transaction[], range: StatRange, t: Translate, now: Date = new Date()): CategorySlice[] {
   const inWindow = transactions.filter((t) => t.type === 'expense' && inRange(t, range, now));
   const total = inWindow.reduce((s, t) => s + t.amount, 0);
   const byCategory = new Map<string, number>();
-  for (const t of inWindow) {
-    byCategory.set(t.category ?? 'Other', (byCategory.get(t.category ?? 'Other') ?? 0) + t.amount);
+  for (const tx of inWindow) {
+    const name = tx.category ?? t('otherCategory');
+    byCategory.set(name, (byCategory.get(name) ?? 0) + tx.amount);
   }
   return Array.from(byCategory.entries())
     .map(([name, amount]) => ({ name, amount, pct: total > 0 ? Math.round((amount / total) * 100) : 0 }))
     .sort((a, b) => b.amount - a.amount);
 }
 
-const METHOD_LABEL: Record<Account['type'], string> = {
-  cash: 'Cash',
-  bank: 'Bank',
-  savings: 'Bank',
-  wallet: 'Mobile wallet',
-  credit: 'Card',
-  debit: 'Card',
+const METHOD_KEY: Record<Account['type'], string> = {
+  cash: 'methodCash',
+  bank: 'methodBank',
+  savings: 'methodBank',
+  wallet: 'methodWallet',
+  credit: 'methodCard',
+  debit: 'methodCard',
 };
 
 export interface MethodSlice {
@@ -65,15 +84,16 @@ export interface MethodSlice {
   amount: number;
 }
 
-/** "How the money left" — expense breakdown bucketed by account type, not individual account. */
-export function methodBreakdown(transactions: Transaction[], accounts: Account[], range: StatRange, now: Date = new Date()): MethodSlice[] {
+/** "How the money left" — expense breakdown bucketed by account type, not
+ * individual account. `t` is the caller's `useTranslation('common')`. */
+export function methodBreakdown(transactions: Transaction[], accounts: Account[], range: StatRange, t: Translate, now: Date = new Date()): MethodSlice[] {
   const byMethod = new Map<string, number>();
-  for (const t of transactions) {
-    if (t.type !== 'expense' || !inRange(t, range, now)) continue;
-    const acc = accounts.find((a) => a.id === t.account);
+  for (const tx of transactions) {
+    if (tx.type !== 'expense' || !inRange(tx, range, now)) continue;
+    const acc = accounts.find((a) => a.id === tx.account);
     if (!acc) continue;
-    const label = METHOD_LABEL[acc.type];
-    byMethod.set(label, (byMethod.get(label) ?? 0) + t.amount);
+    const label = t(METHOD_KEY[acc.type]);
+    byMethod.set(label, (byMethod.get(label) ?? 0) + tx.amount);
   }
   return Array.from(byMethod.entries())
     .map(([name, amount]) => ({ name, amount }))
@@ -89,27 +109,29 @@ export interface FlowStep {
   tone: 'pos' | 'neutral' | 'neg' | 'warn';
 }
 
-/** "Money flow" — the 5 fixed reconciliation-style steps shown on Stats. */
-export function moneyFlow(transactions: Transaction[], accounts: Account[], countLentAsSpending: boolean, range: StatRange, now: Date = new Date()): FlowStep[] {
+/** "Money flow" — the 5 fixed reconciliation-style steps shown on Stats.
+ * `t` is the caller's `useTranslation('stats')`, `tCommon` its
+ * `useTranslation('common')` (passed through to categoryBreakdown). */
+export function moneyFlow(transactions: Transaction[], accounts: Account[], countLentAsSpending: boolean, range: StatRange, t: Translate, tCommon: Translate, now: Date = new Date()): FlowStep[] {
   const inWindow = transactions.filter((t) => inRange(t, range, now));
   const income = incomeTotal(inWindow);
   const expense = inWindow.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const transfers = transferTotal(inWindow);
   const spentTotal = spent(inWindow, countLentAsSpending);
   const owed = totalOwedToMe(inWindow);
-  const cats = categoryBreakdown(inWindow, range, now)
+  const cats = categoryBreakdown(inWindow, range, tCommon, now)
     .slice(0, 3)
     .map((c) => c.name)
     .join(', ');
-  const lentPeople = Array.from(new Set(inWindow.filter((t) => t.type === 'lent').map((t) => t.person).filter(Boolean)))
+  const lentPeople = Array.from(new Set(inWindow.filter((tx) => tx.type === 'lent').map((tx) => tx.person).filter(Boolean)))
     .slice(0, 3)
     .join(', ');
   return [
-    { label: 'Money came in', amount: income, sub: 'Income this period', tone: 'pos' },
-    { label: 'Landed in accounts', amount: income - spentTotal, sub: 'After spending', tone: 'neutral' },
-    { label: 'Moved between accounts', amount: transfers, sub: 'Transfers · no net effect', tone: 'neutral' },
-    { label: 'Went out as spending', amount: expense, sub: cats || 'No categories yet', tone: 'neg' },
-    { label: 'Sitting with other people', amount: owed, sub: lentPeople || 'Nobody currently', tone: 'warn' },
+    { label: t('flowIn'), amount: income, sub: t('flowInSub'), tone: 'pos' },
+    { label: t('flowLanded'), amount: income - spentTotal, sub: t('flowLandedSub'), tone: 'neutral' },
+    { label: t('flowMoved'), amount: transfers, sub: t('flowMovedSub'), tone: 'neutral' },
+    { label: t('flowOut'), amount: expense, sub: cats || t('flowOutSubEmpty'), tone: 'neg' },
+    { label: t('flowSitting'), amount: owed, sub: lentPeople || t('flowSittingSubEmpty'), tone: 'warn' },
   ];
 }
 
@@ -176,18 +198,19 @@ export interface MonthSpend {
  * budget-per-month snapshot, so each past month is compared against the
  * *current* budget setting, not whatever it was that month.
  */
-export function recentMonthSpending(transactions: Transaction[], countLentAsSpending: boolean, monthsBack = 3, now: Date = new Date()): MonthSpend[] {
+/** `t` is the caller's `useTranslation('common')` (for the short month name). */
+export function recentMonthSpending(transactions: Transaction[], countLentAsSpending: boolean, t: Translate, monthsBack = 3, now: Date = new Date()): MonthSpend[] {
   const result: MonthSpend[] = [];
   for (let i = 1; i <= monthsBack; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const spent = transactions
-      .filter((t) => {
-        if (t.type !== 'expense' && !(t.type === 'lent' && countLentAsSpending)) return false;
-        const at = new Date(t.at);
+      .filter((tx) => {
+        if (tx.type !== 'expense' && !(tx.type === 'lent' && countLentAsSpending)) return false;
+        const at = new Date(tx.at);
         return at.getFullYear() === d.getFullYear() && at.getMonth() === d.getMonth();
       })
-      .reduce((s, t) => s + t.amount, 0);
-    result.push({ month: d.toLocaleDateString('en-US', { month: 'short' }), spent });
+      .reduce((s, tx) => s + tx.amount, 0);
+    result.push({ month: t(`monthShort${d.getMonth()}`), spent });
   }
   return result;
 }

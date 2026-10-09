@@ -10,9 +10,10 @@ import { DonutChart } from '@/components/DonutChart';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
-import { categoryBreakdown, methodBreakdown, moneyFlow, spendingByDay, type StatRange } from '@/domain/stats';
+import { categoryBreakdown, methodBreakdown, moneyFlow, rangeLabel, spendingByDay, type StatRange, type Translate } from '@/domain/stats';
 import { categoryColor, methodColor } from '@/theme/tokens';
 import { formatAmount } from '@/domain/format';
+import { useTranslation } from '@/i18n/useTranslation';
 
 const RANGES: StatRange[] = ['Today', 'This week', 'This month', '3 months', 'This year'];
 
@@ -21,11 +22,13 @@ export default function StatsScreen() {
   const router = useRouter();
   const { accounts, transactions, settings } = useLedger();
   const privacy = usePrivacy('stats');
+  const t = useTranslation('stats') as unknown as Translate;
+  const tc = useTranslation('common') as unknown as Translate;
   const [range, setRange] = useState<StatRange>('This month');
 
-  const cats = categoryBreakdown(transactions, range);
-  const methods = methodBreakdown(transactions, accounts, range);
-  const flow = moneyFlow(transactions, accounts, settings.countLentAsSpending, range);
+  const cats = categoryBreakdown(transactions, range, tc);
+  const methods = methodBreakdown(transactions, accounts, range, tc);
+  const flow = moneyFlow(transactions, accounts, settings.countLentAsSpending, range, t, tc);
   const days = spendingByDay(transactions, settings.countLentAsSpending, 6);
   const statTotal = cats.reduce((s, c) => s + c.amount, 0);
   const maxDay = Math.max(1, ...days.map((d) => d.amount));
@@ -33,27 +36,32 @@ export default function StatsScreen() {
 
   const topCat = cats[0];
   const insight = statTotal === 0
-    ? 'Not enough data yet. Record a few transactions to unlock insights.'
-    : `You spent ${formatAmount(statTotal, settings.currencySymbol)} in this period. ${topCat.name} took the biggest share at ${topCat.pct}% — ${formatAmount(topCat.amount, settings.currencySymbol)}.`;
+    ? t('insightEmpty')
+    : t('insight', {
+        total: formatAmount(statTotal, settings.currencySymbol),
+        category: topCat.name,
+        pct: String(topCat.pct),
+        amount: formatAmount(topCat.amount, settings.currencySymbol),
+      });
 
   return (
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
         <IconButton glyph="←" onPress={() => (router.canGoBack() ? router.back() : router.push('/'))} />
-        <AppText variant="title">Statistics</AppText>
+        <AppText variant="title">{t('title')}</AppText>
       </View>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {RANGES.map((r) => (
-          <Chip key={r} label={r} active={range === r} onPress={() => setRange(r)} />
+          <Chip key={r} label={rangeLabel(r, t)} active={range === r} onPress={() => setRange(r)} />
         ))}
       </View>
 
       {statTotal === 0 ? (
         <View style={{ padding: 32, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 22 }}>
-          <AppText variant="heading">Not enough data yet</AppText>
+          <AppText variant="heading">{t('notEnoughData')}</AppText>
           <AppText variant="body2" style={{ textAlign: 'center' }}>
-            Record a few transactions and this fills in with where your money goes, how you pay and when you spend.
+            {t('notEnoughDataHint')}
           </AppText>
         </View>
       ) : (
@@ -67,7 +75,7 @@ export default function StatsScreen() {
                 />
                 <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
                   <AppText variant="label" style={{ fontSize: 9.5 }}>
-                    Spent
+                    {t('spent')}
                   </AppText>
                   <AppText variant="amount" style={{ fontSize: 15, marginTop: 3 }}>
                     {privacy.fmt(statTotal)}
@@ -98,7 +106,7 @@ export default function StatsScreen() {
 
           {methods.length > 0 ? (
             <GlassCard>
-              <AppText variant="heading">How the money left</AppText>
+              <AppText variant="heading">{t('howMoneyLeft')}</AppText>
               <View style={{ gap: 12, marginTop: 14 }}>
                 {methods.map((m, i) => (
                   <View key={m.name}>
@@ -116,7 +124,7 @@ export default function StatsScreen() {
           ) : null}
 
           <GlassCard>
-            <AppText variant="heading">Money flow</AppText>
+            <AppText variant="heading">{t('moneyFlow')}</AppText>
             <View style={{ gap: 4, marginTop: 14 }}>
               {flow.map((f, i) => {
                 const dotColor = theme.tone(f.tone);
@@ -145,7 +153,7 @@ export default function StatsScreen() {
           </GlassCard>
 
           <GlassCard>
-            <AppText variant="heading">Spending by day</AppText>
+            <AppText variant="heading">{t('spendingByDay')}</AppText>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginTop: 16, height: 80 }}>
               {days.map((d) => {
                 const isToday = d.date.toDateString() === today.toDateString();
@@ -153,7 +161,7 @@ export default function StatsScreen() {
                   <View key={d.date.toISOString()} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
                     <View style={{ width: '100%', height: Math.max(4, (d.amount / maxDay) * 64), borderRadius: 6, backgroundColor: isToday ? theme.accentColor : theme.surface2 }} />
                     <AppText variant="mono" style={{ fontSize: 9.5 }}>
-                      {d.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
+                      {tc(`weekdayNarrow${d.date.getDay()}`)}
                     </AppText>
                   </View>
                 );

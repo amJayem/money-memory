@@ -12,9 +12,11 @@ import { ScreenBackground } from '@/components/Screen';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
+import { useTranslation } from '@/i18n/useTranslation';
+import type { StringKey } from '@/i18n/strings';
 import type { TransactionType } from '@/domain/types';
 import { budgetStatus, liquid, outstandingFor, spent } from '@/domain/money';
-import { echoLine, SAVE_TOAST_LABEL } from '@/domain/echo';
+import { echoLine } from '@/domain/echo';
 import { formatAmount } from '@/domain/format';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -24,24 +26,34 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 const NEEDS_CATEGORY: TransactionType[] = ['expense', 'income'];
 const NEEDS_PERSON: TransactionType[] = ['lent', 'repay_in', 'borrowed', 'repay_out'];
 
-const ACCOUNT_LABEL: Record<TransactionType, string> = {
-  expense: 'Paid using',
-  income: 'Into which account',
-  transfer: 'Out of',
-  lent: 'Paid using',
-  borrowed: 'Into which account',
-  repay_in: 'Into which account',
-  repay_out: 'Paid using',
+const ACCOUNT_LABEL_KEY: Record<TransactionType, StringKey<'entry'>> = {
+  expense: 'accountLabelExpense',
+  income: 'accountLabelIncome',
+  transfer: 'accountLabelTransfer',
+  lent: 'accountLabelLent',
+  borrowed: 'accountLabelBorrowed',
+  repay_in: 'accountLabelRepayIn',
+  repay_out: 'accountLabelRepayOut',
 };
 
-const TITLE: Record<TransactionType, string> = {
-  expense: 'I spent money',
-  income: 'I received money',
-  transfer: 'I moved my own money',
-  lent: 'I lent money to someone',
-  borrowed: 'I borrowed money',
-  repay_in: 'Someone paid me back',
-  repay_out: 'I paid someone back',
+const TITLE_KEY: Record<TransactionType, StringKey<'entry'>> = {
+  expense: 'titleExpense',
+  income: 'titleIncome',
+  transfer: 'titleTransfer',
+  lent: 'titleLent',
+  borrowed: 'titleBorrowed',
+  repay_in: 'titleRepayIn',
+  repay_out: 'titleRepayOut',
+};
+
+const SAVED_TOAST_KEY: Record<TransactionType, StringKey<'entry'>> = {
+  expense: 'toastSavedExpense',
+  income: 'toastSavedIncome',
+  transfer: 'toastSavedTransfer',
+  lent: 'toastSavedLent',
+  borrowed: 'toastSavedBorrowed',
+  repay_in: 'toastSavedRepayIn',
+  repay_out: 'toastSavedRepayOut',
 };
 
 function isSameDay(a: Date, b: Date) {
@@ -52,6 +64,7 @@ export default function EntryForm() {
   const { type: typeParam, person: personParam, editId } = useLocalSearchParams<{ type: string; person?: string; editId?: string }>();
   const type = typeParam as TransactionType;
   const theme = useTheme();
+  const t = useTranslation('entry');
   const router = useRouter();
   const toast = useToastStore((s) => s.show);
 
@@ -263,17 +276,17 @@ export default function EntryForm() {
         liquidTotal: liquid(accounts, calcTransactions),
         outstandingToThem,
         owedToThem,
-      })
+      }, (key, vars) => t(key as StringKey<'entry'>, vars))
     : null;
 
   function save() {
     if (saving) return;
     if (!numericAmount) {
-      toast('Enter an amount first');
+      toast(t('toastEnterAmount'));
       return;
     }
     if (needsPerson && !effectivePerson) {
-      toast('Add a person for this');
+      toast(t('toastAddPerson'));
       return;
     }
     setSaving(true);
@@ -304,7 +317,7 @@ export default function EntryForm() {
       lastAccountId: account,
       ...(type === 'expense' ? { lastCategory: effectiveCategory } : {}),
     });
-    toast(editing ? 'Transaction updated · everything recalculated' : `${SAVE_TOAST_LABEL[type]} · balances and budget updated`);
+    toast(editing ? t('toastUpdated') : t(SAVED_TOAST_KEY[type]));
     goBack();
   }
 
@@ -312,11 +325,11 @@ export default function EntryForm() {
     <ScreenBackground blobs={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 6 }}>
         <View>
-          <AppText variant="heading">{editing ? 'Edit transaction' : TITLE[type]}</AppText>
+          <AppText variant="heading">{editing ? t('editTitle') : t(TITLE_KEY[type])}</AppText>
           {editing ? (
             <Pressable onPress={() => router.push(`/sheet?editId=${editing.id}`)} hitSlop={6}>
               <AppText variant="body2" color={theme.accentColor} style={{ marginTop: 2 }}>
-                Wrong type? Change it
+                {t('wrongType')}
               </AppText>
             </Pressable>
           ) : null}
@@ -447,7 +460,7 @@ export default function EntryForm() {
         </Pressable>
 
         {needsCategory ? (
-            <Section label="Category">
+            <Section label={t('category')}>
               <ChipRow>
                 {categories.map((c) => (
                   <Chip
@@ -467,7 +480,7 @@ export default function EntryForm() {
                   onChangeText={setCustomCategory}
                   onFocus={() => setActiveInput('text')}
                   onBlur={() => setActiveInput((cur) => (cur === 'text' ? null : cur))}
-                  placeholder="Name this category — optional, stays as Other if blank"
+                  placeholder={t('customCategoryPlaceholder')}
                   placeholderTextColor={theme.ink3}
                   style={{ marginTop: 10, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 12, color: theme.ink, fontSize: 13.5 }}
                 />
@@ -476,7 +489,7 @@ export default function EntryForm() {
           ) : null}
 
           {needsPerson ? (
-            <Section label="Person">
+            <Section label={t('person')}>
               <ChipRow>
                 {knownPeople.map((p) => (
                   <Chip key={p} label={p} active={!newPersonName && person === p} onPress={() => { setPerson(p); setNewPersonName(''); }} />
@@ -487,14 +500,14 @@ export default function EntryForm() {
                 onChangeText={setNewPersonName}
                 onFocus={() => setActiveInput('text')}
                 onBlur={() => setActiveInput((cur) => (cur === 'text' ? null : cur))}
-                placeholder="or type a new name"
+                placeholder={t('newPersonPlaceholder')}
                 placeholderTextColor={theme.ink3}
                 style={{ marginTop: 10, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 12, color: theme.ink, fontSize: 13.5 }}
               />
             </Section>
           ) : null}
 
-          <Section label={ACCOUNT_LABEL[type]}>
+          <Section label={t(ACCOUNT_LABEL_KEY[type])}>
             <ChipRow>
               {/* Only expense/lent can be charged to a credit card (creditUsed() only counts those two);
                   every other type moves real money and must land in a non-credit account. */}
@@ -505,9 +518,9 @@ export default function EntryForm() {
           </Section>
 
           {needsDest ? (
-            <Section label="Into">
+            <Section label={t('into')}>
               {nonCreditAccounts.filter((a) => a.id !== account).length === 0 ? (
-                <AppText variant="body2">You need a second account to move money between accounts.</AppText>
+                <AppText variant="body2">{t('needSecondAccount')}</AppText>
               ) : (
                 <ChipRow>
                   {nonCreditAccounts
@@ -520,11 +533,11 @@ export default function EntryForm() {
             </Section>
           ) : null}
 
-          <Section label="Date">
+          <Section label={t('date')}>
             <ChipRow>
-              <Chip label="Today" active={isToday} onPress={() => setDate(new Date())} />
-              <Chip label="Yesterday" active={isYesterday} onPress={() => setDate(yesterday)} />
-              <Chip label={isToday || isYesterday ? 'Pick a date' : date.toLocaleDateString()} active={!isToday && !isYesterday} onPress={() => setShowDatePicker(true)} />
+              <Chip label={t('today')} active={isToday} onPress={() => setDate(new Date())} />
+              <Chip label={t('yesterday')} active={isYesterday} onPress={() => setDate(yesterday)} />
+              <Chip label={isToday || isYesterday ? t('pickDate') : date.toLocaleDateString()} active={!isToday && !isYesterday} onPress={() => setShowDatePicker(true)} />
             </ChipRow>
             {showDatePicker ? (
               <DateTimePicker
@@ -540,13 +553,13 @@ export default function EntryForm() {
             ) : null}
           </Section>
 
-          <Section label="Note — optional, helps you remember">
+          <Section label={t('note')}>
             <TextInput
               value={note}
               onChangeText={setNote}
               onFocus={() => setActiveInput('text')}
               onBlur={() => setActiveInput((cur) => (cur === 'text' ? null : cur))}
-              placeholder="Add a note"
+              placeholder={t('notePlaceholder')}
               placeholderTextColor={theme.ink3}
               style={{ borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, padding: 12, color: theme.ink, fontSize: 13.5 }}
             />
@@ -555,9 +568,9 @@ export default function EntryForm() {
           {type === 'expense' ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 18, padding: 13 }}>
               <View style={{ flex: 1 }}>
-                <AppText variant="body">Outside budget</AppText>
+                <AppText variant="body">{t('outsideBudget')}</AppText>
                 <AppText variant="mono" style={{ marginTop: 2 }}>
-                  Still recorded as normal — just not counted against this month's plan
+                  {t('outsideBudgetSub')}
                 </AppText>
               </View>
               <AppSwitch value={outsideBudget} onValueChange={setOutsideBudget} />
@@ -599,16 +612,16 @@ export default function EntryForm() {
           }}
         >
           <AppText color={numericAmount ? theme.solid : theme.ink3} weight="manrope700">
-            {numericAmount ? `Save ${formatAmount(numericAmount, settings.currencySymbol)}` : 'Save transaction'}
+            {numericAmount ? t('saveWithAmount', { amount: formatAmount(numericAmount, settings.currencySymbol) }) : t('saveTransaction')}
           </AppText>
         </Pressable>
       </View>
 
       <ConfirmDialog
         visible={confirmDiscard}
-        title="Discard this entry?"
-        body="What you've entered here hasn't been saved yet."
-        confirmLabel="Discard"
+        title={t('discardTitle')}
+        body={t('discardBody')}
+        confirmLabel={t('discard')}
         onCancel={() => setConfirmDiscard(false)}
         onConfirm={() => {
           setConfirmDiscard(false);

@@ -5,6 +5,11 @@ function tx(overrides: Partial<Transaction> & Pick<Transaction, 'id' | 'type' | 
   return overrides as Transaction;
 }
 
+// Identity stand-in for the real useTranslation('common') hook — tests only
+// care about categoryBreakdown's amounts/sorting, not the "Other" fallback's
+// exact wording, so echoing the key back is a stable, dependency-free stub.
+const t = (key: string) => key;
+
 describe('categoryBreakdown', () => {
   test('sorts descending and computes percent of the window total', () => {
     const now = new Date('2026-09-15T12:00:00.000Z');
@@ -13,7 +18,7 @@ describe('categoryBreakdown', () => {
       tx({ id: '2', type: 'expense', amount: 1000, category: 'Transport', account: 'cash', at: '2026-09-11T10:00:00.000Z' }),
       tx({ id: '3', type: 'income', amount: 50000, category: 'Salary', account: 'cash', at: '2026-09-11T10:00:00.000Z' }),
     ];
-    const result = categoryBreakdown(txs, 'This month', now);
+    const result = categoryBreakdown(txs, 'This month', t, now);
     expect(result).toEqual([
       { name: 'Food', amount: 3000, pct: 75 },
       { name: 'Transport', amount: 1000, pct: 25 },
@@ -23,7 +28,7 @@ describe('categoryBreakdown', () => {
   test('excludes transactions outside the range', () => {
     const now = new Date('2026-09-15T12:00:00.000Z');
     const txs = [tx({ id: '1', type: 'expense', amount: 1000, category: 'Food', account: 'cash', at: '2026-08-01T10:00:00.000Z' })];
-    expect(categoryBreakdown(txs, 'This month', now)).toEqual([]);
+    expect(categoryBreakdown(txs, 'This month', t, now)).toEqual([]);
   });
 });
 
