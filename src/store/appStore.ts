@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS: Settings = {
   reminderMinute: 0,
   navStyle: 'classic',
   categoryBudgets: {},
+  appLockEnabled: false,
 };
 
 interface PersistedShape {

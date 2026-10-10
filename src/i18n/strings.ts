@@ -17,6 +17,11 @@ import type { Language } from '@/domain/types';
  */
 export const STRINGS = {
   en: {
+    lock: {
+      title: 'Money Memory is locked',
+      subtitle: 'Unlock with your fingerprint, face or PIN to continue',
+      unlock: 'Unlock',
+    },
     onboarding: {
       languageTitle: 'Choose your language',
       languageSubtitle: 'You can change this anytime from Settings',
@@ -37,6 +42,8 @@ export const STRINGS = {
       currencyPreview: 'amounts will read {symbol}1,250',
       monthlyBudgetLabel: 'Monthly budget — optional',
       monthlyBudgetHint: "Leave blank and set one later if you'd rather not yet",
+      appLockLabel: 'Lock the app',
+      appLockSub: 'Open it with your phone’s fingerprint, face or PIN',
       exploreSampleData: 'Or explore with sample data first',
     },
     home: {
@@ -135,6 +142,10 @@ export const STRINGS = {
       whatItHidesSub: 'Tap the eye to reveal for 10s',
       whatItHidesDashboard: 'Dashboard',
       whatItHidesAll: 'Everything',
+      groupSecurity: 'Security',
+      appLock: 'App lock',
+      appLockOn: 'On — fingerprint, face or PIN',
+      appLockOff: 'Off — no lock screen on open',
       groupNotifications: 'Notifications',
       budgetAlerts: 'Budget alerts',
       budgetAlertsOn: 'At 80% and when you pass it',
@@ -504,6 +515,11 @@ export const STRINGS = {
     },
   },
   bn: {
+    lock: {
+      title: 'Money Memory লক করা আছে',
+      subtitle: 'চালিয়ে যেতে আপনার ফিঙ্গারপ্রিন্ট, ফেস বা পিন দিয়ে আনলক করুন',
+      unlock: 'আনলক করুন',
+    },
     onboarding: {
       languageTitle: 'আপনার ভাষা বেছে নিন',
       languageSubtitle: 'আপনি যেকোনো সময় সেটিংস থেকে এটি পরিবর্তন করতে পারবেন',
@@ -524,6 +540,8 @@ export const STRINGS = {
       currencyPreview: 'পরিমাণ দেখাবে {symbol}1,250 এভাবে',
       monthlyBudgetLabel: 'মাসিক বাজেট — ঐচ্ছিক',
       monthlyBudgetHint: 'এখনই চাইলে খালি রেখে পরে সেট করতে পারবেন',
+      appLockLabel: 'অ্যাপ লক করুন',
+      appLockSub: 'আপনার ফোনের ফিঙ্গারপ্রিন্ট, ফেস বা পিন দিয়ে খুলুন',
       exploreSampleData: 'অথবা আগে নমুনা ডেটা দিয়ে দেখুন',
     },
     home: {
@@ -622,6 +640,10 @@ export const STRINGS = {
       whatItHidesSub: '10 সেকেন্ডের জন্য দেখতে চোখের আইকনে চাপ দিন',
       whatItHidesDashboard: 'ড্যাশবোর্ড',
       whatItHidesAll: 'সবকিছু',
+      groupSecurity: 'নিরাপত্তা',
+      appLock: 'অ্যাপ লক',
+      appLockOn: 'চালু — ফিঙ্গারপ্রিন্ট, ফেস বা পিন দিয়ে খুলুন',
+      appLockOff: 'বন্ধ — খোলার সময় কোনো লক নেই',
       groupNotifications: 'নোটিফিকেশন',
       budgetAlerts: 'বাজেট এলার্ট',
       budgetAlertsOn: '80% এ এবং বাজেট পার হলে',
@@ -993,6 +1015,7 @@ export const STRINGS = {
 } satisfies Record<
   Language,
   {
+    lock: Record<string, string>;
     onboarding: Record<string, string>;
     home: Record<string, string>;
     settings: Record<string, string>;

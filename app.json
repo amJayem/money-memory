@@ -52,7 +52,13 @@
           }
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Money Memory to use Face ID to unlock the app."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

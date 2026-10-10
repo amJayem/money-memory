@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from '@/components/AppText';
+import { AppSwitch } from '@/components/AppSwitch';
 import { ScreenBackground } from '@/components/Screen';
 import { GhostButton } from '@/components/GhostButton';
 import { useAppStore } from '@/store/appStore';
@@ -52,10 +54,22 @@ export function OnboardingFlow() {
   // back to its default name and a zero balance; nothing here needs clearing
   // before someone can type their own values.
   const [details, setDetails] = useState<Record<string, AccountDetail>>({});
+  // Only offered when the device actually has a screen lock set up — checked
+  // once, up front, rather than letting someone flip a toggle that can't
+  // ever actually do anything.
+  const [lockAvailable, setLockAvailable] = useState(false);
+  const [appLockWanted, setAppLockWanted] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 1200);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    LocalAuthentication.hasHardwareAsync()
+      .then((hw) => (hw ? LocalAuthentication.isEnrolledAsync() : false))
+      .then(setLockAvailable)
+      .catch(() => setLockAvailable(false));
   }, []);
 
   function toggle(type: AccountType) {
@@ -84,6 +98,7 @@ export function OnboardingFlow() {
       currencySymbol: symbol.trim() || '৳',
       enabledAccountTypes: enabled,
       monthlyBudget: parseFloat(budgetInput) || 0,
+      appLockEnabled: lockAvailable && appLockWanted,
     });
   }
 
@@ -255,6 +270,17 @@ export function OnboardingFlow() {
                 style={{ width: 92, minHeight: 46, textAlign: 'center', borderWidth: 1, borderColor: theme.lineStrong, backgroundColor: theme.solid, borderRadius: 12, color: theme.ink, fontSize: 15, fontWeight: '700' }}
               />
             </View>
+            {lockAvailable ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.surface2, borderRadius: 18, padding: 13 }}>
+                <View style={{ flex: 1 }}>
+                  <AppText variant="body">{t('appLockLabel')}</AppText>
+                  <AppText variant="mono" style={{ marginTop: 2 }}>
+                    {t('appLockSub')}
+                  </AppText>
+                </View>
+                <AppSwitch value={appLockWanted} onValueChange={setAppLockWanted} />
+              </View>
+            ) : null}
           </View>
         ) : null}
       </ScrollView>

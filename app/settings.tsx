@@ -3,6 +3,7 @@ import { Modal, Platform, Pressable, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/AppText';
 import { IconButton } from '@/components/IconButton';
@@ -64,6 +65,24 @@ export default function SettingsScreen() {
   function commitCurrency(v: string) {
     setCurrency(v);
     updateSettings({ currencySymbol: v.trim() || '৳' });
+  }
+
+  // Turning it ON requires proving device ownership right now — otherwise anyone holding an
+  // already-unlocked phone could flip this on/off freely, which defeats the point. Turning it
+  // OFF needs no prompt: you're already past the lock screen this session to have reached here.
+  async function setAppLockEnabled(enabled: boolean) {
+    if (!enabled) {
+      updateSettings({ appLockEnabled: false });
+      return;
+    }
+    const hw = await LocalAuthentication.hasHardwareAsync();
+    const enrolled = hw && (await LocalAuthentication.isEnrolledAsync());
+    if (!enrolled) {
+      toast('Set up a fingerprint, face or PIN lock on your phone first');
+      return;
+    }
+    const result = await LocalAuthentication.authenticateAsync();
+    if (result.success) updateSettings({ appLockEnabled: true });
   }
 
   async function setReminderEnabled(enabled: boolean) {
@@ -187,6 +206,13 @@ export default function SettingsScreen() {
         </Row>
         <Row label={t('whatItHides')} sub={t('whatItHidesSub')} last>
           <Dropdown value={settings.privacyScope === 'all' ? t('whatItHidesAll') : t('whatItHidesDashboard')} onPress={() => setPrivacyScopeModal(true)} />
+        </Row>
+      </Card>
+
+      <GroupHeading title={t('groupSecurity')} />
+      <Card>
+        <Row label={t('appLock')} sub={settings.appLockEnabled ? t('appLockOn') : t('appLockOff')} last>
+          <AppSwitch value={settings.appLockEnabled} onValueChange={setAppLockEnabled} compact />
         </Row>
       </Card>
 

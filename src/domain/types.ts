@@ -80,6 +80,9 @@ export interface Settings {
   navStyle: NavStyle;
   /** Per-category monthly limits the user has explicitly set — empty until they add one. Keyed by category name. */
   categoryBudgets: Record<string, number>;
+  /** Gates app launch/resume behind the device's own screen lock (fingerprint/face/PIN/pattern) via
+   * expo-local-authentication — no password of our own is ever stored, just a yes/no from the OS. */
+  appLockEnabled: boolean;
 }
 
 export const EXPENSE_CATEGORIES = [
