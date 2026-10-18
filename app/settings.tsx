@@ -367,9 +367,12 @@ export default function SettingsScreen() {
         }
         confirmLabel="Restore"
         onCancel={() => setPendingRestore(null)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingRestore) return;
-          restoreBackup(pendingRestore);
+          // Awaited — restoreBackup now persists immediately rather than on the usual
+          // debounce, and waiting here means the data is actually durable on disk
+          // before we navigate away, not just updated in memory.
+          await restoreBackup(pendingRestore);
           setPendingRestore(null);
           toast('Backup restored');
           router.replace('/');
@@ -382,8 +385,8 @@ export default function SettingsScreen() {
         body="This clears every account, transaction and setting on this device. This can't be undone."
         confirmLabel="Delete all"
         onCancel={() => setConfirmDelete(false)}
-        onConfirm={() => {
-          resetAllData();
+        onConfirm={async () => {
+          await resetAllData();
           setConfirmDelete(false);
           router.replace('/');
         }}

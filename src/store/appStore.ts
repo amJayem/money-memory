@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState as RNAppState } from 'react-native';
 import { create } from 'zustand';
 import type { Account, Settings, Transaction } from '@/domain/types';
 import type { BackupFile } from '@/domain/backup';
@@ -59,9 +60,9 @@ interface AppState extends PersistedShape {
   addIncomeCategory: (name: string) => void;
   setCategoryBudget: (name: string, amount: number) => void;
   removeCategoryBudget: (name: string) => void;
-  loadSampleData: () => void;
-  resetAllData: () => void;
-  restoreBackup: (backup: BackupFile) => void;
+  loadSampleData: () => Promise<void>;
+  resetAllData: () => Promise<void>;
+  restoreBackup: (backup: BackupFile) => Promise<void>;
   startPeek: () => void;
   cancelPeek: () => void;
 }
@@ -104,10 +105,25 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
 
+  // Every write used to be fire-and-forget: schedulePersist's setTimeout called this
+  // with nothing awaiting it and no error handling, so a process kill or a transient
+  // AsyncStorage failure in that window silently discarded the write — the in-memory
+  // state (and whatever the UI showed right after) was never actually what ended up
+  // on disk. One retry covers the common transient case; the error is at least
+  // surfaced now instead of vanishing.
   persist: async () => {
     const { accounts, transactions, settings } = get();
-    const payload: PersistedShape = { accounts, transactions, settings };
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    const payload = JSON.stringify({ accounts, transactions, settings } satisfies PersistedShape);
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, payload);
+    } catch (err) {
+      try {
+        await AsyncStorage.setItem(STORAGE_KEY, payload);
+      } catch (err2) {
+        console.error('Failed to save app data', err2);
+        throw err2;
+      }
+    }
   },
 
   addTransaction: (t) => {
@@ -201,7 +217,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Onboarding's "explore with sample data" choice — loads the same demo
   // ledger a fresh install used to start with automatically, for anyone who
   // wants to poke around before adding their own real accounts.
-  loadSampleData: () => {
+  // These three replace the entire ledger in one shot, so unlike the small
+  // incremental edits above they persist immediately and are awaited by the
+  // caller — the debounced path was how a restore could show as "done" on
+  // screen yet never actually reach disk (see persist()'s comment). A caller
+  // that awaits this knows the data is durable before it navigates away or
+  // reports success.
+  loadSampleData: async () => {
     set({
       accounts: SEED_ACCOUNTS,
       transactions: SEED_TRANSACTIONS,
@@ -209,28 +231,28 @@ export const useAppStore = create<AppState>((set, get) => ({
       // this is explicitly opt-in exploration, not a real user's default.
       settings: { ...DEFAULT_SETTINGS, hasOnboarded: true, monthlyBudget: 30000 },
     });
-    schedulePersist(get);
+    await persistNow(get);
   },
 
   // Unlike the prototype (which only clears transactions), this wipes the
   // whole ledger — accounts and settings included — and routes back through
   // onboarding, since the brief's "delete all" implies a true fresh start.
-  resetAllData: () => {
+  resetAllData: async () => {
     set({ accounts: [], transactions: [], settings: DEFAULT_SETTINGS });
-    schedulePersist(get);
+    await persistNow(get);
   },
 
   // Replaces the entire ledger with an imported backup, same as resetAllData
   // but restoring real data instead of wiping it — merged onto DEFAULT_SETTINGS
   // like hydrate() does, so a backup from an older app version that predates
   // a newer settings field still restores with that field's default intact.
-  restoreBackup: (backup) => {
+  restoreBackup: async (backup) => {
     set({
       accounts: backup.accounts,
       transactions: backup.transactions,
       settings: { ...DEFAULT_SETTINGS, ...backup.settings },
     });
-    schedulePersist(get);
+    await persistNow(get);
   },
 
   startPeek: () => set({ peekUntil: Date.now() + 10_000 }),
@@ -240,6 +262,29 @@ export const useAppStore = create<AppState>((set, get) => ({
 function schedulePersist(get: () => AppState) {
   if (persistTimer) clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
-    get().persist();
+    persistTimer = null;
+    get().persist().catch(() => {});
   }, 300);
 }
+
+// Cancels any pending debounced write and persists right now instead —
+// used by the three ledger-replacing actions above, and by the app-background
+// flush below, wherever "the data is durable before we move on" actually matters.
+async function persistNow(get: () => AppState) {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  await get().persist();
+}
+
+// Safety net for every other action (addTransaction, updateSettings, ...): those
+// still debounce for efficiency, which leaves a real window — up to 300ms — where
+// a change is only in memory. Flushing on backgrounding closes that window for the
+// most common real way the app gets killed (switching away, the OS reclaiming it,
+// a notification tap), without paying the cost of persisting on every keystroke.
+RNAppState.addEventListener('change', (next) => {
+  if (next === 'background' || next === 'inactive') {
+    persistNow(useAppStore.getState).catch(() => {});
+  }
+});
