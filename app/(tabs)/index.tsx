@@ -106,10 +106,16 @@ export default function HomeScreen() {
   // Mirrors exactly what onboarding already asked for (accounts, a budget) plus the one thing it
   // can't set up on the user's behalf (an actual logged transaction) — not new rules, just a
   // visible checklist of the same setup so nothing from onboarding quietly stays half-done.
+  //
+  // "Add your accounts" checks liquid > 0, not accounts.length > 0 — onboarding's Skip button
+  // (present on every slide, not just the account-setup one) still silently creates the three
+  // default accounts with a zero balance, so accounts.length is never actually 0. Checking for
+  // a real balance instead means this only reads as "done" once the user has actually put a
+  // number in, matching what skipping onboarding entirely should honestly leave outstanding.
   const checklistItems = [
-    { key: 'checklistAccounts', done: accounts.length > 0 },
-    { key: 'checklistBudget', done: settings.monthlyBudget > 0 },
-    { key: 'checklistTransaction', done: transactions.length > 0 },
+    { key: 'checklistAccounts', done: liquid > 0, onPress: () => router.push('/accounts') },
+    { key: 'checklistBudget', done: settings.monthlyBudget > 0, onPress: () => router.push('/budget') },
+    { key: 'checklistTransaction', done: transactions.length > 0, onPress: () => router.push('/sheet') },
   ] as const;
   const checklistDone = checklistItems.every((i) => i.done);
   const showChecklist = !settings.setupChecklistDismissed && !checklistDone;
@@ -140,12 +146,28 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           {checklistItems.map((item) => (
-            <View key={item.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Pressable
+              key={item.key}
+              onPress={item.done ? undefined : item.onPress}
+              hitSlop={6}
+              style={({ pressed }) => [
+                {
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  minHeight: 48,
+                  marginHorizontal: -10,
+                  paddingHorizontal: 10,
+                  borderRadius: 12,
+                },
+                !item.done && pressed ? { backgroundColor: theme.surface2 } : null,
+              ]}
+            >
               <View
                 style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 6,
+                  width: 24,
+                  height: 24,
+                  borderRadius: 7,
                   borderWidth: 1.5,
                   borderColor: item.done ? theme.accentColor : theme.lineStrong,
                   backgroundColor: item.done ? theme.accentColor : 'transparent',
@@ -154,15 +176,20 @@ export default function HomeScreen() {
                 }}
               >
                 {item.done ? (
-                  <AppText color="#fff" style={{ fontSize: 12 }}>
+                  <AppText color="#fff" style={{ fontSize: 13 }}>
                     ✓
                   </AppText>
                 ) : null}
               </View>
-              <AppText variant="body2" style={item.done ? { textDecorationLine: 'line-through' } : undefined}>
+              <AppText variant="body2" style={[item.done ? { textDecorationLine: 'line-through' } : undefined, !item.done ? { flex: 1 } : undefined]}>
                 {t(item.key)}
               </AppText>
-            </View>
+              {!item.done ? (
+                <AppText variant="body2" color={theme.accentColor}>
+                  →
+                </AppText>
+              ) : null}
+            </Pressable>
           ))}
         </GlassCard>
       ) : null}
