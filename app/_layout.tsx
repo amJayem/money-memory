@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Pressable, View } from 'react-native';
+import { AppState, BackHandler, Pressable, View } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
@@ -24,6 +24,7 @@ import { useDailyReminderSync } from '@/hooks/useDailyReminderSync';
 import { AppText } from '@/components/AppText';
 import { ScreenBackground } from '@/components/Screen';
 import { useTranslation } from '@/i18n/useTranslation';
+import { useToastStore } from '@/store/toastStore';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -133,6 +134,10 @@ function AppShell() {
 /** Thin wrapper so the lock prompt fires once automatically on mount (first time locked each
  * session) without also re-firing on every re-render while still locked after a failed attempt. */
 function LockScreenGate({ onTryUnlock }: { onTryUnlock: () => void }) {
+  const t = useTranslation('lock');
+  const toast = useToastStore((s) => s.show);
+  const backPressedOnce = useRef(false);
+
   useEffect(() => {
     onTryUnlock();
     // Deliberately once-per-mount: this re-mounts fresh each time the app transitions back to
@@ -140,6 +145,27 @@ function LockScreenGate({ onTryUnlock }: { onTryUnlock: () => void }) {
     // when an automatic prompt is wanted again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    // The lock screen has nothing to navigate back to (it isn't part of the
+    // real stack), so the system default for a hardware back press here is
+    // to exit the app outright on a single tap. Requiring a second press
+    // within 2s — same "press back again to exit" pattern used elsewhere on
+    // Android — guards against a locked phone exiting the app from one
+    // accidental button press, which would otherwise be very easy to do
+    // since there's nothing else to interact with on this screen.
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (backPressedOnce.current) return false;
+      backPressedOnce.current = true;
+      toast(t('pressBackAgain'));
+      setTimeout(() => {
+        backPressedOnce.current = false;
+      }, 2000);
+      return true;
+    });
+    return () => sub.remove();
+  }, [t, toast]);
+
   return <LockScreen onUnlock={onTryUnlock} />;
 }
 

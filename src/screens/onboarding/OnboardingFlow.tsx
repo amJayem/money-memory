@@ -102,6 +102,21 @@ export function OnboardingFlow() {
     });
   }
 
+  // The top-right Skip button is reachable from every slide, including before
+  // the account-setup slide is ever shown — finish() used to run regardless,
+  // silently creating the three DEFAULT_ON accounts (cash/bank/wallet, all
+  // zero balance) even for someone who skipped before seeing that step. The
+  // dashboard then showed "3 accounts" for a user who'd set up nothing,
+  // with no way to tell the difference from someone who genuinely has three
+  // zero-balance accounts. Skip now means skip — no accounts, no budget —
+  // leaving a real empty state Home can prompt the user to fill in.
+  function skipSetup() {
+    updateSettings({
+      hasOnboarded: true,
+      currencySymbol: symbol.trim() || '৳',
+    });
+  }
+
   // For anyone who'd rather poke around before adding real accounts —
   // loads the same demo ledger a fresh install used to start with.
   function exploreWithSampleData() {
@@ -174,7 +189,7 @@ export function OnboardingFlow() {
   return (
     <ScreenBackground edges={['top', 'bottom', 'left', 'right']} style={{ paddingHorizontal: 24 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingTop: 8 }}>
-        <GhostButton label={t('skip')} onPress={finish} />
+        <GhostButton label={t('skip')} onPress={skipSetup} />
       </View>
 
       {/* justifyContent: 'center' here was actively fighting Android's adjustResize:

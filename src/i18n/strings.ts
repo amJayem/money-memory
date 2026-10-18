@@ -21,6 +21,7 @@ export const STRINGS = {
       title: 'Money Memory is locked',
       subtitle: 'Unlock with your fingerprint, face or PIN to continue',
       unlock: 'Unlock',
+      pressBackAgain: 'Press back again to exit',
     },
     onboarding: {
       languageTitle: 'Choose your language',
@@ -119,6 +120,9 @@ export const STRINGS = {
       checklistAccounts: 'Add your accounts',
       checklistBudget: 'Set a monthly budget',
       checklistTransaction: 'Log your first transaction',
+      noAccountsTitle: 'No accounts yet',
+      noAccountsBody: 'Add your first account to start tracking your money.',
+      noAccountsCta: 'Add an account',
     },
     settings: {
       title: 'Settings',
@@ -524,6 +528,7 @@ export const STRINGS = {
       title: 'Money Memory লক করা আছে',
       subtitle: 'চালিয়ে যেতে আপনার ফিঙ্গারপ্রিন্ট, ফেস বা পিন দিয়ে আনলক করুন',
       unlock: 'আনলক করুন',
+      pressBackAgain: 'বের হতে আবার ব্যাক চাপুন',
     },
     onboarding: {
       languageTitle: 'আপনার ভাষা বেছে নিন',
@@ -622,6 +627,9 @@ export const STRINGS = {
       checklistAccounts: 'আপনার অ্যাকাউন্ট যোগ করুন',
       checklistBudget: 'একটি মাসিক বাজেট সেট করুন',
       checklistTransaction: 'আপনার প্রথম লেনদেন লিখুন',
+      noAccountsTitle: 'এখনো কোনো অ্যাকাউন্ট নেই',
+      noAccountsBody: 'আপনার টাকার হিসাব রাখা শুরু করতে প্রথম অ্যাকাউন্ট যোগ করুন।',
+      noAccountsCta: 'একটি অ্যাকাউন্ট যোগ করুন',
     },
     settings: {
       title: 'সেটিংস',

@@ -194,6 +194,19 @@ export default function HomeScreen() {
         </GlassCard>
       ) : null}
 
+      {accounts.length === 0 ? (
+        <Pressable onPress={() => router.push('/accounts/add')}>
+          <GlassCard style={{ marginTop: 14, alignItems: 'center', gap: 6, paddingVertical: 28 }}>
+            <AppText variant="heading">{t('noAccountsTitle')}</AppText>
+            <AppText variant="body2" color={theme.ink3} style={{ textAlign: 'center' }}>
+              {t('noAccountsBody')}
+            </AppText>
+            <AppText variant="body2" color={theme.accentColor} weight="manrope700" style={{ marginTop: 6 }}>
+              {t('noAccountsCta')} →
+            </AppText>
+          </GlassCard>
+        </Pressable>
+      ) : (
       <View style={{ marginHorizontal: -18 }}>
         <ScrollView
           horizontal
@@ -283,29 +296,30 @@ export default function HomeScreen() {
             </AppText>
           </Pressable>
         </View>
+      </View>
+      )}
 
-        <View style={{ paddingHorizontal: 18, paddingTop: 7, gap: 3 }}>
-          {privacy.hintText ? (
-            <View
-              style={{
-                alignSelf: 'flex-start',
-                paddingHorizontal: 10,
-                paddingVertical: 5,
-                borderRadius: 999,
-                backgroundColor: theme.toneBg('accent'),
-              }}
-            >
-              <AppText variant="mono" color={theme.accentColor}>
-                {privacy.hintText}
-              </AppText>
-            </View>
-          ) : null}
-          <AppText variant="mono">
-            {[t('spendableHint'), owed > 0 ? t('lentOutNotCounted', { amount: privacy.fmt(owed) }) : '', accounts.some((a) => a.type === 'credit') ? t('cardCreditExcluded') : '']
-              .filter(Boolean)
-              .join(' · ')}
-          </AppText>
-        </View>
+      <View style={{ paddingHorizontal: 18, paddingTop: 7, gap: 3 }}>
+        {privacy.hintText ? (
+          <View
+            style={{
+              alignSelf: 'flex-start',
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 999,
+              backgroundColor: theme.toneBg('accent'),
+            }}
+          >
+            <AppText variant="mono" color={theme.accentColor}>
+              {privacy.hintText}
+            </AppText>
+          </View>
+        ) : null}
+        <AppText variant="mono">
+          {[t('spendableHint'), owed > 0 ? t('lentOutNotCounted', { amount: privacy.fmt(owed) }) : '', accounts.some((a) => a.type === 'credit') ? t('cardCreditExcluded') : '']
+            .filter(Boolean)
+            .join(' · ')}
+        </AppText>
       </View>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9 }}>
