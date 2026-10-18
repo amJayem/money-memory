@@ -15,7 +15,13 @@ function readWebAsset(asset: DocumentPicker.DocumentPickerAsset): Promise<string
  * or the file wasn't a valid backup (a toast-worthy message is thrown).
  */
 export async function pickBackupFile(): Promise<BackupFile | null> {
-  const result = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/json', 'text/plain'], copyToCacheDirectory: true });
+  // No MIME filter — many Android storage providers (Drive, WhatsApp, Telegram, a plain
+  // "Downloads" save) tag a .json file as something generic like application/octet-stream
+  // or leave the type blank, which made it silently disappear from a type-filtered picker
+  // even though the file was right there. The content gets fully validated by parseBackup
+  // below regardless of what anyone picks, so filtering by type here only cost visibility
+  // without adding any real safety.
+  const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
   if (result.canceled || !result.assets[0]) return null;
   const asset = result.assets[0];
 
