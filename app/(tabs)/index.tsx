@@ -10,6 +10,7 @@ import { TransactionRow } from '@/components/TransactionRow';
 import { WalletCard, paletteFor } from '@/components/WalletCard';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
+import { useAppStore } from '@/store/appStore';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { useHideNavBarOnScroll } from '@/hooks/useHideNavBarOnScroll';
 import { useToastStore } from '@/store/toastStore';
@@ -55,6 +56,7 @@ export default function HomeScreen() {
   };
   const toast = useToastStore((s) => s.show);
   const { accounts, transactions, settings, spentAmount, liquid, owed, iOwe, budget } = useLedger();
+  const updateSettings = useAppStore((s) => s.updateSettings);
   const privacy = usePrivacy('home');
   const [walletIndex, setWalletIndex] = useState(0);
 
@@ -101,6 +103,17 @@ export default function HomeScreen() {
   const totalPaidBackAll = borrowedLedger.reduce((s, p) => s + p.back, 0);
   const onHomeScroll = useHideNavBarOnScroll();
 
+  // Mirrors exactly what onboarding already asked for (accounts, a budget) plus the one thing it
+  // can't set up on the user's behalf (an actual logged transaction) — not new rules, just a
+  // visible checklist of the same setup so nothing from onboarding quietly stays half-done.
+  const checklistItems = [
+    { key: 'checklistAccounts', done: accounts.length > 0 },
+    { key: 'checklistBudget', done: settings.monthlyBudget > 0 },
+    { key: 'checklistTransaction', done: transactions.length > 0 },
+  ] as const;
+  const checklistDone = checklistItems.every((i) => i.done);
+  const showChecklist = !settings.setupChecklistDismissed && !checklistDone;
+
   return (
     <Screen onScroll={onHomeScroll} scrollEventThrottle={16}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: 4 }}>
@@ -115,6 +128,44 @@ export default function HomeScreen() {
           <IconButton glyph="⚙" onPress={() => router.push('/settings')} />
         </View>
       </View>
+
+      {showChecklist ? (
+        <GlassCard style={{ marginTop: 14, gap: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <AppText variant="heading">{t('checklistTitle')}</AppText>
+            <Pressable onPress={() => updateSettings({ setupChecklistDismissed: true })} hitSlop={8}>
+              <AppText variant="body2" color={theme.ink3}>
+                {t('checklistDismiss')}
+              </AppText>
+            </Pressable>
+          </View>
+          {checklistItems.map((item) => (
+            <View key={item.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 6,
+                  borderWidth: 1.5,
+                  borderColor: item.done ? theme.accentColor : theme.lineStrong,
+                  backgroundColor: item.done ? theme.accentColor : 'transparent',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {item.done ? (
+                  <AppText color="#fff" style={{ fontSize: 12 }}>
+                    ✓
+                  </AppText>
+                ) : null}
+              </View>
+              <AppText variant="body2" style={item.done ? { textDecorationLine: 'line-through' } : undefined}>
+                {t(item.key)}
+              </AppText>
+            </View>
+          ))}
+        </GlassCard>
+      ) : null}
 
       <View style={{ marginHorizontal: -18 }}>
         <ScrollView
@@ -177,6 +228,8 @@ export default function HomeScreen() {
                   palette={paletteFor(a.type)}
                   hasMeter={credit}
                   pctUsed={pctUsed}
+                  eyeGlyph={privacy.eyeGlyph}
+                  onEyePress={() => privacy.tapEye(toast)}
                 />
               </Pressable>
             );

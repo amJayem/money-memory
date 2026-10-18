@@ -114,6 +114,11 @@ export const STRINGS = {
       budgetLineExact: "You've used your {month} plan exactly — anything more goes over.",
       budgetLineNear: "You're getting close to your {month} budget — {amount} left.",
       budgetLineNormal: '{amount} of your plan is still unspent, with {days} days to go.',
+      checklistTitle: 'Finish setting up',
+      checklistDismiss: 'Hide',
+      checklistAccounts: 'Add your accounts',
+      checklistBudget: 'Set a monthly budget',
+      checklistTransaction: 'Log your first transaction',
     },
     settings: {
       title: 'Settings',
@@ -612,6 +617,11 @@ export const STRINGS = {
       budgetLineExact: 'আপনি {month}-এর পরিকল্পনা পুরোপুরি ব্যবহার করে ফেলেছেন — এরপর যা খরচ হবে তা বাজেটের বাইরে চলে যাবে।',
       budgetLineNear: 'আপনি {month}-এর বাজেটের কাছাকাছি চলে এসেছেন — বাকি আছে {amount}।',
       budgetLineNormal: 'আপনার পরিকল্পনার {amount} এখনো খরচ হয়নি, বাকি আছে {days} দিন।',
+      checklistTitle: 'সেটআপ সম্পূর্ণ করুন',
+      checklistDismiss: 'লুকান',
+      checklistAccounts: 'আপনার অ্যাকাউন্ট যোগ করুন',
+      checklistBudget: 'একটি মাসিক বাজেট সেট করুন',
+      checklistTransaction: 'আপনার প্রথম লেনদেন লিখুন',
     },
     settings: {
       title: 'সেটিংস',

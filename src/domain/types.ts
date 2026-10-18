@@ -83,6 +83,9 @@ export interface Settings {
   /** Gates app launch/resume behind the device's own screen lock (fingerprint/face/PIN/pattern) via
    * expo-local-authentication — no password of our own is ever stored, just a yes/no from the OS. */
   appLockEnabled: boolean;
+  /** Home's post-onboarding "Finish setting up" checklist — hidden once the user dismisses it
+   * explicitly, independent of whether every item is actually checked off yet. */
+  setupChecklistDismissed: boolean;
 }
 
 export const EXPENSE_CATEGORIES = [

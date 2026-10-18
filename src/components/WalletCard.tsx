@@ -64,7 +64,7 @@ export function WalletCard({ kicker, name, amount, sub, digits, holderLabel, pal
               {kicker}
             </AppText>
           </View>
-          {isTotal ? (
+          {onEyePress ? (
             <Pressable onPress={onEyePress} style={styles.eyeBtn}>
               <AppText color="#fff">{eyeGlyph ?? '◉'}</AppText>
             </Pressable>

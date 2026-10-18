@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/AppText';
@@ -84,7 +84,11 @@ export default function StatsScreen() {
               </View>
               <View style={{ flex: 1, gap: 7 }}>
                 {cats.slice(0, 5).map((c) => (
-                  <View key={c.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Pressable
+                    key={c.name}
+                    onPress={() => router.push(`/history?category=${encodeURIComponent(c.name)}`)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                  >
                     <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: categoryColor(c.name, theme.mode) }} />
                     <AppText variant="body2" style={{ flex: 1 }} numberOfLines={1}>
                       {c.name}
@@ -95,7 +99,7 @@ export default function StatsScreen() {
                     <AppText variant="mono" style={{ width: 32, textAlign: 'right' }}>
                       {c.pct}%
                     </AppText>
-                  </View>
+                  </Pressable>
                 ))}
               </View>
             </View>

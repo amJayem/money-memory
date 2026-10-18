@@ -32,6 +32,7 @@ const DEFAULT_SETTINGS: Settings = {
   navStyle: 'classic',
   categoryBudgets: {},
   appLockEnabled: false,
+  setupChecklistDismissed: false,
 };
 
 interface PersistedShape {
