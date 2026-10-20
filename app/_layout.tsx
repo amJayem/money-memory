@@ -131,17 +131,20 @@ function AppShell() {
   );
 }
 
-/** Deliberately does NOT auto-trigger the unlock prompt on mount anymore (it used to). The system
- * biometric dialog it opens is a separate window that owns the back button while it's showing —
- * on this device, cancelling it via back doesn't just dismiss the dialog, it backgrounds the
- * whole app as a side effect, bypassing the back-press handler below entirely since the event
- * never reaches our Activity. Landing on this screen's own "Unlock" button first means the first
- * back press someone makes is actually on our screen, where the double-press-to-exit guard below
- * can see it — one extra tap to start unlocking, but the exit confirmation genuinely works now. */
+/** Thin wrapper so the lock prompt fires once automatically on mount (first time locked each
+ * session) without also re-firing on every re-render while still locked after a failed attempt. */
 function LockScreenGate({ onTryUnlock }: { onTryUnlock: () => void }) {
   const t = useTranslation('lock');
   const toast = useToastStore((s) => s.show);
   const backPressedOnce = useRef(false);
+
+  useEffect(() => {
+    onTryUnlock();
+    // Deliberately once-per-mount: this re-mounts fresh each time the app transitions back to
+    // locked (see AppShell's appLockEnabled/unlocked-driven conditional render), which is exactly
+    // when an automatic prompt is wanted again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     // The lock screen has nothing to navigate back to (it isn't part of the
