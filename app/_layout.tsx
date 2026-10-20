@@ -13,7 +13,7 @@ import { Manrope_800ExtraBold } from '@expo-google-fonts/manrope/800ExtraBold';
 import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono/400Regular';
 import { IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono/500Medium';
 import * as SplashScreen from 'expo-splash-screen';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { useAppStore } from '@/store/appStore';
@@ -125,10 +125,39 @@ function AppShell() {
   return (
     <>
       {statusBar}
+      {appLockEnabled ? <ExitConfirmGuard /> : null}
       <ThemedStack />
       <CustomTabBar />
     </>
   );
+}
+
+/** Renders nothing — just registers the back-press guard for as long as App Lock is on. Confirmed
+ * from the user's own testing: they meant this for ordinary use of the app (pressing back on Home,
+ * with nowhere left to go), not the dedicated lock screen, which has its own separate handler. Only
+ * intercepts when router.canGoBack() is false — i.e. back would otherwise exit the app outright —
+ * so normal in-app back navigation (leaving Settings, closing a modal, ...) is left alone. */
+function ExitConfirmGuard() {
+  const router = useRouter();
+  const t = useTranslation('lock');
+  const toast = useToastStore((s) => s.show);
+  const backPressedOnce = useRef(false);
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (router.canGoBack()) return false;
+      if (backPressedOnce.current) return false;
+      backPressedOnce.current = true;
+      toast(t('pressBackAgain'));
+      setTimeout(() => {
+        backPressedOnce.current = false;
+      }, 2000);
+      return true;
+    });
+    return () => sub.remove();
+  }, [router, t, toast]);
+
+  return null;
 }
 
 /** Thin wrapper so the lock prompt fires once automatically on mount (first time locked each
