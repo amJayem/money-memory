@@ -32,6 +32,12 @@ export function usePrivacy(screen: string) {
 
   useEffect(() => {
     if (!peekUntil) return;
+    // Refreshed immediately, not just by the interval below — `now` otherwise keeps
+    // whatever stale value it had from this component's last render before the peek
+    // started, which could be many seconds (or much more) old. secondsLeft is derived
+    // from peekUntil - now, so that first render after tapping the eye could briefly
+    // show a nonsense countdown (observed: "308s") until the first 1s tick corrected it.
+    setNow(Date.now());
     const remaining = peekUntil - Date.now();
     if (remaining <= 0) {
       cancelPeek();
