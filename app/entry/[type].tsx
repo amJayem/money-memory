@@ -113,6 +113,14 @@ export default function EntryForm() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  // A repayment ("Got paid" / "Paid back") can exceed what's actually on record for that
+  // person — e.g. a loan made before the person started using the app, never entered. Rather
+  // than silently clamping their balance to 0 and losing the gap, offer to backdate a loan/borrow
+  // entry covering the shortfall first, so the two transactions net out correctly.
+  const [shortfallAmount, setShortfallAmount] = useState(0);
+  const [showShortfallConfirm, setShowShortfallConfirm] = useState(false);
+  const [showShortfallDatePicker, setShowShortfallDatePicker] = useState(false);
+  const [shortfallDate, setShortfallDate] = useState(new Date());
   // The amount display behaves like a real focusable field even though it's
   // not a TextInput: 'amount' shows the custom Keypad (focused on landing,
   // so entry starts immediately), 'text' means a free-text field (note,
@@ -289,6 +297,20 @@ export default function EntryForm() {
       toast(t('toastAddPerson'));
       return;
     }
+    if (type === 'repay_in' || type === 'repay_out') {
+      const currentOutstanding = type === 'repay_in' ? outstandingToThem : owedToThem;
+      const shortfall = numericAmount - currentOutstanding;
+      if (shortfall > 0) {
+        setShortfallAmount(shortfall);
+        setShortfallDate(date);
+        setShowShortfallConfirm(true);
+        return;
+      }
+    }
+    doSave();
+  }
+
+  function doSave() {
     setSaving(true);
     // A typed "Other" name that isn't already a known category gets saved as
     // one, so it shows up as a normal chip the next time instead of having
@@ -628,6 +650,47 @@ export default function EntryForm() {
           goBack();
         }}
       />
+
+      <ConfirmDialog
+        visible={showShortfallConfirm}
+        title={t('shortfallTitle')}
+        body={t('shortfallBody', { amount: formatAmount(shortfallAmount, settings.currencySymbol), person: effectivePerson })}
+        confirmLabel={t('shortfallConfirm')}
+        onCancel={() => {
+          setShowShortfallConfirm(false);
+          doSave();
+        }}
+        onConfirm={() => {
+          setShowShortfallConfirm(false);
+          setShowShortfallDatePicker(true);
+        }}
+      />
+
+      {showShortfallDatePicker ? (
+        <DateTimePicker
+          value={shortfallDate}
+          mode="date"
+          maximumDate={new Date()}
+          onValueChange={(_, selected) => {
+            setShowShortfallDatePicker(Platform.OS === 'ios');
+            if (!selected) return;
+            setShortfallDate(selected);
+            addTransaction({
+              id: `n${Date.now()}`,
+              type: type === 'repay_in' ? 'lent' : 'borrowed',
+              amount: shortfallAmount,
+              account,
+              person: effectivePerson,
+              at: selected.toISOString(),
+            });
+            doSave();
+          }}
+          onDismiss={() => {
+            setShowShortfallDatePicker(false);
+            doSave();
+          }}
+        />
+      ) : null}
     </ScreenBackground>
   );
 }
