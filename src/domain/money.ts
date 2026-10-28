@@ -72,6 +72,8 @@ export interface PersonLedger {
   back: number;
   /** given - back, i.e. still outstanding in this direction. Never shown negative in the UI. */
   out: number;
+  /** ISO date of this person's most recent lent/borrowed/repay transaction in this ledger. */
+  lastDate: string;
 }
 
 /**
@@ -81,26 +83,28 @@ export interface PersonLedger {
 export function peopleAgg(transactions: Transaction[], kind: 'lent' | 'borrowed'): PersonLedger[] {
   const give = kind === 'lent' ? 'lent' : 'borrowed';
   const back = kind === 'lent' ? 'repay_in' : 'repay_out';
-  const byPerson = new Map<string, { given: number; back: number }>();
+  const byPerson = new Map<string, { given: number; back: number; lastDate: string }>();
   for (const t of transactions) {
     if (!t.person) continue;
     if (t.type !== give && t.type !== back) continue;
-    const entry = byPerson.get(t.person) ?? { given: 0, back: 0 };
+    const entry = byPerson.get(t.person) ?? { given: 0, back: 0, lastDate: t.at };
     if (t.type === give) entry.given += t.amount;
     else entry.back += t.amount;
+    if (t.at > entry.lastDate) entry.lastDate = t.at;
     byPerson.set(t.person, entry);
   }
-  return Array.from(byPerson.entries()).map(([person, { given, back }]) => ({
+  return Array.from(byPerson.entries()).map(([person, { given, back, lastDate }]) => ({
     person,
     given,
     back,
     out: given - back,
+    lastDate,
   }));
 }
 
 export function outstandingFor(transactions: Transaction[], kind: 'lent' | 'borrowed', person: string): PersonLedger {
   const row = peopleAgg(transactions, kind).find((p) => p.person === person);
-  return row ?? { person, given: 0, back: 0, out: 0 };
+  return row ?? { person, given: 0, back: 0, out: 0, lastDate: '' };
 }
 
 /** Design's `statusTone`: cleared -> pos, partly paid -> warn, still fully outstanding -> neg. Drives both the avatar circle and the status pill on Loans/Person. */

@@ -10,6 +10,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { peopleAgg, statusLabel, statusTone, type Translate } from '@/domain/money';
+import { formatShortDate } from '@/domain/search';
 import { MIN_TAP_TARGET } from '@/theme/tokens';
 import { useTranslation } from '@/i18n/useTranslation';
 
@@ -142,7 +143,8 @@ export default function LoansScreen() {
                         </View>
                       </View>
                       <AppText variant="mono" style={{ marginTop: 3 }}>
-                        {cleared ? t('paidInFull') : t('givenBack', { given: privacy.fmt(p.given), back: privacy.fmt(p.back) })}
+                        {(cleared ? t('paidInFull') : t('givenBack', { given: privacy.fmt(p.given), back: privacy.fmt(p.back) })) +
+                          (p.lastDate ? ' · ' + formatShortDate(p.lastDate) : '')}
                       </AppText>
                     </View>
                     <AppText variant="amount" style={{ fontSize: 15 }}>

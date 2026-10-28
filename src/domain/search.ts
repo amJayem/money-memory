@@ -73,11 +73,25 @@ export function transactionTitle(t: Transaction, accounts: Account[], translate:
   }
 }
 
+/** Short date, e.g. "Oct 24" (or "Oct 24, 2025" across a year boundary). */
+export function formatShortDate(iso: string, now: Date = new Date()): string {
+  const d = new Date(iso);
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+  return d.toLocaleDateString('en-US', opts);
+}
+
+/** Short date for a row's sub line, e.g. "Oct 24" (or "Oct 24, 2025" across a year boundary). */
+export function transactionDate(t: Transaction, now: Date = new Date()): string {
+  return formatShortDate(t.at, now);
+}
+
 /** `t` is the caller's `useTranslation('common')`. */
 export function transactionSub(t: Transaction, accounts: Account[], translate: Translate): string {
   const accName = (id: string) => accounts.find((a) => a.id === id)?.name ?? id;
-  if (t.type === 'transfer') return translate('subTransferNotSpending');
-  return `${accName(t.account)}${t.note ? ' · ' + t.note : ''}`;
+  const date = transactionDate(t);
+  if (t.type === 'transfer') return `${translate('subTransferNotSpending')} · ${date}`;
+  return `${accName(t.account)}${t.note ? ' · ' + t.note : ''} · ${date}`;
 }
 
 export function matchesQuery(t: Transaction, query: string, accounts: Account[], translate: Translate): boolean {
