@@ -8,6 +8,7 @@ interface Props {
   glyph: string;
   onPress: () => void;
   variant?: 'ghost' | 'surface';
+  disabled?: boolean;
 }
 
 /**
@@ -15,12 +16,14 @@ interface Props {
  * gear, the privacy eye. Design's `iconBtn`/`backBtn`: same glass treatment as
  * every card (blurred, `--surface` gradient, lift shadow), `ink2` glyph color.
  */
-export function IconButton({ glyph, onPress, variant = 'surface' }: Props) {
+export function IconButton({ glyph, onPress, variant = 'surface', disabled }: Props) {
   const theme = useTheme();
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       style={[
+        disabled ? { opacity: 0.35 } : null,
         styles.base,
         variant === 'surface'
           ? {

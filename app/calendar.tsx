@@ -23,10 +23,24 @@ export default function CalendarScreen() {
   const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6].map((i) => tc(`weekdayNarrow${i}`));
   const MONTHS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => tc(`monthShort${i}`));
   const today = new Date();
+  const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selected, setSelected] = useState(today.getDate());
 
-  const year = today.getFullYear();
-  const month = today.getMonth();
+  const year = cursor.getFullYear();
+  const month = cursor.getMonth();
+  const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  // `selected` is a raw day-of-month carried across months — clamp it so e.g. "31" picked
+  // in a 31-day month doesn't point past the end of a shorter month navigated to afterward.
+  if (selected > daysInMonth) setSelected(daysInMonth);
+
+  function changeMonth(delta: number) {
+    const next = new Date(year, month + delta, 1);
+    setCursor(next);
+    const clamped = Math.min(selected, new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate());
+    setSelected(next.getFullYear() === today.getFullYear() && next.getMonth() === today.getMonth() ? today.getDate() : clamped);
+  }
+
   const days = calendarIntensity(transactions, settings.countLentAsSpending, year, month);
   const firstWeekday = new Date(year, month, 1).getDay();
 
@@ -43,7 +57,9 @@ export default function CalendarScreen() {
     <Screen>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 4 }}>
         <IconButton glyph="←" onPress={() => router.back()} />
-        <AppText variant="title">{MONTHS[month]} {year}</AppText>
+        <AppText variant="title" style={{ flex: 1 }}>{MONTHS[month]} {year}</AppText>
+        <IconButton glyph="‹" onPress={() => changeMonth(-1)} />
+        <IconButton glyph="›" onPress={() => changeMonth(1)} disabled={isCurrentMonth} />
       </View>
 
       <GlassCard>
