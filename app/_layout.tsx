@@ -85,6 +85,11 @@ function AppShell() {
       setUnlocked(true);
       return;
     }
+    // Arms the lock immediately when the setting turns on while the app is already running
+    // (Settings toggle, or finishing onboarding with it checked) — otherwise `unlocked` would
+    // keep whatever value it had from before the setting changed, until the next background/
+    // foreground cycle happened to fire.
+    setUnlocked(false);
     const sub = AppState.addEventListener('change', (next) => {
       if (appState.current.match(/inactive|background/) && next === 'active') {
         setUnlocked(false);
@@ -146,7 +151,14 @@ function ExitConfirmGuard() {
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (router.canGoBack()) return false;
-      if (backPressedOnce.current) return false;
+      // On the confirmed second press, exit deterministically instead of falling through to the
+      // platform-default back action — whether that merely backgrounds the task (leaving the JS
+      // process, and this screen's in-memory unlocked state, alive) or actually kills it varies by
+      // OEM/launcher, which made re-locking on the next open unreliable.
+      if (backPressedOnce.current) {
+        BackHandler.exitApp();
+        return true;
+      }
       backPressedOnce.current = true;
       toast(t('pressBackAgain'));
       setTimeout(() => {
@@ -184,7 +196,10 @@ function LockScreenGate({ onTryUnlock }: { onTryUnlock: () => void }) {
     // accidental button press, which would otherwise be very easy to do
     // since there's nothing else to interact with on this screen.
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (backPressedOnce.current) return false;
+      if (backPressedOnce.current) {
+        BackHandler.exitApp();
+        return true;
+      }
       backPressedOnce.current = true;
       toast(t('pressBackAgain'));
       setTimeout(() => {
