@@ -14,7 +14,7 @@ import { useAppStore } from '@/store/appStore';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { useHideNavBarOnScroll } from '@/hooks/useHideNavBarOnScroll';
 import { useToastStore } from '@/store/toastStore';
-import { balance, budgetStatusLine, creditLeft, creditUsed, dueReminders, peopleAgg, type Translate } from '@/domain/money';
+import { balance, budgetStatusLine, creditLeft, creditUsed, dueReminders, isSameMonth, peopleAgg, type Translate } from '@/domain/money';
 import { formatAmount } from '@/domain/format';
 import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -86,12 +86,14 @@ export default function HomeScreen() {
 
   const orderedAccounts = [...accounts].sort((a, b) => (a.type === 'credit' ? 1 : 0) - (b.type === 'credit' ? 1 : 0));
 
-  const income = transactions.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const expense = transactions.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-  const lentThisMonth = transactions.filter((t) => t.type === 'lent').reduce((s, t) => s + t.amount, 0);
-  const recoveredThisMonth = transactions.filter((t) => t.type === 'repay_in').reduce((s, t) => s + t.amount, 0);
-  const borrowedThisMonth = transactions.filter((t) => t.type === 'borrowed').reduce((s, t) => s + t.amount, 0);
-  const paidBackThisMonth = transactions.filter((t) => t.type === 'repay_out').reduce((s, t) => s + t.amount, 0);
+  // Genuinely scoped to the current calendar month — this card is titled "This month" and must
+  // not silently include prior months' totals (see the same bug class fixed in money.spent()).
+  const income = transactions.filter((t) => t.type === 'income' && isSameMonth(t.at, today)).reduce((s, t) => s + t.amount, 0);
+  const expense = transactions.filter((t) => t.type === 'expense' && isSameMonth(t.at, today)).reduce((s, t) => s + t.amount, 0);
+  const lentThisMonth = transactions.filter((t) => t.type === 'lent' && isSameMonth(t.at, today)).reduce((s, t) => s + t.amount, 0);
+  const recoveredThisMonth = transactions.filter((t) => t.type === 'repay_in' && isSameMonth(t.at, today)).reduce((s, t) => s + t.amount, 0);
+  const borrowedThisMonth = transactions.filter((t) => t.type === 'borrowed' && isSameMonth(t.at, today)).reduce((s, t) => s + t.amount, 0);
+  const paidBackThisMonth = transactions.filter((t) => t.type === 'repay_out' && isSameMonth(t.at, today)).reduce((s, t) => s + t.amount, 0);
 
   const recent = sortedTransactions(transactions).slice(0, 6);
   const lentLedger = peopleAgg(transactions, 'lent');

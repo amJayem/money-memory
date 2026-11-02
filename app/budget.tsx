@@ -13,7 +13,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { useAppStore } from '@/store/appStore';
-import { budgetStatus } from '@/domain/money';
+import { budgetStatus, isSameMonth } from '@/domain/money';
 import { recentMonthSpending, type Translate } from '@/domain/stats';
 import { formatAmount } from '@/domain/format';
 import { Chip } from '@/components/Chip';
@@ -37,8 +37,9 @@ export default function BudgetScreen() {
   const t = useTranslation('budget');
   const tc = useTranslation('common') as unknown as Translate;
 
-  const monthLabel = tc(`monthShort${new Date().getMonth()}`);
-  const lentThisMonth = transactions.filter((tx) => tx.type === 'lent').reduce((s, tx) => s + tx.amount, 0);
+  const now = new Date();
+  const monthLabel = tc(`monthShort${now.getMonth()}`);
+  const lentThisMonth = transactions.filter((tx) => tx.type === 'lent' && isSameMonth(tx.at, now)).reduce((s, tx) => s + tx.amount, 0);
   const history = recentMonthSpending(transactions, settings.countLentAsSpending, tc);
   const budgetedCategories = Object.keys(settings.categoryBudgets);
   const unbudgetedCategories = settings.categories.filter((c) => !(c in settings.categoryBudgets));
@@ -134,7 +135,7 @@ export default function BudgetScreen() {
           <View style={{ gap: 14, marginTop: 14 }}>
             {budgetedCategories.map((name) => {
               const catBudget = settings.categoryBudgets[name];
-              const spent = transactions.filter((t) => t.type === 'expense' && !t.excludeFromBudget && t.category === name).reduce((s, t) => s + t.amount, 0);
+              const spent = transactions.filter((t) => t.type === 'expense' && !t.excludeFromBudget && t.category === name && isSameMonth(t.at, now)).reduce((s, t) => s + t.amount, 0);
               const status = budgetStatus(catBudget, spent);
               return (
                 <Pressable key={name} onPress={() => openCategoryEditor(name)}>

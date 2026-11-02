@@ -7,6 +7,12 @@ import type { Account, Transaction } from './types';
 
 export type Translate = (key: string, vars?: Record<string, string>) => string;
 
+/** Whether an ISO timestamp falls in the same calendar month/year as `now`. */
+export function isSameMonth(at: string, now: Date): boolean {
+  const d = new Date(at);
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+}
+
 /** A non-credit account's current balance: opening balance plus every effect on it. */
 export function balance(account: Account, transactions: Transaction[]): number {
   let b = account.openingBalance;
@@ -48,10 +54,16 @@ export function liquid(accounts: Account[], transactions: Transaction[]): number
 /**
  * Spending total that counts toward the budget (brief §2 rule 1): only
  * `expense` counts by default; `lent` counts only if the user opted in.
+ * Scoped to `now`'s calendar month — a budget is a monthly concept, and
+ * every transaction outside the current month (expenses from prior months
+ * included) must NOT inflate it. Previously this summed every expense ever
+ * recorded, silently carrying earlier months' spending into the current
+ * month's "over budget" figure and never letting it reset.
  */
-export function spent(transactions: Transaction[], countLentAsSpending: boolean): number {
+export function spent(transactions: Transaction[], countLentAsSpending: boolean, now: Date = new Date()): number {
   let total = 0;
   for (const t of transactions) {
+    if (!isSameMonth(t.at, now)) continue;
     if (t.type === 'expense' && !t.excludeFromBudget) total += t.amount;
     else if (t.type === 'lent' && countLentAsSpending) total += t.amount;
   }
@@ -239,8 +251,13 @@ export function knownPeople(transactions: Transaction[]): string[] {
   return Array.from(new Set(transactions.map((t) => t.person).filter((p): p is string => !!p))).sort();
 }
 
-export function monthlyReport(accounts: Account[], transactions: Transaction[]): MonthlyReport {
-  const sumType = (type: Transaction['type']) => transactions.filter((t) => t.type === type).reduce((s, t) => s + t.amount, 0);
+export function monthlyReport(accounts: Account[], transactions: Transaction[], now: Date = new Date()): MonthlyReport {
+  // `closing` needs the FULL history (today's real balance depends on everything that ever
+  // happened), but each movement row must be scoped to this month only — otherwise `opening`
+  // (closing minus the movements) silently absorbs every prior month's activity instead of
+  // representing the balance at the start of this month.
+  const monthTx = transactions.filter((t) => isSameMonth(t.at, now));
+  const sumType = (type: Transaction['type']) => monthTx.filter((t) => t.type === type).reduce((s, t) => s + t.amount, 0);
   const income = sumType('income');
   const expense = sumType('expense');
   const lent = sumType('lent');

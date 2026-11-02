@@ -26,20 +26,29 @@ const accounts: Account[] = [
   acc({ id: 'visa', type: 'credit', openingBalance: 0, limit: 50000 }),
 ];
 
+// Matches tx()'s default `at`, so date-scoped functions (spent, monthlyReport) see these
+// fixture transactions as "this month" instead of filtering them all out.
+const sept2026 = new Date('2026-09-15T00:00:00.000Z');
+
 describe('brief §2 non-negotiable money rules', () => {
   test('rule 1: lent money is not spending by default', () => {
     const txs = [tx({ id: 't1', type: 'expense', amount: 1000, account: 'cash', category: 'Food' }), tx({ id: 't2', type: 'lent', amount: 5000, account: 'cash', person: 'Rahim' })];
-    expect(spent(txs, false)).toBe(1000);
+    expect(spent(txs, false, sept2026)).toBe(1000);
   });
 
   test('rule 1: "count lent as spending" setting flips it', () => {
     const txs = [tx({ id: 't1', type: 'expense', amount: 1000, account: 'cash', category: 'Food' }), tx({ id: 't2', type: 'lent', amount: 5000, account: 'cash', person: 'Rahim' })];
-    expect(spent(txs, true)).toBe(6000);
+    expect(spent(txs, true, sept2026)).toBe(6000);
   });
 
   test('rule 2: transfers never affect spending', () => {
     const txs = [tx({ id: 't1', type: 'transfer', amount: 9000, account: 'bank', toAccount: 'cash' })];
-    expect(spent(txs, true)).toBe(0);
+    expect(spent(txs, true, sept2026)).toBe(0);
+  });
+
+  test('spending from a previous month does not carry into the current month\'s total', () => {
+    const txs = [tx({ id: 't1', type: 'expense', amount: 1000, account: 'cash', category: 'Food', at: '2026-08-15T00:00:00.000Z' })];
+    expect(spent(txs, false, sept2026)).toBe(0);
   });
 
   test('rule 3: total available excludes lent-out money and credit accounts entirely', () => {
@@ -139,7 +148,7 @@ describe('monthly reconciliation invariant', () => {
       tx({ id: 't6', type: 'repay_out', amount: 500, account: 'cash', person: 'Imran' }),
       tx({ id: 't7', type: 'transfer', amount: 5000, account: 'bank', toAccount: 'cash' }),
     ];
-    const r = monthlyReport(accounts, txs);
+    const r = monthlyReport(accounts, txs, sept2026);
     const net = r.income + r.repaidIn - r.expense - r.lent + r.borrowed - r.repaidOut;
     expect(r.opening + net).toBeCloseTo(r.closing);
     expect(r.closing).toBe(liquid(accounts, txs));
