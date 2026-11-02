@@ -330,11 +330,11 @@ export default function HomeScreen() {
       </View>
       )}
 
-      <View style={{ paddingHorizontal: 18, paddingTop: 7, gap: 3, alignItems: 'center' }}>
+      <View style={{ paddingHorizontal: 18, paddingTop: 7, gap: 3 }}>
         {privacy.hintText ? (
           <View
             style={{
-              alignSelf: 'center',
+              alignSelf: 'flex-start',
               paddingHorizontal: 10,
               paddingVertical: 5,
               borderRadius: 999,
@@ -346,24 +346,28 @@ export default function HomeScreen() {
             </AppText>
           </View>
         ) : null}
-        <AppText variant="mono" style={{ textAlign: 'center' }}>
+        <AppText variant="mono" style={{ textAlign: 'left' }}>
           {[t('spendableHint'), owed > 0 ? t('lentOutNotCounted', { amount: privacy.fmt(owed) }) : '', accounts.some((a) => a.type === 'credit') ? t('cardCreditExcluded') : '']
             .filter(Boolean)
             .join(' · ')}
         </AppText>
       </View>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
         {QUICK_ACTIONS.map((q) => (
-          <Pressable key={q.type} onPress={() => router.push(`/entry/${q.type}`)} style={{ width: '22.6%' }}>
-            <GlassCard radius={18} padding={13}>
-              <View style={{ alignItems: 'center', gap: 7 }}>
-                <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.toneBg(q.tone) }}>
-                  <AppText style={{ fontSize: 15 }} color={theme.tone(q.tone)}>
+          <Pressable key={q.type} onPress={() => router.push(`/entry/${q.type}`)} style={{ width: '22.9%' }}>
+            <GlassCard radius={18} padding={8}>
+              <View style={{ alignItems: 'center', gap: 6 }}>
+                <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.toneBg(q.tone) }}>
+                  <AppText style={{ fontSize: 14 }} color={theme.tone(q.tone)}>
                     {q.icon}
                   </AppText>
                 </View>
-                <AppText variant="body" style={{ fontSize: 11.5 }}>
+                {/* numberOfLines + adjustsFontSizeToFit instead of a fixed width/font-size guess —
+                    the longest labels ("Got paid", "Paid back") were wrapping to two lines on a
+                    real device's actual font metrics even though they fit fine on the emulator,
+                    breaking the row's card heights. Shrinking to fit is robust across devices. */}
+                <AppText variant="body" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ fontSize: 11 }}>
                   {t(q.labelKey)}
                 </AppText>
               </View>
