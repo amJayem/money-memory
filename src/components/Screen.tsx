@@ -102,10 +102,14 @@ export function ScreenBackground({
 interface Props extends ScrollViewProps {
   scroll?: boolean;
   bottomInset?: number;
+  /** Rendered above the ScrollView, outside it — stays fixed on screen regardless of scroll
+   * position, instead of scrolling away with the rest of the content. Gets the same horizontal
+   * padding as the scrollable content so it lines up with it. */
+  header?: React.ReactNode;
 }
 
 /** Standard screen shell: backdrop + safe area + (optionally) a scroll container with room for the tab bar/FAB. */
-export function Screen({ scroll = true, bottomInset, children, contentContainerStyle, ...rest }: Props) {
+export function Screen({ scroll = true, bottomInset, header, children, contentContainerStyle, ...rest }: Props) {
   const insets = useSafeAreaInsets();
   // Measured, not guessed: clear whichever of the bar's own content or the
   // FAB's overhang reaches further up, plus the safe-area inset and a 24px
@@ -113,6 +117,7 @@ export function Screen({ scroll = true, bottomInset, children, contentContainerS
   const resolvedBottomInset = bottomInset ?? insets.bottom + Math.max(TAB_BAR_CONTENT_HEIGHT, FAB_CLEARANCE) + 24;
   return (
     <ScreenBackground>
+      {header ? <View style={{ paddingHorizontal: 18 }}>{header}</View> : null}
       {scroll ? (
         <ScrollView
           contentContainerStyle={[{ paddingHorizontal: 18, paddingBottom: resolvedBottomInset, gap: 13 }, contentContainerStyle]}

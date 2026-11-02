@@ -125,18 +125,23 @@ export default function HomeScreen() {
   const reminders = dueReminders(transactions);
 
   return (
-    <Screen onScroll={onHomeScroll} scrollEventThrottle={16}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingTop: 4 }}>
-        <View>
-          <AppText variant="label">{greeting()}</AppText>
-          <AppText variant="title" style={{ marginTop: 3 }}>
-            {dateLabel}
-          </AppText>
+    <Screen
+      onScroll={onHomeScroll}
+      scrollEventThrottle={16}
+      header={
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingTop: 4, paddingBottom: 8 }}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <IconButton glyph="⌕" onPress={() => router.push('/history')} />
+            <IconButton glyph="⚙" onPress={() => router.push('/settings')} />
+          </View>
         </View>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <IconButton glyph="⌕" onPress={() => router.push('/history')} />
-          <IconButton glyph="⚙" onPress={() => router.push('/settings')} />
-        </View>
+      }
+    >
+      <View>
+        <AppText variant="label">{greeting()}</AppText>
+        <AppText variant="title" style={{ marginTop: 3 }}>
+          {dateLabel}
+        </AppText>
       </View>
 
       {reminders.length > 0 ? (
