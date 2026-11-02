@@ -330,11 +330,11 @@ export default function HomeScreen() {
       </View>
       )}
 
-      <View style={{ paddingHorizontal: 18, paddingTop: 7, gap: 3 }}>
+      <View style={{ paddingHorizontal: 18, paddingTop: 7, gap: 3, alignItems: 'center' }}>
         {privacy.hintText ? (
           <View
             style={{
-              alignSelf: 'flex-start',
+              alignSelf: 'center',
               paddingHorizontal: 10,
               paddingVertical: 5,
               borderRadius: 999,
@@ -346,7 +346,7 @@ export default function HomeScreen() {
             </AppText>
           </View>
         ) : null}
-        <AppText variant="mono">
+        <AppText variant="mono" style={{ textAlign: 'center' }}>
           {[t('spendableHint'), owed > 0 ? t('lentOutNotCounted', { amount: privacy.fmt(owed) }) : '', accounts.some((a) => a.type === 'credit') ? t('cardCreditExcluded') : '']
             .filter(Boolean)
             .join(' · ')}
@@ -355,7 +355,7 @@ export default function HomeScreen() {
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9 }}>
         {QUICK_ACTIONS.map((q) => (
-          <Pressable key={q.type} onPress={() => router.push(`/entry/${q.type}`)} style={{ width: '31.5%' }}>
+          <Pressable key={q.type} onPress={() => router.push(`/entry/${q.type}`)} style={{ width: '22.6%' }}>
             <GlassCard radius={18} padding={13}>
               <View style={{ alignItems: 'center', gap: 7 }}>
                 <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.toneBg(q.tone) }}>
