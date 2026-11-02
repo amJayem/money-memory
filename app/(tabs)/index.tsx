@@ -330,7 +330,10 @@ export default function HomeScreen() {
       </View>
       )}
 
-      <View style={{ paddingHorizontal: 18, paddingTop: 7, gap: 3 }}>
+      {/* No paddingHorizontal here — the screen's ScrollView content container already applies
+          18px on both sides; adding it again here doubled this block's side margins compared
+          to every card above/below it. */}
+      <View style={{ paddingTop: 7, gap: 3 }}>
         {privacy.hintText ? (
           <View
             style={{
