@@ -457,9 +457,9 @@ export default function HomeScreen() {
         ) : null}
       </View>
 
-      <GlassCard padding={12}>
+      <GlassCard padding={10}>
         <AppText variant="label">{t('thisMonth')}</AppText>
-        <View style={{ flexDirection: 'row', marginTop: 6 }}>
+        <View style={{ flexDirection: 'row', marginTop: 5 }}>
           <View style={{ flex: 1 }}>
             <AppText variant="body2">{t('moneyIn')}</AppText>
             <AppText variant="amount" color={theme.tone('pos')} style={{ fontSize: 17, marginTop: 2 }}>
@@ -473,7 +473,7 @@ export default function HomeScreen() {
             </AppText>
           </View>
         </View>
-        <View style={{ flexDirection: 'row', marginTop: 10, paddingTop: 9, borderTopWidth: 1, borderTopColor: theme.line }}>
+        <View style={{ flexDirection: 'row', marginTop: 8, paddingTop: 7, borderTopWidth: 1, borderTopColor: theme.line }}>
           <View style={{ flex: 1 }}>
             <AppText variant="body2">{t('lentLabel')}</AppText>
             <AppText variant="amount" color={theme.tone('warn')} style={{ fontSize: 17, marginTop: 2 }}>
