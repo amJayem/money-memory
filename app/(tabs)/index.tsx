@@ -384,8 +384,8 @@ export default function HomeScreen() {
       </View>
 
       <Pressable onPress={() => router.push('/budget')}>
-        <GlassCard>
-          <View style={{ gap: 12 }}>
+        <GlassCard padding={14}>
+          <View style={{ gap: 9 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <AppText variant="heading">{t('monthBudget', { month: monthLabel })}</AppText>
               <View style={{ backgroundColor: theme.toneBg(budget.tone), borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
@@ -424,16 +424,16 @@ export default function HomeScreen() {
 
       <View style={{ flexDirection: 'row', gap: 11, alignItems: 'stretch' }}>
         <Pressable onPress={() => router.push('/loans')} style={{ flex: 1 }}>
-          <GlassCard padding={15} fill>
+          <GlassCard padding={12} fill>
             <AppText variant="label">{t('youAreOwed')}</AppText>
-            <AppText variant="amount" color={theme.tone('warn')} style={{ fontSize: 23, marginTop: 8 }}>
+            <AppText variant="amount" color={theme.tone('warn')} style={{ fontSize: 23, marginTop: 6 }}>
               {privacy.fmt(owed)}
             </AppText>
-            <AppText variant="body2" style={{ marginTop: 4 }}>
+            <AppText variant="body2" style={{ marginTop: 3 }}>
               {t(peopleOwing === 1 ? 'personOne' : 'personOther', { count: String(peopleOwing) })}
             </AppText>
             {totalLentAll > 0 ? (
-              <AppText variant="mono" style={{ marginTop: 9, paddingTop: 9, borderTopWidth: 1, borderTopColor: theme.line }}>
+              <AppText variant="mono" style={{ marginTop: 7, paddingTop: 7, borderTopWidth: 1, borderTopColor: theme.line }}>
                 {t('allTimeLent', { amount: privacy.fmt(totalLentAll), back: privacy.fmt(totalRecoveredAll) })}
               </AppText>
             ) : null}
@@ -441,15 +441,15 @@ export default function HomeScreen() {
         </Pressable>
         {totalBorrowedAll > 0 ? (
           <Pressable onPress={() => router.push('/loans?tab=borrowed')} style={{ flex: 1 }}>
-            <GlassCard padding={15} fill>
+            <GlassCard padding={12} fill>
               <AppText variant="label">{t('youOwe')}</AppText>
-              <AppText variant="amount" color={theme.tone('neg')} style={{ fontSize: 23, marginTop: 8 }}>
+              <AppText variant="amount" color={theme.tone('neg')} style={{ fontSize: 23, marginTop: 6 }}>
                 {privacy.fmt(iOwe)}
               </AppText>
-              <AppText variant="body2" style={{ marginTop: 4 }}>
+              <AppText variant="body2" style={{ marginTop: 3 }}>
                 {t(peopleIOwe === 1 ? 'personOne' : 'personOther', { count: String(peopleIOwe) })}
               </AppText>
-              <AppText variant="mono" style={{ marginTop: 9, paddingTop: 9, borderTopWidth: 1, borderTopColor: theme.line }}>
+              <AppText variant="mono" style={{ marginTop: 7, paddingTop: 7, borderTopWidth: 1, borderTopColor: theme.line }}>
                 {t('allTimeBorrowed', { amount: privacy.fmt(totalBorrowedAll), back: privacy.fmt(totalPaidBackAll) })}
               </AppText>
             </GlassCard>
@@ -457,9 +457,9 @@ export default function HomeScreen() {
         ) : null}
       </View>
 
-      <GlassCard padding={15}>
+      <GlassCard padding={12}>
         <AppText variant="label">{t('thisMonth')}</AppText>
-        <View style={{ flexDirection: 'row', marginTop: 8 }}>
+        <View style={{ flexDirection: 'row', marginTop: 6 }}>
           <View style={{ flex: 1 }}>
             <AppText variant="body2">{t('moneyIn')}</AppText>
             <AppText variant="amount" color={theme.tone('pos')} style={{ fontSize: 17, marginTop: 2 }}>
@@ -473,7 +473,7 @@ export default function HomeScreen() {
             </AppText>
           </View>
         </View>
-        <View style={{ flexDirection: 'row', marginTop: 14, paddingTop: 13, borderTopWidth: 1, borderTopColor: theme.line }}>
+        <View style={{ flexDirection: 'row', marginTop: 10, paddingTop: 9, borderTopWidth: 1, borderTopColor: theme.line }}>
           <View style={{ flex: 1 }}>
             <AppText variant="body2">{t('lentLabel')}</AppText>
             <AppText variant="amount" color={theme.tone('warn')} style={{ fontSize: 17, marginTop: 2 }}>
