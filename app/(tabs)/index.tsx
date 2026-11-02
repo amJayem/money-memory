@@ -335,13 +335,14 @@ export default function HomeScreen() {
           <View
             style={{
               alignSelf: 'flex-start',
+              maxWidth: '100%',
               paddingHorizontal: 10,
               paddingVertical: 5,
               borderRadius: 999,
               backgroundColor: theme.toneBg('accent'),
             }}
           >
-            <AppText variant="mono" color={theme.accentColor}>
+            <AppText variant="mono" color={theme.accentColor} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
               {privacy.hintText}
             </AppText>
           </View>
