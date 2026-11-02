@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, BackHandler, Pressable, View } from 'react-native';
+import { BackHandler, Pressable, View } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
@@ -72,13 +72,13 @@ function AppShell() {
   useDailyReminderSync();
   const statusBar = <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />;
 
-  // Starts locked whenever the feature is on — including right after
-  // onboarding turns it on, so the very first launch with it enabled still
-  // asks. appState tracks transitions so re-foregrounding (not just cold
-  // launch) re-locks too; without it, switching to another app and back
-  // would skip the lock entirely.
+  // Starts locked whenever the feature is on — including right after onboarding turns it on,
+  // so the very first launch with it enabled still asks. Deliberately NOT re-armed on every
+  // background/foreground cycle (confirmed with the user: pressing Home, switching apps
+  // briefly, or the OS reclaiming/recreating the activity should NOT re-prompt) — only a
+  // genuinely fresh mount (cold start, or right after the double-back exit tears the activity
+  // down) and explicitly turning the setting on while already running should ask again.
   const [unlocked, setUnlocked] = useState(!appLockEnabled);
-  const appState = useRef(AppState.currentState);
 
   useEffect(() => {
     if (!appLockEnabled) {
@@ -87,16 +87,8 @@ function AppShell() {
     }
     // Arms the lock immediately when the setting turns on while the app is already running
     // (Settings toggle, or finishing onboarding with it checked) — otherwise `unlocked` would
-    // keep whatever value it had from before the setting changed, until the next background/
-    // foreground cycle happened to fire.
+    // keep whatever value it had from before the setting changed.
     setUnlocked(false);
-    const sub = AppState.addEventListener('change', (next) => {
-      if (appState.current.match(/inactive|background/) && next === 'active') {
-        setUnlocked(false);
-      }
-      appState.current = next;
-    });
-    return () => sub.remove();
   }, [appLockEnabled]);
 
   async function tryUnlock() {
