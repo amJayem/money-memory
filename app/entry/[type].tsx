@@ -95,10 +95,10 @@ export default function EntryForm() {
   const accountPool = type === 'expense' || type === 'lent' ? accounts : nonCreditAccounts;
 
   const [amount, setAmount] = useState(editing ? String(editing.amount) : '');
-  const [category, setCategory] = useState(
-    !typeChanged && editing?.category ? editing.category : type === 'income' ? 'Salary' : settings.lastCategory ?? settings.categories[0] ?? 'Other',
-  );
-  const [account, setAccount] = useState(!typeChanged && editing && accountPool.some((a) => a.id === editing.account) ? editing.account : defaultAccountId);
+  // Deliberately NOT defaulted to a remembered/first category or account — the user wants
+  // every entry to force an explicit choice rather than silently carrying over the last pick.
+  const [category, setCategory] = useState(!typeChanged && editing?.category ? editing.category : '');
+  const [account, setAccount] = useState(!typeChanged && editing && accountPool.some((a) => a.id === editing.account) ? editing.account : '');
   const [toAccount, setToAccount] = useState(!typeChanged && editing?.toAccount ? editing.toAccount : accounts.find((a) => a.id !== defaultAccountId)?.id ?? defaultAccountId);
   const decodedPersonParam = personParam ? decodeURIComponent(personParam) : undefined;
   const [person, setPerson] = useState(!typeChanged && editing?.person ? editing.person : decodedPersonParam ?? knownPeople[0] ?? '');
@@ -111,6 +111,9 @@ export default function EntryForm() {
   const [customCategory, setCustomCategory] = useState('');
   const [date, setDate] = useState(editing ? new Date(editing.at) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  // lent/borrowed only: an optional reminder date for when the money is expected back.
+  const [dueDate, setDueDate] = useState<Date | null>(editing?.dueDate ? new Date(editing.dueDate) : null);
+  const [showDueDatePicker, setShowDueDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   // A repayment ("Got paid" / "Paid back") can exceed what's actually on record for that
@@ -297,6 +300,14 @@ export default function EntryForm() {
       toast(t('toastAddPerson'));
       return;
     }
+    if (needsCategory && !category) {
+      toast(t('toastPickCategory'));
+      return;
+    }
+    if (!account) {
+      toast(t('toastPickAccount'));
+      return;
+    }
     if (type === 'repay_in' || type === 'repay_out') {
       const currentOutstanding = type === 'repay_in' ? outstandingToThem : owedToThem;
       const shortfall = numericAmount - currentOutstanding;
@@ -329,6 +340,8 @@ export default function EntryForm() {
       note: note.trim() || undefined,
       at: date.toISOString(),
       excludeFromBudget: type === 'expense' && outsideBudget ? true : undefined,
+      dueDate: (type === 'lent' || type === 'borrowed') && dueDate ? dueDate.toISOString().slice(0, 10) : undefined,
+      dueDateDismissed: (type === 'lent' || type === 'borrowed') && dueDate ? false : undefined,
     };
     if (editing) {
       updateTransaction(editing.id, patch);
@@ -574,6 +587,27 @@ export default function EntryForm() {
               />
             ) : null}
           </Section>
+
+          {type === 'lent' || type === 'borrowed' ? (
+            <Section label={t('dueDate')}>
+              <ChipRow>
+                <Chip label={dueDate ? dueDate.toLocaleDateString() : t('setReminder')} active={!!dueDate} onPress={() => setShowDueDatePicker(true)} />
+                {dueDate ? <Chip label={t('clearReminder')} onPress={() => setDueDate(null)} /> : null}
+              </ChipRow>
+              {showDueDatePicker ? (
+                <DateTimePicker
+                  value={dueDate ?? new Date()}
+                  mode="date"
+                  minimumDate={new Date()}
+                  onValueChange={(_, selected) => {
+                    setShowDueDatePicker(Platform.OS === 'ios');
+                    if (selected) setDueDate(selected);
+                  }}
+                  onDismiss={() => setShowDueDatePicker(false)}
+                />
+              ) : null}
+            </Section>
+          ) : null}
 
           <Section label={t('note')}>
             <TextInput

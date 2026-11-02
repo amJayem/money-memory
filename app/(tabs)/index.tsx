@@ -14,7 +14,7 @@ import { useAppStore } from '@/store/appStore';
 import { usePrivacy } from '@/hooks/usePrivacy';
 import { useHideNavBarOnScroll } from '@/hooks/useHideNavBarOnScroll';
 import { useToastStore } from '@/store/toastStore';
-import { balance, budgetStatusLine, creditLeft, creditUsed, peopleAgg, type Translate } from '@/domain/money';
+import { balance, budgetStatusLine, creditLeft, creditUsed, dueReminders, peopleAgg, type Translate } from '@/domain/money';
 import { formatAmount } from '@/domain/format';
 import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -57,6 +57,7 @@ export default function HomeScreen() {
   const toast = useToastStore((s) => s.show);
   const { accounts, transactions, settings, spentAmount, liquid, owed, iOwe, budget } = useLedger();
   const updateSettings = useAppStore((s) => s.updateSettings);
+  const updateTransaction = useAppStore((s) => s.updateTransaction);
   const privacy = usePrivacy('home');
   const [walletIndex, setWalletIndex] = useState(0);
 
@@ -119,6 +120,7 @@ export default function HomeScreen() {
   ] as const;
   const checklistDone = checklistItems.every((i) => i.done);
   const showChecklist = !settings.setupChecklistDismissed && !checklistDone;
+  const reminders = dueReminders(transactions);
 
   return (
     <Screen onScroll={onHomeScroll} scrollEventThrottle={16}>
@@ -134,6 +136,33 @@ export default function HomeScreen() {
           <IconButton glyph="⚙" onPress={() => router.push('/settings')} />
         </View>
       </View>
+
+      {reminders.length > 0 ? (
+        <GlassCard style={{ marginTop: 14, gap: 10 }}>
+          <AppText variant="label">{t('reminderHeading')}</AppText>
+          {reminders.map((r) => (
+            <Pressable
+              key={r.id}
+              onPress={() => router.push(`/person/${encodeURIComponent(r.person)}?kind=${r.direction}`)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surface2, borderRadius: 14, padding: 12 }}
+            >
+              <View style={{ flex: 1 }}>
+                <AppText variant="body">
+                  {t(r.direction === 'lent' ? 'reminderLentLine' : 'reminderBorrowedLine', { person: r.person, amount: privacy.fmt(r.amount) })}
+                </AppText>
+                <AppText variant="mono" color={r.overdue ? theme.tone('neg') : theme.ink2} style={{ marginTop: 2 }}>
+                  {t(r.overdue ? 'reminderOverdue' : 'reminderDueToday', { date: new Date(r.dueDate).toLocaleDateString() })}
+                </AppText>
+              </View>
+              <Pressable onPress={() => updateTransaction(r.id, { dueDateDismissed: true })} hitSlop={10}>
+                <AppText variant="body2" color={theme.ink2}>
+                  ✕
+                </AppText>
+              </Pressable>
+            </Pressable>
+          ))}
+        </GlassCard>
+      ) : null}
 
       {showChecklist ? (
         <GlassCard style={{ marginTop: 14, gap: 10 }}>

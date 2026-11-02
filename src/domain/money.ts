@@ -107,6 +107,41 @@ export function outstandingFor(transactions: Transaction[], kind: 'lent' | 'borr
   return row ?? { person, given: 0, back: 0, out: 0, lastDate: '' };
 }
 
+export interface DueReminder {
+  /** The lent/borrowed transaction that carries the due date. */
+  id: string;
+  person: string;
+  direction: 'lent' | 'borrowed';
+  amount: number;
+  /** "YYYY-MM-DD" */
+  dueDate: string;
+  overdue: boolean;
+}
+
+/**
+ * Lent/borrowed records with a reminder date that's arrived (today or past), the person's
+ * ledger in that direction still outstanding (not yet cleared), and the reminder not already
+ * dismissed. Settling the debt or dismissing the reminder is what makes one disappear — the
+ * due date itself is never auto-cleared, since it's a one-time acknowledgement, not a repeat.
+ */
+export function dueReminders(transactions: Transaction[], today: Date = new Date()): DueReminder[] {
+  const todayStr = today.toISOString().slice(0, 10);
+  return transactions
+    .filter((t): t is Transaction & { person: string; dueDate: string } =>
+      (t.type === 'lent' || t.type === 'borrowed') && !!t.person && !!t.dueDate && !t.dueDateDismissed && t.dueDate <= todayStr,
+    )
+    .filter((t) => outstandingFor(transactions, t.type as 'lent' | 'borrowed', t.person).out > 0)
+    .map((t) => ({
+      id: t.id,
+      person: t.person,
+      direction: t.type as 'lent' | 'borrowed',
+      amount: t.amount,
+      dueDate: t.dueDate,
+      overdue: t.dueDate < todayStr,
+    }))
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+}
+
 /** Design's `statusTone`: cleared -> pos, partly paid -> warn, still fully outstanding -> neg. Drives both the avatar circle and the status pill on Loans/Person. */
 export function statusTone(p: PersonLedger): 'pos' | 'warn' | 'neg' {
   if (p.out <= 0) return 'pos';

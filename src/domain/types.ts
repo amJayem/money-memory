@@ -38,6 +38,12 @@ export interface Transaction {
   toAccount?: string;
   /** lent | borrowed | repay_in | repay_out only. */
   person?: string;
+  /** lent | borrowed only: an optional estimated date the money is expected back, as a plain
+   * date-only ISO string ("YYYY-MM-DD") — a reminder target, not a hard deadline. */
+  dueDate?: string;
+  /** Set once a reminder banner/notification for `dueDate` has been dismissed by the user,
+   * so it doesn't keep reappearing after they've acknowledged it without changing the date. */
+  dueDateDismissed?: boolean;
   note?: string;
   /** Set when a transaction is edited, so history can show it was touched. */
   editedAt?: string;
