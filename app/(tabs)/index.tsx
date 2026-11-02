@@ -347,7 +347,10 @@ export default function HomeScreen() {
             </AppText>
           </View>
         ) : null}
-        <AppText variant="mono" style={{ textAlign: 'left' }}>
+        {/* paddingLeft matches the pill badge's own paddingHorizontal above, so both lines'
+            text starts flush at the same x — the pill's inner padding otherwise shifts its
+            text right of this line, which sits at the container edge with no padding of its own. */}
+        <AppText variant="mono" style={{ textAlign: 'left', paddingLeft: privacy.hintText ? 10 : 0 }}>
           {[t('spendableHint'), owed > 0 ? t('lentOutNotCounted', { amount: privacy.fmt(owed) }) : '', accounts.some((a) => a.type === 'credit') ? t('cardCreditExcluded') : '']
             .filter(Boolean)
             .join(' · ')}
