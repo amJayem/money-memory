@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Animated, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/AppText';
@@ -105,6 +105,17 @@ export default function HomeScreen() {
   const totalBorrowedAll = borrowedLedger.reduce((s, p) => s + p.given, 0);
   const totalPaidBackAll = borrowedLedger.reduce((s, p) => s + p.back, 0);
   const onHomeScroll = useHideNavBarOnScroll();
+  // Drives the collapsing-title effect in the fixed header: the big greeting/date block lives in
+  // the scrollable content (unchanged), and this tracks scroll position purely to fade/slide a
+  // small copy of the date into the fixed header row once the big one has scrolled past it —
+  // same idea as a standard collapsing toolbar title.
+  const scrollY = useRef(new Animated.Value(0)).current;
+  // useNativeDriver: false — Screen's ScrollView is a plain (non-Animated) ScrollView, which
+  // can't be driven by the native animated module; JS-driven is perfectly fine for an opacity/
+  // translate fade on a small header row.
+  const handleScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false, listener: onHomeScroll });
+  const headerTitleOpacity = scrollY.interpolate({ inputRange: [10, 56], outputRange: [0, 1], extrapolate: 'clamp' });
+  const headerTitleTranslate = scrollY.interpolate({ inputRange: [10, 56], outputRange: [8, 0], extrapolate: 'clamp' });
 
   // Mirrors exactly what onboarding already asked for (accounts, a budget) plus the one thing it
   // can't set up on the user's behalf (an actual logged transaction) — not new rules, just a
@@ -126,10 +137,15 @@ export default function HomeScreen() {
 
   return (
     <Screen
-      onScroll={onHomeScroll}
+      onScroll={handleScroll}
       scrollEventThrottle={16}
       header={
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingTop: 4, paddingBottom: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4, paddingBottom: 8 }}>
+          <Animated.View style={{ flex: 1, opacity: headerTitleOpacity, transform: [{ translateY: headerTitleTranslate }] }}>
+            <AppText variant="heading" numberOfLines={1}>
+              {dateLabel}
+            </AppText>
+          </Animated.View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <IconButton glyph="⌕" onPress={() => router.push('/history')} />
             <IconButton glyph="⚙" onPress={() => router.push('/settings')} />
