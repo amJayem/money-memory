@@ -554,11 +554,13 @@ export default function EntryForm() {
 
           {needsDest ? (
             <Section label={t('into')}>
-              {nonCreditAccounts.filter((a) => a.id !== account).length === 0 ? (
+              {/* Credit cards ARE a valid transfer destination (paying a card bill), just never a
+                  source — that's a cash advance, a different feature this app doesn't model. */}
+              {accounts.filter((a) => a.id !== account).length === 0 ? (
                 <AppText variant="body2">{t('needSecondAccount')}</AppText>
               ) : (
                 <ChipRow>
-                  {nonCreditAccounts
+                  {accounts
                     .filter((a) => a.id !== account)
                     .map((a) => (
                       <Chip key={a.id} label={a.name} active={toAccount === a.id} onPress={() => setToAccount(a.id)} />

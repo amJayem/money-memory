@@ -2,6 +2,7 @@ import {
   balance,
   budgetStatus,
   creditLeft,
+  creditUsed,
   liquid,
   monthlyReport,
   peopleAgg,
@@ -65,6 +66,25 @@ describe('brief §2 non-negotiable money rules', () => {
     const visa = accounts.find((a) => a.id === 'visa')!;
     expect(creditLeft(visa, txs)).toBe(35000);
     expect(liquid(accounts, txs)).toBe(30000); // unaffected by the visa charge
+  });
+
+  test('paying a credit card bill via transfer brings its used amount back down', () => {
+    const txs = [
+      tx({ id: 't1', type: 'expense', amount: 15000, account: 'visa', category: 'Shopping' }),
+      tx({ id: 't2', type: 'transfer', amount: 9000, account: 'cash', toAccount: 'visa' }),
+    ];
+    const visa = accounts.find((a) => a.id === 'visa')!;
+    expect(creditUsed(visa, txs)).toBe(6000);
+    expect(creditLeft(visa, txs)).toBe(44000);
+  });
+
+  test('paying off a credit card never pushes its used amount below zero', () => {
+    const txs = [
+      tx({ id: 't1', type: 'expense', amount: 5000, account: 'visa', category: 'Shopping' }),
+      tx({ id: 't2', type: 'transfer', amount: 8000, account: 'cash', toAccount: 'visa' }),
+    ];
+    const visa = accounts.find((a) => a.id === 'visa')!;
+    expect(creditUsed(visa, txs)).toBe(0);
   });
 
   test('rule 5: total position is liquid + owed, never conflated with liquid', () => {

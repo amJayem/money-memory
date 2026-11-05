@@ -26,13 +26,18 @@ export function balance(account: Account, transactions: Transaction[]): number {
   return b;
 }
 
-/** Credit consumed on a credit-card account (expense + lent charged to it). */
+/**
+ * Credit consumed on a credit-card account: expense/lent charges raise it, and a transfer
+ * paid INTO the card (paying the bill) brings it back down — never below zero. Without the
+ * transfer-in case this only ever grew, so a card's "used" total never reflected a real payoff.
+ */
 export function creditUsed(account: Account, transactions: Transaction[]): number {
   let u = account.openingUsed ?? 0;
   for (const t of transactions) {
     if (t.account === account.id && (t.type === 'expense' || t.type === 'lent')) u += t.amount;
+    if (t.type === 'transfer' && t.toAccount === account.id) u -= t.amount;
   }
-  return u;
+  return Math.max(0, u);
 }
 
 /** Credit remaining on a credit-card account — never negative. */
