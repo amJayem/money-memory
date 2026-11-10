@@ -27,6 +27,9 @@ export default function PersonScreen() {
 
   const ledger = outstandingFor(transactions, direction, person);
   const cleared = ledger.out <= 0 && ledger.given > 0;
+  // ledger.out can go negative when a repayment exceeds logged loans (e.g. a "leave as is" choice
+  // on a repay-gap prompt) — surfaced so it doesn't silently net against a future loan unnoticed.
+  const overpaid = ledger.out < 0;
   const tone = statusTone(ledger);
   const pct = ledger.given > 0 ? Math.min(100, (ledger.back / ledger.given) * 100) : 0;
 
@@ -84,6 +87,13 @@ export default function PersonScreen() {
           <AppText variant="body2" style={{ marginTop: 10 }}>
             {t('settledHint')}
           </AppText>
+        ) : null}
+        {overpaid ? (
+          <View style={{ marginTop: 10, backgroundColor: theme.toneBg('warn'), borderRadius: 10, padding: 10 }}>
+            <AppText variant="body2" color={theme.tone('warn')}>
+              {t('overpaidHint', { amount: privacy.fmt(-ledger.out) })}
+            </AppText>
+          </View>
         ) : null}
         <Pressable onPress={() => router.push(`/entry/${ctaType}?person=${encodeURIComponent(person)}`)} style={{ backgroundColor: theme.ink, borderRadius: 16, minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 16 }}>
           <AppText color={theme.solid} weight="manrope700">
