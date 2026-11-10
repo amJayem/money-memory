@@ -51,7 +51,7 @@ export default function PersonScreen() {
   };
 
   const ctaLabel = direction === 'lent' ? (cleared ? t('lendAgain') : t('recordRepayment')) : cleared ? t('borrowAgain') : t('recordPayment');
-  const ctaType = direction === 'lent' ? 'repay_in' : 'repay_out';
+  const ctaType = cleared ? direction : direction === 'lent' ? 'repay_in' : 'repay_out';
 
   return (
     <Screen>
