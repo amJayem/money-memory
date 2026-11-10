@@ -10,7 +10,7 @@ import { TransactionRow } from '@/components/TransactionRow';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
-import { outstandingFor, statusLabel, statusTone, type Translate } from '@/domain/money';
+import { loanFulfillments, outstandingFor, statusLabel, statusTone, type Translate } from '@/domain/money';
 import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
 import { useTranslation } from '@/i18n/useTranslation';
 
@@ -34,6 +34,21 @@ export default function PersonScreen() {
   const pct = ledger.given > 0 ? Math.min(100, (ledger.back / ledger.given) * 100) : 0;
 
   const related = sortedTransactions(transactions.filter((t) => t.person === person));
+  const fulfillments = loanFulfillments(transactions, direction);
+  const fulfillmentCounts = { onTime: 0, late: 0, overdue: 0 };
+  for (const status of fulfillments.values()) {
+    if (status.fulfillment === 'onTime') fulfillmentCounts.onTime++;
+    else if (status.fulfillment === 'late') fulfillmentCounts.late++;
+    else if (status.fulfillment === 'overdue') fulfillmentCounts.overdue++;
+  }
+  const hasReliabilityHistory = fulfillmentCounts.onTime + fulfillmentCounts.late + fulfillmentCounts.overdue > 0;
+  const fulfillmentLabel = (txId: string) => {
+    const status = fulfillments.get(txId);
+    if (!status || status.fulfillment === 'noDueDate' || status.fulfillment === 'pending') return null;
+    if (status.fulfillment === 'onTime') return t('fulfillOnTime');
+    if (status.fulfillment === 'late') return t('fulfillLate');
+    return t('fulfillOverdue');
+  };
 
   const ctaLabel = direction === 'lent' ? (cleared ? t('lendAgain') : t('recordRepayment')) : cleared ? t('borrowAgain') : t('recordPayment');
   const ctaType = direction === 'lent' ? 'repay_in' : 'repay_out';
@@ -95,6 +110,11 @@ export default function PersonScreen() {
             </AppText>
           </View>
         ) : null}
+        {hasReliabilityHistory ? (
+          <AppText variant="body2" style={{ marginTop: 10 }}>
+            {t('reliabilitySummary', { onTime: String(fulfillmentCounts.onTime), late: String(fulfillmentCounts.late), overdue: String(fulfillmentCounts.overdue) })}
+          </AppText>
+        ) : null}
         <Pressable onPress={() => router.push(`/entry/${ctaType}?person=${encodeURIComponent(person)}`)} style={{ backgroundColor: theme.ink, borderRadius: 16, minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 16 }}>
           <AppText color={theme.solid} weight="manrope700">
             {ctaLabel}
@@ -106,17 +126,21 @@ export default function PersonScreen() {
         {t('timeline')}
       </AppText>
       <GlassCard padding={4}>
-        {related.map((tx) => (
-          <TransactionRow
-            key={tx.id}
-            title={transactionTitle(tx, accounts, tc)}
-            sub={transactionSub(tx, accounts, tc)}
-            icon={transactionIcon(tx)}
-            amountText={privacy.fmt(tx.type === 'expense' || tx.type === 'lent' || tx.type === 'repay_out' ? -tx.amount : tx.amount, true)}
-            type={tx.type}
-            onPress={() => router.push(`/transaction/${tx.id}`)}
-          />
-        ))}
+        {related.map((tx) => {
+          const label = fulfillmentLabel(tx.id);
+          const sub = label ? `${transactionSub(tx, accounts, tc)} · ${label}` : transactionSub(tx, accounts, tc);
+          return (
+            <TransactionRow
+              key={tx.id}
+              title={transactionTitle(tx, accounts, tc)}
+              sub={sub}
+              icon={transactionIcon(tx)}
+              amountText={privacy.fmt(tx.type === 'expense' || tx.type === 'lent' || tx.type === 'repay_out' ? -tx.amount : tx.amount, true)}
+              type={tx.type}
+              onPress={() => router.push(`/transaction/${tx.id}`)}
+            />
+          );
+        })}
       </GlassCard>
     </Screen>
   );

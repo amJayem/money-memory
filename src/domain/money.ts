@@ -159,6 +159,63 @@ export function dueReminders(transactions: Transaction[], today: Date = new Date
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 }
 
+export type LoanFulfillment = 'onTime' | 'late' | 'overdue' | 'pending' | 'noDueDate';
+
+export interface LoanStatus {
+  /** ISO date this specific loan was fully paid off, or null while still outstanding. */
+  clearedAt: string | null;
+  fulfillment: LoanFulfillment;
+}
+
+/**
+ * Per-loan "did they pay by when they said they would" status, keyed by the lent/borrowed
+ * transaction's id. The ledger only tracks one running total per person (brief §2 rule 6), so a
+ * repayment is never tied to a specific loan — this infers it with a FIFO assumption: each
+ * repayment pays off that person's OLDEST unpaid loan first. A loan's `dueDate` is then compared
+ * against the date it was inferred cleared to say whether it was honored.
+ */
+export function loanFulfillments(transactions: Transaction[], direction: 'lent' | 'borrowed', today: Date = new Date()): Map<string, LoanStatus> {
+  const backType = direction === 'lent' ? 'repay_in' : 'repay_out';
+  const byPerson = new Map<string, Transaction[]>();
+  for (const t of transactions) {
+    if (!t.person || (t.type !== direction && t.type !== backType)) continue;
+    const list = byPerson.get(t.person) ?? [];
+    list.push(t);
+    byPerson.set(t.person, list);
+  }
+
+  const result = new Map<string, LoanStatus>();
+  const todayStr = today.toISOString().slice(0, 10);
+
+  for (const list of byPerson.values()) {
+    const sorted = [...list].sort((a, b) => a.at.localeCompare(b.at));
+    const queue = sorted.filter((t) => t.type === direction).map((t) => ({ id: t.id, dueDate: t.dueDate, remaining: t.amount, clearedAt: null as string | null }));
+    let head = 0;
+    for (const t of sorted) {
+      if (t.type !== backType) continue;
+      let amount = t.amount;
+      while (amount > 0 && head < queue.length) {
+        const loan = queue[head];
+        const take = Math.min(loan.remaining, amount);
+        loan.remaining -= take;
+        amount -= take;
+        if (loan.remaining === 0) {
+          loan.clearedAt = t.at;
+          head++;
+        }
+      }
+    }
+    for (const loan of queue) {
+      let fulfillment: LoanFulfillment;
+      if (!loan.dueDate) fulfillment = 'noDueDate';
+      else if (loan.clearedAt) fulfillment = loan.clearedAt.slice(0, 10) <= loan.dueDate ? 'onTime' : 'late';
+      else fulfillment = loan.dueDate < todayStr ? 'overdue' : 'pending';
+      result.set(loan.id, { clearedAt: loan.clearedAt, fulfillment });
+    }
+  }
+  return result;
+}
+
 /** Design's `statusTone`: cleared -> pos, partly paid -> warn, still fully outstanding -> neg. Drives both the avatar circle and the status pill on Loans/Person. */
 export function statusTone(p: PersonLedger): 'pos' | 'warn' | 'neg' {
   if (p.out <= 0) return 'pos';

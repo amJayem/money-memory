@@ -484,6 +484,11 @@ export const STRINGS = {
       borrowAgain: 'Borrow again',
       recordPayment: 'Record a payment',
       timeline: 'Timeline',
+      fulfillOnTime: 'Paid on time',
+      fulfillLate: 'Paid late',
+      fulfillOverdue: 'Overdue',
+      fulfillPending: 'Due {date}',
+      reliabilitySummary: '{onTime} on time · {late} late · {overdue} overdue',
     },
     report: {
       moneyIn: 'Money in',
@@ -1005,6 +1010,11 @@ export const STRINGS = {
       borrowAgain: 'আবার ধার নিন',
       recordPayment: 'একটি পরিশোধ রেকর্ড করুন',
       timeline: 'টাইমলাইন',
+      fulfillOnTime: 'সময়মতো পরিশোধ',
+      fulfillLate: 'দেরিতে পরিশোধ',
+      fulfillOverdue: 'মেয়াদোত্তীর্ণ',
+      fulfillPending: '{date} তারিখে দেয়',
+      reliabilitySummary: '{onTime} সময়মতো · {late} দেরিতে · {overdue} মেয়াদোত্তীর্ণ',
     },
     report: {
       moneyIn: 'টাকা এসেছে',

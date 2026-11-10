@@ -4,6 +4,7 @@ import {
   creditLeft,
   creditUsed,
   liquid,
+  loanFulfillments,
   monthlyReport,
   peopleAgg,
   spent,
@@ -85,6 +86,28 @@ describe('brief §2 non-negotiable money rules', () => {
     ];
     const visa = accounts.find((a) => a.id === 'visa')!;
     expect(creditUsed(visa, txs)).toBe(0);
+  });
+
+  test('loan fulfillment FIFO: an older loan absorbs repayments before a newer one', () => {
+    const txs = [
+      tx({ id: 'l1', type: 'lent', amount: 1000, account: 'cash', person: 'Karim', at: '2026-07-01T00:00:00.000Z', dueDate: '2026-07-15' }),
+      tx({ id: 'l2', type: 'lent', amount: 500, account: 'cash', person: 'Karim', at: '2026-07-10T00:00:00.000Z', dueDate: '2026-07-25' }),
+      tx({ id: 'r1', type: 'repay_in', amount: 700, account: 'cash', person: 'Karim', at: '2026-07-12T00:00:00.000Z' }),
+      tx({ id: 'r2', type: 'repay_in', amount: 800, account: 'cash', person: 'Karim', at: '2026-07-20T00:00:00.000Z' }),
+    ];
+    const statuses = loanFulfillments(txs, 'lent', new Date('2026-08-01T00:00:00.000Z'));
+    expect(statuses.get('l1')!.fulfillment).toBe('late'); // due Jul 15, cleared Jul 20
+    expect(statuses.get('l2')!.fulfillment).toBe('onTime'); // due Jul 25, cleared Jul 20
+  });
+
+  test('loan fulfillment: still outstanding past its due date is overdue, before it is pending', () => {
+    const txs = [
+      tx({ id: 'l1', type: 'lent', amount: 1000, account: 'cash', person: 'Hasan', at: '2026-07-01T00:00:00.000Z', dueDate: '2026-07-15' }),
+      tx({ id: 'l2', type: 'lent', amount: 1000, account: 'cash', person: 'Rina', at: '2026-07-01T00:00:00.000Z', dueDate: '2026-09-01' }),
+    ];
+    const statuses = loanFulfillments(txs, 'lent', new Date('2026-08-01T00:00:00.000Z'));
+    expect(statuses.get('l1')!.fulfillment).toBe('overdue');
+    expect(statuses.get('l2')!.fulfillment).toBe('pending');
   });
 
   test('rule 5: total position is liquid + owed, never conflated with liquid', () => {
