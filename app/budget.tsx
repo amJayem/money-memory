@@ -8,7 +8,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { ProgressBar } from '@/components/ProgressBar';
 import { AppSwitch } from '@/components/AppSwitch';
 import { DonutChart } from '@/components/DonutChart';
-import { Keypad } from '@/components/Keypad';
+import { CalcKeypad } from '@/components/CalcKeypad';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
@@ -215,7 +215,7 @@ export default function BudgetScreen() {
                 {budgetInput || '0'}
               </AppText>
             </View>
-            <Keypad value={budgetInput} onChange={setBudgetInput} />
+            <CalcKeypad value={budgetInput} onChange={setBudgetInput} />
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <Pressable onPress={() => setBudgetEditorOpen(false)} style={{ flex: 1, borderWidth: 1, borderColor: theme.lineStrong, borderRadius: 14, minHeight: 46, alignItems: 'center', justifyContent: 'center' }}>
                 <AppText variant="body">{tc('cancel')}</AppText>
@@ -247,7 +247,7 @@ export default function BudgetScreen() {
                     {catBudgetInput || '0'}
                   </AppText>
                 </View>
-                <Keypad value={catBudgetInput} onChange={setCatBudgetInput} />
+                <CalcKeypad value={catBudgetInput} onChange={setCatBudgetInput} />
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   {catEditorTarget in settings.categoryBudgets ? (
                     <Pressable

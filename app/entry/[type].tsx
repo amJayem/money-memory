@@ -7,7 +7,8 @@ import { AppText } from '@/components/AppText';
 import { AppSwitch } from '@/components/AppSwitch';
 import { Chip } from '@/components/Chip';
 import { IconButton } from '@/components/IconButton';
-import { Keypad } from '@/components/Keypad';
+import { CalcKeypad } from '@/components/CalcKeypad';
+import { evaluateExpression, hasOperator } from '@/domain/calc';
 import { ScreenBackground } from '@/components/Screen';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useAppStore } from '@/store/appStore';
@@ -246,7 +247,9 @@ export default function EntryForm() {
   const rawCategories = type === 'income' ? settings.incomeCategories : settings.categories;
   const categories = [...rawCategories.filter((c) => c !== 'Other'), ...rawCategories.filter((c) => c === 'Other')];
 
-  const numericAmount = parseFloat(amount) || 0;
+  const numericAmount = evaluateExpression(amount);
+  const isExpression = hasOperator(amount);
+  const amountFontSize = amount.length > 16 ? 22 : amount.length > 11 ? 26 : amount.length > 7 ? 30 : amount.length > 5 ? 36 : 42;
   // A typed name that only differs from an existing person by case or spacing
   // ("Rahim" vs "rahim ") reuses that person's exact casing instead of
   // silently starting a second, separate loan ledger for the same person.
@@ -476,7 +479,7 @@ export default function EntryForm() {
           }}
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10 }}
         >
-          <AppText style={{ fontSize: amount.length > 7 ? 30 : amount.length > 5 ? 36 : 42 }} variant="amount">
+          <AppText style={{ fontSize: amountFontSize, flexShrink: 1, textAlign: 'center' }} variant="amount">
             {settings.currencySymbol}
             {amount || '0'}
           </AppText>
@@ -484,7 +487,7 @@ export default function EntryForm() {
             <Animated.View
               style={{
                 width: 2.5,
-                height: amount.length > 7 ? 28 : amount.length > 5 ? 32 : 36,
+                height: amountFontSize * 0.85,
                 marginLeft: 3,
                 borderRadius: 1.5,
                 backgroundColor: theme.ink,
@@ -493,6 +496,11 @@ export default function EntryForm() {
             />
           ) : null}
         </Pressable>
+        {isExpression ? (
+          <AppText variant="mono" color={theme.accentColor} style={{ textAlign: 'center', marginTop: -6, fontSize: 15 }}>
+            = {formatAmount(numericAmount, settings.currencySymbol)}
+          </AppText>
+        ) : null}
 
         {needsCategory ? (
             <Section label={t('category')}>
@@ -655,7 +663,7 @@ export default function EntryForm() {
           if (activeInput === 'amount') expandedPanelHeight.current = e.nativeEvent.layout.height;
         }}
       >
-        {activeInput === 'amount' ? <Keypad value={amount} onChange={setAmount} /> : null}
+        {activeInput === 'amount' ? <CalcKeypad value={amount} onChange={setAmount} calculator /> : null}
 
         <Pressable
           onPress={save}
