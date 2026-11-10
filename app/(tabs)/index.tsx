@@ -161,7 +161,7 @@ export default function HomeScreen() {
       </View>
 
       {reminders.length > 0 ? (
-        <GlassCard style={{ marginTop: 14, gap: 10 }}>
+        <GlassCard style={{ marginTop: 14, gap: 16 }}>
           <AppText variant="label">{t('reminderHeading')}</AppText>
           {reminders.map((r) => (
             <Pressable
