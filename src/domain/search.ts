@@ -89,9 +89,10 @@ export function transactionDate(t: Transaction, now: Date = new Date()): string 
 /** `t` is the caller's `useTranslation('common')`. */
 export function transactionSub(t: Transaction, accounts: Account[], translate: Translate): string {
   const accName = (id: string) => accounts.find((a) => a.id === id)?.name ?? id;
+  // Date leads so a long note truncates instead of pushing the date off the row.
   const date = transactionDate(t);
-  if (t.type === 'transfer') return `${translate('subTransferNotSpending')} · ${date}`;
-  return `${accName(t.account)}${t.note ? ' · ' + t.note : ''} · ${date}`;
+  if (t.type === 'transfer') return `${date} · ${translate('subTransferNotSpending')}`;
+  return `${date} · ${accName(t.account)}${t.note ? ' · ' + t.note : ''}`;
 }
 
 export function matchesQuery(t: Transaction, query: string, accounts: Account[], translate: Translate): boolean {
