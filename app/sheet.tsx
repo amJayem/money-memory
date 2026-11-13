@@ -30,8 +30,7 @@ export default function ActionSheet() {
   const toast = useToastStore((s) => s.show);
   const te = useTranslation('entry');
   const t = useTranslation('sheet');
-  // A transfer's source must be a non-credit account, but its destination can be a credit card
-  // (paying a bill) — so this only needs one non-credit account plus one other account of any kind.
+  // Card-to-card is the only pairing a transfer rules out, so it needs a real account plus one more.
   const canTransfer = accounts.some((a) => a.type !== 'credit') && accounts.length >= 2;
 
   function open(type: TransactionType) {

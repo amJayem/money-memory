@@ -79,6 +79,19 @@ describe('brief §2 non-negotiable money rules', () => {
     expect(creditLeft(visa, txs)).toBe(44000);
   });
 
+  test('moving money out of a credit card into a bank raises used credit and the bank balance', () => {
+    const txs = [
+      tx({ id: 't1', type: 'transfer', amount: 2500, account: 'visa', toAccount: 'bank' }),
+      tx({ id: 't2', type: 'transfer', amount: 2500, account: 'cash', toAccount: 'visa' }),
+    ];
+    const visa = accounts.find((a) => a.id === 'visa')!;
+    const bank = accounts.find((a) => a.id === 'bank')!;
+    expect(creditUsed(visa, txs.slice(0, 1))).toBe(2500);
+    expect(balance(bank, txs)).toBe(22500);
+    expect(liquid(accounts, txs.slice(0, 1))).toBe(32500);
+    expect(creditUsed(visa, txs)).toBe(0); // paid back
+  });
+
   test('paying off a credit card never pushes its used amount below zero', () => {
     const txs = [
       tx({ id: 't1', type: 'expense', amount: 5000, account: 'visa', category: 'Shopping' }),

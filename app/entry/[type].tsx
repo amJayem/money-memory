@@ -93,7 +93,10 @@ export default function EntryForm() {
   // defaults from the old record no longer make sense for the new type, so
   // only carry them over when the type is unchanged — amount and note still do.
   const typeChanged = !!editing && editing.type !== type;
-  const accountPool = type === 'expense' || type === 'lent' ? accounts : nonCreditAccounts;
+  // Types whose source account may be a credit card: a charge (expense/lent), or money moved
+  // out of the card into a real account (a card-to-bank transfer / cash advance).
+  const creditCanBeSource = type === 'expense' || type === 'lent' || type === 'transfer';
+  const accountPool = creditCanBeSource ? accounts : nonCreditAccounts;
 
   const [amount, setAmount] = useState(editing ? String(editing.amount) : '');
   // Deliberately NOT defaulted to a remembered/first category or account — the user wants
@@ -101,6 +104,9 @@ export default function EntryForm() {
   const [category, setCategory] = useState(!typeChanged && editing?.category ? editing.category : '');
   const [account, setAccount] = useState(!typeChanged && editing && accountPool.some((a) => a.id === editing.account) ? editing.account : '');
   const [toAccount, setToAccount] = useState(!typeChanged && editing?.toAccount ? editing.toAccount : accounts.find((a) => a.id !== defaultAccountId)?.id ?? defaultAccountId);
+  // Card-to-card isn't a real move of money, so once the source is a card only real accounts are offered.
+  const sourceIsCredit = accounts.find((a) => a.id === account)?.type === 'credit';
+  const destAccounts = accounts.filter((a) => a.id !== account && !(sourceIsCredit && a.type === 'credit'));
   const decodedPersonParam = personParam ? decodeURIComponent(personParam) : undefined;
   const [person, setPerson] = useState(!typeChanged && editing?.person ? editing.person : decodedPersonParam ?? knownPeople[0] ?? '');
   const [newPersonName, setNewPersonName] = useState('');
@@ -552,25 +558,27 @@ export default function EntryForm() {
 
           <Section label={t(ACCOUNT_LABEL_KEY[type])}>
             <ChipRow>
-              {/* Only expense/lent can be charged to a credit card (creditUsed() only counts those two);
-                  every other type moves real money and must land in a non-credit account. */}
-              {(type === 'expense' || type === 'lent' ? accounts : nonCreditAccounts).map((a) => (
-                <Chip key={a.id} label={a.name} active={account === a.id} onPress={() => setAccount(a.id)} />
+              {accountPool.map((a) => (
+                <Chip
+                  key={a.id}
+                  label={a.name}
+                  active={account === a.id}
+                  onPress={() => {
+                    setAccount(a.id);
+                    if (a.type === 'credit' && accounts.find((d) => d.id === toAccount)?.type === 'credit') setToAccount('');
+                  }}
+                />
               ))}
             </ChipRow>
           </Section>
 
           {needsDest ? (
             <Section label={t('into')}>
-              {/* Credit cards ARE a valid transfer destination (paying a card bill), just never a
-                  source — that's a cash advance, a different feature this app doesn't model. */}
-              {accounts.filter((a) => a.id !== account).length === 0 ? (
+              {destAccounts.length === 0 ? (
                 <AppText variant="body2">{t('needSecondAccount')}</AppText>
               ) : (
                 <ChipRow>
-                  {accounts
-                    .filter((a) => a.id !== account)
-                    .map((a) => (
+                  {destAccounts.map((a) => (
                       <Chip key={a.id} label={a.name} active={toAccount === a.id} onPress={() => setToAccount(a.id)} />
                     ))}
                 </ChipRow>
