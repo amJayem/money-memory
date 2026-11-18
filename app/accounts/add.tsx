@@ -13,6 +13,7 @@ import { useAppStore } from '@/store/appStore';
 import { useToastStore } from '@/store/toastStore';
 import { useTranslation } from '@/i18n/useTranslation';
 import type { AccountType } from '@/domain/types';
+import { newId } from '@/domain/id';
 
 const TYPES: AccountType[] = ['cash', 'bank', 'debit', 'credit', 'wallet', 'savings'];
 
@@ -68,7 +69,7 @@ export default function AddAccountScreen() {
       toast(t('toastUpdated'));
     } else {
       addAccount({
-        id: `acc${Date.now()}`,
+        id: newId('acc'),
         name: name.trim(),
         type,
         openingBalance: type === 'credit' ? 0 : value,

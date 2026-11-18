@@ -16,9 +16,11 @@ import { useToastStore } from '@/store/toastStore';
 import { useTranslation } from '@/i18n/useTranslation';
 import type { StringKey } from '@/i18n/strings';
 import type { TransactionType } from '@/domain/types';
-import { budgetStatus, liquid, outstandingFor, spent } from '@/domain/money';
+import { liquid, outstandingFor, roundMoney, spent } from '@/domain/money';
 import { echoLine } from '@/domain/echo';
 import { formatAmount } from '@/domain/format';
+import { parseDateKey, toDateKey } from '@/domain/dates';
+import { newId } from '@/domain/id';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -119,7 +121,7 @@ export default function EntryForm() {
   const [date, setDate] = useState(editing ? new Date(editing.at) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   // lent/borrowed only: an optional reminder date for when the money is expected back.
-  const [dueDate, setDueDate] = useState<Date | null>(editing?.dueDate ? new Date(editing.dueDate) : null);
+  const [dueDate, setDueDate] = useState<Date | null>(editing?.dueDate ? parseDateKey(editing.dueDate) : null);
   const [showDueDatePicker, setShowDueDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -317,9 +319,16 @@ export default function EntryForm() {
       toast(t('toastPickAccount'));
       return;
     }
+    // A transfer with no destination (or one pointing back at its own source) takes the money
+    // out of one account and lands it nowhere — reachable when the preselected destination is
+    // then picked as the source, or cleared by choosing a card as the source.
+    if (needsDest && !destAccounts.some((a) => a.id === toAccount)) {
+      toast(t('toastPickDestination'));
+      return;
+    }
     if (type === 'repay_in' || type === 'repay_out') {
       const currentOutstanding = type === 'repay_in' ? outstandingToThem : owedToThem;
-      const shortfall = numericAmount - currentOutstanding;
+      const shortfall = roundMoney(numericAmount - currentOutstanding);
       if (shortfall > 0) {
         setShortfallAmount(shortfall);
         setShortfallDate(date);
@@ -349,13 +358,13 @@ export default function EntryForm() {
       note: note.trim() || undefined,
       at: date.toISOString(),
       excludeFromBudget: type === 'expense' && outsideBudget ? true : undefined,
-      dueDate: (type === 'lent' || type === 'borrowed') && dueDate ? dueDate.toISOString().slice(0, 10) : undefined,
+      dueDate: (type === 'lent' || type === 'borrowed') && dueDate ? toDateKey(dueDate) : undefined,
       dueDateDismissed: (type === 'lent' || type === 'borrowed') && dueDate ? false : undefined,
     };
     if (editing) {
       updateTransaction(editing.id, patch);
     } else {
-      addTransaction({ id: `n${Date.now()}`, ...patch });
+      addTransaction({ id: newId('n'), ...patch });
     }
     updateSettings({
       lastAccountId: account,
@@ -728,7 +737,7 @@ export default function EntryForm() {
             if (!selected) return;
             setShortfallDate(selected);
             addTransaction({
-              id: `n${Date.now()}`,
+              id: newId('n'),
               type: type === 'repay_in' ? 'lent' : 'borrowed',
               amount: shortfallAmount,
               account,
