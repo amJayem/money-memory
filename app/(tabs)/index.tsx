@@ -16,6 +16,7 @@ import { useHideNavBarOnScroll } from '@/hooks/useHideNavBarOnScroll';
 import { useToastStore } from '@/store/toastStore';
 import { balance, budgetStatusLine, creditLeft, creditUsed, dueReminders, isSameMonth, peopleAgg, type Translate } from '@/domain/money';
 import { formatAmount } from '@/domain/format';
+import { parseDateKey } from '@/domain/dates';
 import { sortedTransactions, transactionIcon, transactionSub, transactionTitle } from '@/domain/search';
 import { useTranslation } from '@/i18n/useTranslation';
 
@@ -174,7 +175,7 @@ export default function HomeScreen() {
                   {t(r.direction === 'lent' ? 'reminderLentLine' : 'reminderBorrowedLine', { person: r.person, amount: privacy.fmt(r.amount) })}
                 </AppText>
                 <AppText variant="mono" color={r.overdue ? theme.tone('neg') : theme.ink2} style={{ marginTop: 2 }}>
-                  {t(r.overdue ? 'reminderOverdue' : 'reminderDueToday', { date: new Date(r.dueDate).toLocaleDateString() })}
+                  {t(r.overdue ? 'reminderOverdue' : 'reminderDueToday', { date: parseDateKey(r.dueDate).toLocaleDateString() })}
                 </AppText>
               </View>
               <Pressable onPress={() => updateTransaction(r.id, { dueDateDismissed: true })} hitSlop={10}>

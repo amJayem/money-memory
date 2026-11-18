@@ -45,8 +45,9 @@ describe('transactionsToCsv', () => {
   it('sorts rows oldest first regardless of input order', () => {
     const csv = transactionsToCsv(
       [
-        tx({ id: 'later', type: 'expense', amount: 1, account: 'cash', at: '2026-09-02T00:00:00.000Z' }),
-        tx({ id: 'earlier', type: 'expense', amount: 1, account: 'cash', at: '2026-09-01T00:00:00.000Z' }),
+        tx({ id: 'later', type: 'expense', amount: 1, account: 'cash', at: '2026-09-02T12:00:00.000Z' }),
+        // Midday, so the row's local calendar date is the same in any time zone the tests run in.
+        tx({ id: 'earlier', type: 'expense', amount: 1, account: 'cash', at: '2026-09-01T12:00:00.000Z' }),
       ],
       accounts,
       '৳'

@@ -22,7 +22,7 @@ export function useLedger() {
       liquid,
       owed,
       iOwe,
-      totalPosition: liquid + owed,
+      totalPosition: money.roundMoney(liquid + owed),
       budget,
     };
   }, [accounts, transactions, settings]);

@@ -4,8 +4,20 @@
 // (see LEDGER_SPEC.md §2-3) rather than re-derived from the brief alone.
 
 import type { Account, Transaction } from './types';
+import { toDateKey } from './dates';
 
 export type Translate = (key: string, vars?: Record<string, string>) => string;
+
+/**
+ * Amounts can carry up to two decimals (the keypad has a '.' key), and plain JS addition drifts
+ * on those: 0.1 + 0.2 is 0.30000000000000004. Left alone, a loan of 0.1 + 0.2 repaid with 0.3
+ * stayed "outstanding" by a few quadrillionths forever — never cleared, its reminder never
+ * dismissed. Every total this module hands out is snapped back to whole cents first, so the
+ * comparisons built on them (cleared? over budget? shortfall?) see exact values.
+ */
+export function roundMoney(n: number): number {
+  return Math.round(n * 100) / 100;
+}
 
 /** Whether an ISO timestamp falls in the same calendar month/year as `now`. */
 export function isSameMonth(at: string, now: Date): boolean {
@@ -23,7 +35,7 @@ export function balance(account: Account, transactions: Transaction[]): number {
     }
     if (t.type === 'transfer' && t.toAccount === account.id) b += t.amount;
   }
-  return b;
+  return roundMoney(b);
 }
 
 /**
@@ -37,12 +49,12 @@ export function creditUsed(account: Account, transactions: Transaction[]): numbe
     if (t.account === account.id && (t.type === 'expense' || t.type === 'lent' || t.type === 'transfer')) u += t.amount;
     if (t.type === 'transfer' && t.toAccount === account.id) u -= t.amount;
   }
-  return Math.max(0, u);
+  return Math.max(0, roundMoney(u));
 }
 
 /** Credit remaining on a credit-card account — never negative. */
 export function creditLeft(account: Account, transactions: Transaction[]): number {
-  return Math.max(0, (account.limit ?? 0) - creditUsed(account, transactions));
+  return Math.max(0, roundMoney((account.limit ?? 0) - creditUsed(account, transactions)));
 }
 
 /**
@@ -53,7 +65,7 @@ export function creditLeft(account: Account, transactions: Transaction[]): numbe
 export function liquid(accounts: Account[], transactions: Transaction[]): number {
   return accounts
     .filter((a) => a.type !== 'credit')
-    .reduce((sum, a) => sum + balance(a, transactions), 0);
+    .reduce((sum, a) => roundMoney(sum + balance(a, transactions)), 0);
 }
 
 /**
@@ -72,15 +84,15 @@ export function spent(transactions: Transaction[], countLentAsSpending: boolean,
     if (t.type === 'expense' && !t.excludeFromBudget) total += t.amount;
     else if (t.type === 'lent' && countLentAsSpending) total += t.amount;
   }
-  return total;
+  return roundMoney(total);
 }
 
 export function incomeTotal(transactions: Transaction[]): number {
-  return transactions.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  return roundMoney(transactions.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0));
 }
 
 export function transferTotal(transactions: Transaction[]): number {
-  return transactions.filter((t) => t.type === 'transfer').reduce((s, t) => s + t.amount, 0);
+  return roundMoney(transactions.filter((t) => t.type === 'transfer').reduce((s, t) => s + t.amount, 0));
 }
 
 export interface PersonLedger {
@@ -112,9 +124,9 @@ export function peopleAgg(transactions: Transaction[], kind: 'lent' | 'borrowed'
   }
   return Array.from(byPerson.entries()).map(([person, { given, back, lastDate }]) => ({
     person,
-    given,
-    back,
-    out: given - back,
+    given: roundMoney(given),
+    back: roundMoney(back),
+    out: roundMoney(given - back),
     lastDate,
   }));
 }
@@ -142,7 +154,7 @@ export interface DueReminder {
  * due date itself is never auto-cleared, since it's a one-time acknowledgement, not a repeat.
  */
 export function dueReminders(transactions: Transaction[], today: Date = new Date()): DueReminder[] {
-  const todayStr = today.toISOString().slice(0, 10);
+  const todayStr = toDateKey(today);
   return transactions
     .filter((t): t is Transaction & { person: string; dueDate: string } =>
       (t.type === 'lent' || t.type === 'borrowed') && !!t.person && !!t.dueDate && !t.dueDateDismissed && t.dueDate <= todayStr,
@@ -185,7 +197,7 @@ export function loanFulfillments(transactions: Transaction[], direction: 'lent' 
   }
 
   const result = new Map<string, LoanStatus>();
-  const todayStr = today.toISOString().slice(0, 10);
+  const todayStr = toDateKey(today);
 
   for (const list of byPerson.values()) {
     const sorted = [...list].sort((a, b) => a.at.localeCompare(b.at));
@@ -197,8 +209,8 @@ export function loanFulfillments(transactions: Transaction[], direction: 'lent' 
       while (amount > 0 && head < queue.length) {
         const loan = queue[head];
         const take = Math.min(loan.remaining, amount);
-        loan.remaining -= take;
-        amount -= take;
+        loan.remaining = roundMoney(loan.remaining - take);
+        amount = roundMoney(amount - take);
         if (loan.remaining === 0) {
           loan.clearedAt = t.at;
           head++;
@@ -208,7 +220,7 @@ export function loanFulfillments(transactions: Transaction[], direction: 'lent' 
     for (const loan of queue) {
       let fulfillment: LoanFulfillment;
       if (!loan.dueDate) fulfillment = 'noDueDate';
-      else if (loan.clearedAt) fulfillment = loan.clearedAt.slice(0, 10) <= loan.dueDate ? 'onTime' : 'late';
+      else if (loan.clearedAt) fulfillment = toDateKey(new Date(loan.clearedAt)) <= loan.dueDate ? 'onTime' : 'late';
       else fulfillment = loan.dueDate < todayStr ? 'overdue' : 'pending';
       result.set(loan.id, { clearedAt: loan.clearedAt, fulfillment });
     }
@@ -232,17 +244,17 @@ export function statusLabel(p: PersonLedger, t: Translate): string {
 
 /** "You are owed" — brief §2 rule: never shown negative, people can't net below zero. */
 export function totalOwedToMe(transactions: Transaction[]): number {
-  return peopleAgg(transactions, 'lent').reduce((sum, p) => sum + Math.max(0, p.out), 0);
+  return peopleAgg(transactions, 'lent').reduce((sum, p) => roundMoney(sum + Math.max(0, p.out)), 0);
 }
 
 /** "You owe" — the borrowed-side mirror of totalOwedToMe. */
 export function totalIOwe(transactions: Transaction[]): number {
-  return peopleAgg(transactions, 'borrowed').reduce((sum, p) => sum + Math.max(0, p.out), 0);
+  return peopleAgg(transactions, 'borrowed').reduce((sum, p) => roundMoney(sum + Math.max(0, p.out)), 0);
 }
 
 /** Total position (brief §2 rule 5): total available + outstanding owed to you. Never conflated with `liquid`. */
 export function totalPosition(accounts: Account[], transactions: Transaction[]): number {
-  return liquid(accounts, transactions) + totalOwedToMe(transactions);
+  return roundMoney(liquid(accounts, transactions) + totalOwedToMe(transactions));
 }
 
 export type BudgetTone = 'pos' | 'warn' | 'neg';
@@ -267,7 +279,7 @@ export interface BudgetStatus {
 /** budget <= 0 means "no budget set" (the entry form's -1 / an unset 0). */
 export function budgetStatus(budget: number, spentAmount: number): BudgetStatus {
   const noBudget = budget <= 0;
-  const left = budget - spentAmount;
+  const left = roundMoney(budget - spentAmount);
   const pct = noBudget ? 0 : Math.min(999, Math.round((spentAmount / budget) * 1000) / 10);
   const overBudget = !noBudget && left < 0;
   const exactBudget = !noBudget && left === 0;
@@ -319,7 +331,7 @@ export function monthlyReport(accounts: Account[], transactions: Transaction[], 
   // (closing minus the movements) silently absorbs every prior month's activity instead of
   // representing the balance at the start of this month.
   const monthTx = transactions.filter((t) => isSameMonth(t.at, now));
-  const sumType = (type: Transaction['type']) => monthTx.filter((t) => t.type === type).reduce((s, t) => s + t.amount, 0);
+  const sumType = (type: Transaction['type']) => roundMoney(monthTx.filter((t) => t.type === type).reduce((s, t) => s + t.amount, 0));
   const income = sumType('income');
   const expense = sumType('expense');
   const lent = sumType('lent');
@@ -329,6 +341,6 @@ export function monthlyReport(accounts: Account[], transactions: Transaction[], 
   const transfers = sumType('transfer');
   const closing = liquid(accounts, transactions);
   const netMovement = income + repaidIn - expense - lent + borrowed - repaidOut;
-  const opening = closing - netMovement;
+  const opening = roundMoney(closing - netMovement);
   return { opening, income, expense, lent, repaidIn, borrowed, repaidOut, transfers, closing };
 }

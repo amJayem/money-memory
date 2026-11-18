@@ -1,4 +1,5 @@
 import type { Account, Transaction } from './types';
+import { toDateKey } from './dates';
 
 const CSV_HEADER = ['Date', 'Time', 'Type', 'Amount', 'Currency', 'Category', 'Account', 'To account', 'Person', 'Note'];
 
@@ -18,7 +19,7 @@ export function transactionsToCsv(transactions: Transaction[], accounts: Account
     .map((t) => {
       const when = new Date(t.at);
       return toRow([
-        when.toISOString().slice(0, 10),
+        toDateKey(when),
         when.toTimeString().slice(0, 5),
         t.type,
         String(t.amount),
