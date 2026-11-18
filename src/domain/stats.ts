@@ -3,7 +3,7 @@
 // from `now` — flagged in LEDGER_SPEC.md §9 as something the real app must do.
 
 import type { Account, Transaction } from './types';
-import { incomeTotal, spent, totalOwedToMe, transferTotal } from './money';
+import { incomeTotal, totalOwedToMe, transferTotal } from './money';
 
 export type StatRange = 'Today' | 'This week' | 'This month' | '3 months' | 'This year';
 
@@ -117,7 +117,14 @@ export function moneyFlow(transactions: Transaction[], accounts: Account[], coun
   const income = incomeTotal(inWindow);
   const expense = inWindow.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const transfers = transferTotal(inWindow);
-  const spentTotal = spent(inWindow, countLentAsSpending);
+  // Summed over the window itself, not via money.spent() — that one is hard-scoped to the
+  // current calendar month, so on '3 months' / 'This year' it subtracted only this month's
+  // spending from the whole range's income.
+  const spentTotal = inWindow.reduce((s, tx) => {
+    if (tx.type === 'expense' && !tx.excludeFromBudget) return s + tx.amount;
+    if (tx.type === 'lent' && countLentAsSpending) return s + tx.amount;
+    return s;
+  }, 0);
   const owed = totalOwedToMe(inWindow);
   const cats = categoryBreakdown(inWindow, range, tCommon, now)
     .slice(0, 3)

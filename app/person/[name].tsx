@@ -34,7 +34,9 @@ export default function PersonScreen() {
   const pct = ledger.given > 0 ? Math.min(100, (ledger.back / ledger.given) * 100) : 0;
 
   const related = sortedTransactions(transactions.filter((t) => t.person === person));
-  const fulfillments = loanFulfillments(transactions, direction);
+  // Scoped to this person — the unfiltered ledger made the on-time/late/overdue summary below
+  // count every other person's loans too.
+  const fulfillments = loanFulfillments(related, direction);
   const fulfillmentCounts = { onTime: 0, late: 0, overdue: 0 };
   for (const status of fulfillments.values()) {
     if (status.fulfillment === 'onTime') fulfillmentCounts.onTime++;

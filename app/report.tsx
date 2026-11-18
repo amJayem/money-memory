@@ -9,7 +9,7 @@ import { TransactionRow } from '@/components/TransactionRow';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useLedger } from '@/hooks/useLedger';
 import { usePrivacy } from '@/hooks/usePrivacy';
-import { balance, monthlyReport } from '@/domain/money';
+import { balance, isSameMonth, monthlyReport } from '@/domain/money';
 import { sortedTransactions, transactionIcon, transactionSub, transactionTitle, type Translate } from '@/domain/search';
 import type { Tone } from '@/theme/tokens';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -27,8 +27,9 @@ export default function ReportScreen() {
   const monthShort = tc(`monthShort${now.getMonth()}`);
   const report = monthlyReport(accounts, transactions);
 
+  // This month only, like every other figure on this screen.
   const largest = sortedTransactions(transactions)
-    .filter((t) => t.type !== 'transfer')
+    .filter((t) => t.type !== 'transfer' && isSameMonth(t.at, now))
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 4);
 
@@ -38,6 +39,10 @@ export default function ReportScreen() {
     { label: t('moneyOut'), value: -report.expense, tone: 'neg' },
     { label: t('lentToPeople'), value: -report.lent, tone: 'warn' },
     { label: t('repaymentsReceived'), value: report.repaidIn, tone: 'pos' },
+    // Shown only when there's something to show, but never left out when there is — these two
+    // move the balance too, and without them the rows above don't add up to the closing figure.
+    ...(report.borrowed ? [{ label: t('borrowedFromPeople'), value: report.borrowed, tone: 'warn' as Tone }] : []),
+    ...(report.repaidOut ? [{ label: t('repaymentsMade'), value: -report.repaidOut, tone: 'neg' as Tone }] : []),
     { label: t('transfers'), value: null },
     { label: t('totalAvailableNow'), value: report.closing, bold: true },
   ];

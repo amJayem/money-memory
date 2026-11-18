@@ -14,7 +14,7 @@ export function useTranslation<S extends Section>(section: S) {
     const fallback = STRINGS.en[section] as Record<string, string>;
     let text = dict[key as string] ?? fallback[key as string] ?? String(key);
     if (vars) {
-      for (const [k, v] of Object.entries(vars)) text = text.replace(`{${k}}`, v);
+      for (const [k, v] of Object.entries(vars)) text = text.replace(`{${k}}`, () => v);
     }
     return text;
   };

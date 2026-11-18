@@ -128,7 +128,11 @@ export interface TxGroup {
 function dayLabel(date: Date, today: Date, t: Translate): string {
   const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const diffDays = Math.round((startOf(today) - startOf(date)) / (24 * 60 * 60 * 1000));
-  const md = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  // The year is included once it differs from this year's — the label doubles as the group's
+  // React key, and without it the same day a year apart produced two identical labels.
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  if (date.getFullYear() !== today.getFullYear()) opts.year = 'numeric';
+  const md = date.toLocaleDateString('en-US', opts);
   if (diffDays === 0) return `${t('today')} · ${md}`;
   if (diffDays === 1) return `${t('yesterday')} · ${md}`;
   return md;
