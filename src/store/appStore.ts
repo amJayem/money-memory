@@ -6,8 +6,16 @@ import type { BackupFile } from '@/domain/backup';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@/domain/types';
 import { SEED_ACCOUNTS, SEED_TRANSACTIONS } from '@/domain/seed';
 import { DEFAULT_ACCENT } from '@/theme/tokens';
+import { STRINGS } from '@/i18n/strings';
+import { useToastStore } from './toastStore';
 
 const STORAGE_KEY = 'moneymemory.v1';
+// Where an unreadable (corrupt) saved ledger is set aside before a fresh one replaces it.
+const RESCUE_KEY = 'moneymemory.v1.unreadable';
+// Written into every save so a future app version that changes the saved shape can tell which
+// shape it is reading and convert it, instead of guessing. Saves from before this field existed
+// have no version and are the same shape as version 1.
+const SCHEMA_VERSION = 1;
 
 const DEFAULT_SETTINGS: Settings = {
   hasOnboarded: false,
@@ -44,6 +52,9 @@ interface PersistedShape {
 
 interface AppState extends PersistedShape {
   hydrated: boolean;
+  /** The saved ledger exists but couldn't be read. Nothing is written while this is set, so a
+   * storage hiccup can never be followed by an empty ledger overwriting the real one. */
+  loadFailed: boolean;
   peekUntil: number | null;
   hydrate: () => Promise<void>;
   persist: () => Promise<void>;
@@ -74,24 +85,41 @@ export const useAppStore = create<AppState>((set, get) => ({
   transactions: [],
   settings: DEFAULT_SETTINGS,
   hydrated: false,
+  loadFailed: false,
   peekUntil: null,
 
   hydrate: async () => {
     if (get().hydrated) return;
+    // A read that throws is NOT the same as "nothing saved yet". It used to fall through to the
+    // empty state below, which showed onboarding and then saved that empty ledger over the real
+    // one. Now it stops here: the app shows a retry screen and writes nothing.
+    let raw: string | null;
     try {
-      const raw = await AsyncStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed: PersistedShape = JSON.parse(raw);
+      raw = await readSaved();
+    } catch {
+      set({ loadFailed: true });
+      return;
+    }
+    if (raw) {
+      const parsed = parseSaved(raw);
+      if (parsed) {
         set({
           accounts: parsed.accounts,
           transactions: parsed.transactions,
           settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
           hydrated: true,
+          loadFailed: false,
         });
         return;
       }
-    } catch {
-      // Corrupt or unreadable storage falls through to a fresh seed below.
+      // Readable but not a ledger (truncated or corrupt JSON). Keep a copy before starting
+      // fresh, and don't start fresh at all if that copy can't be made.
+      try {
+        if ((await AsyncStorage.getItem(RESCUE_KEY)) === null) await AsyncStorage.setItem(RESCUE_KEY, raw);
+      } catch {
+        set({ loadFailed: true });
+        return;
+      }
     }
     // A brand-new install starts genuinely empty and runs onboarding — real
     // users shouldn't land on a ledger full of someone else's fake accounts
@@ -102,6 +130,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       transactions: [],
       settings: DEFAULT_SETTINGS,
       hydrated: true,
+      loadFailed: false,
     });
   },
 
@@ -112,8 +141,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   // on disk. One retry covers the common transient case; the error is at least
   // surfaced now instead of vanishing.
   persist: async () => {
+    // Never write before the saved ledger has been read: the background flush at the bottom of
+    // this file can fire while the app is still on its splash screen, and at that point the
+    // in-memory state is the empty default — writing it would erase everything.
+    if (!get().hydrated) return;
     const { accounts, transactions, settings } = get();
-    const payload = JSON.stringify({ accounts, transactions, settings } satisfies PersistedShape);
+    const payload = JSON.stringify({ schemaVersion: SCHEMA_VERSION, accounts, transactions, settings } satisfies PersistedShape & { schemaVersion: number });
     try {
       await AsyncStorage.setItem(STORAGE_KEY, payload);
     } catch (err) {
@@ -177,17 +210,31 @@ export const useAppStore = create<AppState>((set, get) => ({
   renameCategory: (oldName, newName) => {
     const trimmed = newName.trim();
     if (!trimmed || trimmed === oldName) return;
-    set((s) => ({
-      settings: { ...s.settings, categories: s.settings.categories.map((c) => (c === oldName ? trimmed : c)) },
-      transactions: s.transactions.map((t) => (t.category === oldName ? { ...t, category: trimmed } : t)),
-    }));
+    set((s) => {
+      // Renaming onto a name another category already has would leave two identical entries.
+      if (s.settings.categories.some((c) => c !== oldName && c.toLowerCase() === trimmed.toLowerCase())) return s;
+      // The category's own budget is keyed by name, so it has to move with the rename.
+      const { [oldName]: movedBudget, ...otherBudgets } = s.settings.categoryBudgets;
+      return {
+        settings: {
+          ...s.settings,
+          categories: s.settings.categories.map((c) => (c === oldName ? trimmed : c)),
+          categoryBudgets: movedBudget === undefined ? otherBudgets : { ...otherBudgets, [trimmed]: movedBudget },
+          lastCategory: s.settings.lastCategory === oldName ? trimmed : s.settings.lastCategory,
+        },
+        transactions: s.transactions.map((t) => (t.category === oldName ? { ...t, category: trimmed } : t)),
+      };
+    });
     schedulePersist(get);
   },
 
   // Callers must check the category is unused first (see app/categories.tsx) —
   // deleting one still in use would leave those transactions' category dangling.
   deleteCategory: (name) => {
-    set((s) => ({ settings: { ...s.settings, categories: s.settings.categories.filter((c) => c !== name) } }));
+    set((s) => {
+      const { [name]: _removed, ...categoryBudgets } = s.settings.categoryBudgets;
+      return { settings: { ...s.settings, categories: s.settings.categories.filter((c) => c !== name), categoryBudgets } };
+    });
     schedulePersist(get);
   },
 
@@ -259,11 +306,37 @@ export const useAppStore = create<AppState>((set, get) => ({
   cancelPeek: () => set({ peekUntil: null }),
 }));
 
+async function readSaved(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(STORAGE_KEY);
+  } catch {
+    // One retry covers a transient failure; a second failure is reported to the caller.
+    return AsyncStorage.getItem(STORAGE_KEY);
+  }
+}
+
+function parseSaved(raw: string): PersistedShape | null {
+  try {
+    const data = JSON.parse(raw);
+    if (typeof data !== 'object' || data === null) return null;
+    if (!Array.isArray(data.accounts) || !Array.isArray(data.transactions)) return null;
+    if (typeof data.settings !== 'object' || data.settings === null) return null;
+    return data as PersistedShape;
+  } catch {
+    return null;
+  }
+}
+
 function schedulePersist(get: () => AppState) {
   if (persistTimer) clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
     persistTimer = null;
-    get().persist().catch(() => {});
+    get()
+      .persist()
+      .catch(() => {
+        // The change is on screen but not on disk — say so instead of losing it silently.
+        useToastStore.getState().show(STRINGS[get().settings.language].common.saveFailed);
+      });
   }, 300);
 }
 

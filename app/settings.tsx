@@ -387,6 +387,9 @@ export default function SettingsScreen() {
         onCancel={() => setConfirmDelete(false)}
         onConfirm={async () => {
           await resetAllData();
+          // The daily reminder lives in the OS, not in the ledger — without this it kept
+          // firing every day after "delete all", with the setting itself showing as off.
+          await syncDailyReminder(false, 0, 0).catch(() => {});
           setConfirmDelete(false);
           router.replace('/');
         }}

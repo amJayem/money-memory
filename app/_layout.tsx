@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BackHandler, Pressable, View } from 'react-native';
+import { BackHandler, Pressable, Text, View } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
@@ -205,8 +205,25 @@ function LockScreenGate({ onTryUnlock }: { onTryUnlock: () => void }) {
   return <LockScreen onUnlock={onTryUnlock} />;
 }
 
+/** Shown when the saved ledger exists but can't be read. Deliberately plain (no theme, fonts or
+ * translations — none of those are loaded yet) and deliberately a dead end apart from Retry:
+ * carrying on into an empty app here is how a read error used to turn into a wiped ledger. */
+function LoadFailedScreen({ onRetry }: { onRetry: () => void }) {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 12, backgroundColor: '#101216' }}>
+      <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700', textAlign: 'center' }}>Couldn’t load your data</Text>
+      <Text style={{ color: '#c9ccd3', fontSize: 14, lineHeight: 21, textAlign: 'center' }}>
+        Your records are still saved on this phone, but they couldn’t be read just now. Nothing has been changed or deleted. Try again, or close the app and reopen it.
+      </Text>
+      <Pressable onPress={onRetry} style={{ marginTop: 10, backgroundColor: '#fff', borderRadius: 16, paddingVertical: 13, paddingHorizontal: 26 }}>
+        <Text style={{ color: '#101216', fontSize: 15, fontWeight: '700' }}>Try again</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Manrope_500Medium,
     Manrope_600SemiBold,
     Manrope_700Bold,
@@ -216,6 +233,10 @@ export default function RootLayout() {
   });
   const hydrate = useAppStore((s) => s.hydrate);
   const hydrated = useAppStore((s) => s.hydrated);
+  const loadFailed = useAppStore((s) => s.loadFailed);
+  // A font that fails to load falls back to the system font — better than a splash screen
+  // that never goes away.
+  const fontsReady = fontsLoaded || !!fontError;
   const appearance = useAppStore((s) => s.settings.appearance);
   const accentTheme = useAppStore((s) => s.settings.accentTheme);
 
@@ -224,12 +245,13 @@ export default function RootLayout() {
   }, [hydrate]);
 
   useEffect(() => {
-    if (fontsLoaded && hydrated) {
+    if ((fontsReady && hydrated) || loadFailed) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, hydrated]);
+  }, [fontsReady, hydrated, loadFailed]);
 
-  if (!fontsLoaded || !hydrated) return null;
+  if (loadFailed) return <LoadFailedScreen onRetry={hydrate} />;
+  if (!fontsReady || !hydrated) return null;
 
   return (
     <SafeAreaProvider>
